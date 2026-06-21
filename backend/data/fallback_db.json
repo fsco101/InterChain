@@ -1,0 +1,39 @@
+{
+  "users": [
+    {
+      "full_name": "admin",
+      "email": "admin@gmail.com",
+      "role": "admin",
+      "password_hash": "$pbkdf2-sha256$29000$l5LSWqu19p7TmlNKqRWCkA$vQ0p9cqpW2L.OU7lPk32e4JcQBpfk2aLl3dtVckly2U",
+      "created_at": {
+        "$datetime": "2026-06-21T16:14:56.219279+00:00"
+      },
+      "updated_at": {
+        "$datetime": "2026-06-21T16:14:56.219279+00:00"
+      },
+      "_id": {
+        "$oid": "6a380e0046e67c705d9a4be7"
+      }
+    },
+    {
+      "full_name": "user",
+      "email": "user@gmail.com",
+      "role": "student",
+      "password_hash": "$pbkdf2-sha256$29000$c04JgfC.N8Y4Z0yJkXLOWQ$RsrNWVsF2UHWwL/fAuwjm9btgfTx/jJDwL7k9QZnaEM",
+      "created_at": {
+        "$datetime": "2026-06-21T16:20:42.640830+00:00"
+      },
+      "updated_at": {
+        "$datetime": "2026-06-21T16:20:42.640830+00:00"
+      },
+      "_id": {
+        "$oid": "6a380f5a46e67c705d9a4be8"
+      }
+    }
+  ],
+  "activity_logs": [],
+  "student_reports": [],
+  "attendance_records": [],
+  "performance_evaluations": [],
+  "completion_approvals": []
+}

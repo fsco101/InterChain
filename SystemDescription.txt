@@ -1,0 +1,28 @@
+Title: InternChain: A Blockchain-Based Internship Monitoring and Performance Verification System
+Description
+InternChain is a system that records internship activities, attendance, and supervisor evaluations on a blockchain. It ensures that internship records cannot be altered and provides a trusted verification system for schools and companies.
+
+Functional Requirements
+Student
+
+Log internship daily activities
+View internship progress
+Submit reports
+
+Supervisor/Company
+
+Validate student attendance
+Submit performance evaluations
+Approve internship completion
+
+Admin (School)
+
+Register students and companies
+Monitor internship status
+Generate reports
+
+System
+Store internship logs on blockchain
+Record evaluation transactions
+Generate immutable internship certificates
+Provide verification system for employers.
