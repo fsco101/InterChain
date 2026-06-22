@@ -45,6 +45,24 @@ async def dashboard(current_user: dict = Depends(require_roles("employer"))):
     }
 
 
+@router.get("/search")
+async def search_users(
+    q: str = "",
+    role: str = "student",
+    current_user: dict = Depends(require_roles("employer")),
+):
+    db = get_database()
+    query: dict = {"role": role}
+    if q.strip():
+        query["$or"] = [
+            {"full_name": {"$regex": q.strip(), "$options": "i"}},
+            {"role_id": {"$regex": q.strip(), "$options": "i"}},
+            {"email": {"$regex": q.strip(), "$options": "i"}},
+        ]
+    cursor = db.users.find(query).limit(10)
+    return {"users": [serialize_user(u) async for u in cursor]}
+
+
 # ── Instructor Roster ──────────────────────────────────────────────────────────
 
 @router.get("/roster")
@@ -68,7 +86,10 @@ async def add_instructor(body: InstructorAdd, current_user: dict = Depends(requi
     db = get_database()
     instructor = await db.users.find_one({"role_id": body.role_id, "role": "instructor"})
     if not instructor:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Instructor not found")
+        # fallback: case-insensitive match
+        instructor = await db.users.find_one({"role_id": {"$regex": f"^{body.role_id}$", "$options": "i"}, "role": "instructor"})
+    if not instructor:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Instructor not found. Make sure the Instructor ID is correct (e.g. INS-12345).")
 
     i = serialize_user(instructor)
     entry = {
@@ -79,9 +100,16 @@ async def add_instructor(body: InstructorAdd, current_user: dict = Depends(requi
         "institution": i.get("institution"),
     }
 
+    # check not already in roster
+    existing_doc = await db.employer_rosters.find_one(
+        {"employer_id": current_user["id"], "instructors.user_id": i["id"]}
+    )
+    if existing_doc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Instructor already in your roster")
+
     await db.employer_rosters.update_one(
         {"employer_id": current_user["id"]},
-        {"$addToSet": {"instructors": entry}},
+        {"$push": {"instructors": entry}},
         upsert=True,
     )
     return {"message": f"Instructor {body.role_id} added", "instructor": entry}

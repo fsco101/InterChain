@@ -1,26 +1,31 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { createEmployerApproval, fetchEmployerRecords } from '../../api/records'
 import { confirmAction, showError, showSuccess, extractError } from '../../utils/alerts'
 import { validateEmployerApproval } from '../../utils/validation'
+import { UserSearchField, InternshipSearchField } from '../SearchFields'
 
 function RecordList({ title, records }) {
   return (
     <div className="dashboard-card compact-card">
       <h3>{title}</h3>
       <div className="stack-list">
-        {records.length === 0 ? <p className="muted">No records yet.</p> : records.map((record) => <div key={record.id} className="mini-card">{record.payload.student_id} • {record.payload.approved ? 'Approved' : 'Pending'}</div>)}
+        {records.length === 0
+          ? <p className="muted">No records yet.</p>
+          : records.map((r) => (
+            <div key={r.id} className="mini-card">
+              {r.payload.student_id} • {r.payload.approved ? 'Approved' : 'Pending'}
+            </div>
+          ))}
       </div>
     </div>
   )
 }
 
-function toFormValues(formData) {
-  return Object.fromEntries(formData.entries())
-}
-
 export default function EmployerActions() {
   const [approvals, setApprovals] = useState([])
+  const [selectedStudent, setSelectedStudent] = useState(null)
+  const formRef = useRef(null)
 
   const loadRecords = async () => {
     try {
@@ -31,23 +36,15 @@ export default function EmployerActions() {
     }
   }
 
-  useEffect(() => {
-    loadRecords()
-  }, [])
+  useEffect(() => { loadRecords() }, [])
 
   const submitApproval = async (event) => {
     event.preventDefault()
-    const values = toFormValues(new FormData(event.currentTarget))
+    const values = Object.fromEntries(new FormData(event.currentTarget).entries())
     const validationError = validateEmployerApproval(values)
-
-    if (validationError) {
-      showError('Invalid input', validationError)
-      return
-    }
-
+    if (validationError) { showError('Invalid input', validationError); return }
     const confirmed = await confirmAction({ title: 'Approve internship completion?', text: 'This will save the completion approval to MongoDB.' })
     if (!confirmed) return
-
     try {
       await createEmployerApproval({
         internship_id: values.internship_id,
@@ -58,7 +55,8 @@ export default function EmployerActions() {
       })
       const status = values.approved === 'true' ? 'Approved' : 'Not approved'
       showSuccess('Approval saved', `${status} for student ${values.student_id}.`)
-      event.currentTarget.reset()
+      formRef.current?.reset()
+      setSelectedStudent(null)
       await loadRecords()
     } catch (error) {
       showError('Could not save approval', extractError(error))
@@ -67,16 +65,17 @@ export default function EmployerActions() {
 
   return (
     <div className="dashboard-stack">
-      <form className="dashboard-card form-card single-form" onSubmit={submitApproval}>
+      <form className="dashboard-card form-card single-form" onSubmit={submitApproval} ref={formRef}>
         <h3>Completion Approval</h3>
-        <label>
-          Internship ID
-          <input name="internship_id" type="text" placeholder="INT-1001 (min 3 chars)" />
-        </label>
-        <label>
-          Student ID
-          <input name="student_id" type="text" placeholder="STU-204 (min 5 chars)" />
-        </label>
+        <InternshipSearchField name="internship_id" callerRole="employer" />
+        <UserSearchField
+          label="Student"
+          role="student"
+          callerRole="employer"
+          name="student_id"
+          placeholder="Search student by name or ID…"
+          onChange={setSelectedStudent}
+        />
         <label>
           Approval date
           <input name="approval_date" type="date" />

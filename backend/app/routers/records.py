@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
 
 from app.deps import require_roles
+from app.db.mongodb import get_database
 from app.schemas.records import (
     AttendanceValidationCreate,
     CompletionApprovalCreate,
@@ -12,6 +13,44 @@ from app.services.records_service import create_record, list_records
 
 
 router = APIRouter(prefix="/records", tags=["records"])
+
+
+@router.get("/internships/search")
+async def search_internships(q: str = "", current_user: dict = Depends(require_roles("student", "instructor", "employer"))):
+    """Return distinct internship_ids from record collections + student internship_ids matching the query."""
+    db = get_database()
+    seen = set()
+    results = []
+
+    # 1. student internship_ids from users collection
+    user_query: dict = {"role": "student", "internship_id": {"$ne": None}}
+    if q.strip():
+        user_query["internship_id"] = {"$regex": q.strip(), "$options": "i"}
+    cursor = db.users.find(user_query, {"internship_id": 1}).limit(10)
+    async for doc in cursor:
+        iid = doc.get("internship_id")
+        if iid and iid not in seen:
+            seen.add(iid)
+            results.append(iid)
+
+    # 2. internship_ids referenced in record collections
+    if len(results) < 10:
+        collections = ["activity_logs", "student_reports", "attendance_records", "performance_evaluations", "completion_approvals"]
+        for col in collections:
+            pipeline = [
+                {"$group": {"_id": "$payload.internship_id"}},
+                {"$match": {"_id": {"$regex": q.strip(), "$options": "i"}} if q.strip() else {"_id": {"$ne": None}}},
+                {"$limit": 10},
+            ]
+            async for doc in db[col].aggregate(pipeline):
+                iid = doc["_id"]
+                if iid and iid not in seen:
+                    seen.add(iid)
+                    results.append(iid)
+            if len(results) >= 10:
+                break
+
+    return {"internship_ids": sorted(results)[:10]}
 
 
 @router.post("/student/activity")

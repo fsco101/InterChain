@@ -3,6 +3,8 @@ import ProtectedRoute from '../../components/ProtectedRoute'
 import DashboardShell from '../../components/DashboardShell'
 import { fetchInstructorRoster, addStudentToRoster, removeStudentFromRoster } from '../../api/records'
 import { confirmAction, showError, showSuccess, extractError } from '../../utils/alerts'
+import { UserSearchField } from '../../components/SearchFields'
+import AvatarBadge from '../../components/AvatarBadge'
 
 const LINKS = [
   { to: '/instructor/dashboard', label: 'Overview', description: 'Dashboard summary', end: true },
@@ -14,15 +16,18 @@ const LINKS = [
 
 function InstructorRosterPanel() {
   const [students, setStudents] = useState([])
-  const [roleId, setRoleId] = useState('')
+  const [selectedStudent, setSelectedStudent] = useState(null)
   const [adding, setAdding] = useState(false)
+  const [resetKey, setResetKey] = useState(0)
 
   const load = async () => {
     try {
       const { data } = await fetchInstructorRoster()
       setStudents(data.students || [])
-    } catch {
-      showError('Failed to load roster')
+    } catch (err) {
+      const status = err?.response?.status
+      if (status !== 404) showError('Failed to load roster', extractError(err))
+      setStudents([])
     }
   }
 
@@ -30,16 +35,16 @@ function InstructorRosterPanel() {
 
   const handleAdd = async (e) => {
     e.preventDefault()
-    const id = roleId.trim().toUpperCase()
-    if (!id.startsWith('STU-') || id.length < 9) {
-      showError('Invalid Student ID', 'Format must be STU-XXXXX')
+    if (!selectedStudent?.role_id) {
+      showError('No student selected', 'Please search and select a student first.')
       return
     }
     setAdding(true)
     try {
-      const { data } = await addStudentToRoster(id)
+      const { data } = await addStudentToRoster(selectedStudent.role_id)
       showSuccess('Student added', `${data.student.full_name} is now in your roster.`)
-      setRoleId('')
+      setSelectedStudent(null)
+      setResetKey((k) => k + 1)
       await load()
     } catch (err) {
       showError('Could not add student', extractError(err))
@@ -70,15 +75,17 @@ function InstructorRosterPanel() {
         <p className="eyebrow">Instructor</p>
         <h2>My Students</h2>
         <p className="muted">Add students by their Student ID. Employers can see this roster and the school they belong to.</p>
-        <form onSubmit={handleAdd} style={{ display: 'flex', gap: 10, marginTop: 14, flexWrap: 'wrap' }}>
-          <input
-            type="text"
-            value={roleId}
-            onChange={(e) => setRoleId(e.target.value)}
-            placeholder="Student ID  e.g. STU-12345"
-            style={{ flex: 1, minWidth: 200, minHeight: 44, borderRadius: 12, border: '1px solid rgba(148,163,184,0.28)', background: 'rgba(15,23,42,0.7)', color: 'var(--text)', padding: '0 14px' }}
+        <form onSubmit={handleAdd} style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
+          <UserSearchField
+            label="Student"
+            role="student"
+            callerRole="instructor"
+            name="student_id"
+            placeholder="Search student by name or ID…"
+            onChange={setSelectedStudent}
+            resetKey={resetKey}
           />
-          <button className="primary-button" type="submit" disabled={adding}>
+          <button className="primary-button" type="submit" disabled={adding} style={{ alignSelf: 'flex-start' }}>
             {adding ? 'Adding…' : 'Add Student'}
           </button>
         </form>

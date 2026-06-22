@@ -13,6 +13,24 @@ class StudentAdd(BaseModel):
     role_id: str  # STU-XXXXX
 
 
+@router.get("/search")
+async def search_users(
+    q: str = "",
+    role: str = "student",
+    current_user: dict = Depends(require_roles("instructor")),
+):
+    db = get_database()
+    query: dict = {"role": role}
+    if q.strip():
+        query["$or"] = [
+            {"full_name": {"$regex": q.strip(), "$options": "i"}},
+            {"role_id": {"$regex": q.strip(), "$options": "i"}},
+            {"email": {"$regex": q.strip(), "$options": "i"}},
+        ]
+    cursor = db.users.find(query).limit(10)
+    return {"users": [serialize_user(u) async for u in cursor]}
+
+
 @router.get("/dashboard")
 async def dashboard(current_user: dict = Depends(require_roles("instructor"))):
     return {
@@ -21,6 +39,8 @@ async def dashboard(current_user: dict = Depends(require_roles("instructor"))):
         "actions": ["Review student progress", "Validate attendance", "Submit evaluation"],
     }
 
+
+# ── Instructor Roster ──────────────────────────────────────────────────────────
 
 @router.get("/roster")
 async def get_roster(current_user: dict = Depends(require_roles("instructor"))):
@@ -33,10 +53,13 @@ async def get_roster(current_user: dict = Depends(require_roles("instructor"))):
 @router.post("/roster/add", status_code=status.HTTP_201_CREATED)
 async def add_student(body: StudentAdd, current_user: dict = Depends(require_roles("instructor"))):
     db = get_database()
-    # find user by role_id
+    # search by role_id OR by the role_id prefix pattern if not found
     student = await db.users.find_one({"role_id": body.role_id, "role": "student"})
     if not student:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student not found")
+        # fallback: case-insensitive match
+        student = await db.users.find_one({"role_id": {"$regex": f"^{body.role_id}$", "$options": "i"}, "role": "student"})
+    if not student:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student not found. Make sure the Student ID is correct (e.g. STU-12345).")
 
     s = serialize_user(student)
     entry = {
@@ -47,9 +70,16 @@ async def add_student(body: StudentAdd, current_user: dict = Depends(require_rol
         "institution": s.get("institution"),
     }
 
+    # check not already in roster
+    existing_doc = await db.instructor_rosters.find_one(
+        {"instructor_id": current_user["id"], "students.user_id": s["id"]}
+    )
+    if existing_doc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Student already in your roster")
+
     await db.instructor_rosters.update_one(
         {"instructor_id": current_user["id"]},
-        {"$addToSet": {"students": entry}},
+        {"$push": {"students": entry}},
         upsert=True,
     )
     return {"message": f"Student {body.role_id} added to roster", "student": entry}

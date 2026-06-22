@@ -6,6 +6,7 @@ import DashboardShell from '../../components/DashboardShell'
 import { issueCertificate, fetchCertificates } from '../../api/records'
 import { showError, showSuccess, extractError, confirmAction } from '../../utils/alerts'
 import { useAuth } from '../../context/AuthContext'
+import { UserSearchField } from '../../components/SearchFields'
 
 const LINKS = [
   { to: '/employer/dashboard', label: 'Overview', description: 'Dashboard summary', end: true },
@@ -22,65 +23,132 @@ const EMPTY = {
   signatory_title: '', start_date: '', end_date: '', remarks: '', send_email: true,
 }
 
-function CertPreview({ form, logoSrc }) {
+// A4 landscape at 96dpi: 1122 x 794 px
+const CERT_W = 1122
+const CERT_H = 794
+
+function CertLayout({ form, logoSrc, id }) {
   return (
-    <div id="cert-preview" style={{
-      width: 794, minHeight: 560, background: '#fff', color: '#1e293b',
-      fontFamily: 'Georgia, serif', padding: '48px 64px', position: 'relative',
-      border: '12px solid #0ea5e9', borderRadius: 4, boxSizing: 'border-box',
-    }}>
+    <div
+      id={id}
+      style={{
+        width: CERT_W,
+        height: CERT_H,
+        background: '#ffffff',
+        color: '#1e293b',
+        fontFamily: 'Georgia, Times New Roman, serif',
+        boxSizing: 'border-box',
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+    >
+      {/* outer border */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        border: '16px solid #0ea5e9',
+        boxSizing: 'border-box',
+        pointerEvents: 'none',
+      }} />
       {/* inner border */}
-      <div style={{ position: 'absolute', inset: 8, border: '2px solid #bae6fd', borderRadius: 2, pointerEvents: 'none' }} />
+      <div style={{
+        position: 'absolute', inset: 20,
+        border: '2px solid #bae6fd',
+        boxSizing: 'border-box',
+        pointerEvents: 'none',
+      }} />
 
-      {/* header */}
-      <div style={{ textAlign: 'center', marginBottom: 28 }}>
-        {logoSrc && <img src={logoSrc} alt="logo" style={{ maxHeight: 72, maxWidth: 200, objectFit: 'contain', marginBottom: 12 }} />}
-        <p style={{ margin: 0, fontSize: 11, letterSpacing: 4, textTransform: 'uppercase', color: '#0ea5e9' }}>
-          Certificate of Completion
-        </p>
-        <h1 style={{ margin: '8px 0 0', fontSize: 32, fontWeight: 800, color: '#0f172a', lineHeight: 1.2 }}>
-          {form.company_name || 'Company Name'}
-        </h1>
-        {form.company_address && (
-          <p style={{ margin: '4px 0 0', fontSize: 12, color: '#64748b' }}>{form.company_address}</p>
-        )}
-      </div>
+      {/* decorative corner accents */}
+      {[['top', 'left'], ['top', 'right'], ['bottom', 'left'], ['bottom', 'right']].map(([v, h]) => (
+        <div key={v + h} style={{
+          position: 'absolute',
+          [v]: 28, [h]: 28,
+          width: 32, height: 32,
+          borderTop: v === 'top' ? '3px solid #0ea5e9' : 'none',
+          borderBottom: v === 'bottom' ? '3px solid #0ea5e9' : 'none',
+          borderLeft: h === 'left' ? '3px solid #0ea5e9' : 'none',
+          borderRight: h === 'right' ? '3px solid #0ea5e9' : 'none',
+          pointerEvents: 'none',
+        }} />
+      ))}
 
-      <div style={{ textAlign: 'center', margin: '24px 0' }}>
-        <p style={{ fontSize: 14, color: '#475569', margin: 0 }}>This is to certify that</p>
-        <p style={{ fontSize: 28, fontWeight: 700, color: '#0f172a', margin: '8px 0', borderBottom: '2px solid #e2e8f0', paddingBottom: 8 }}>
-          {form.recipient_name || 'Recipient Name'}
-        </p>
-        <p style={{ fontSize: 12, color: '#64748b', margin: 0 }}>
-          {form.recipient_type === 'student' ? 'Student' : 'Instructor'} · {form.recipient_role_id || '—'}
-        </p>
-      </div>
+      {/* content wrapper */}
+      <div style={{ padding: '48px 80px', height: '100%', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
 
-      <p style={{ textAlign: 'center', fontSize: 14, color: '#334155', lineHeight: 1.7, margin: '16px 0' }}>
-        has successfully completed the internship program{' '}
-        <strong>"{form.internship_title || 'Internship Title'}"</strong>{' '}
-        from <strong>{form.start_date || '—'}</strong> to <strong>{form.end_date || '—'}</strong>.
-      </p>
+        {/* header */}
+        <div style={{ textAlign: 'center' }}>
+          {logoSrc && (
+            <img
+              src={logoSrc}
+              alt="logo"
+              crossOrigin="anonymous"
+              style={{ maxHeight: 72, maxWidth: 220, objectFit: 'contain', display: 'block', margin: '0 auto 12px' }}
+            />
+          )}
+          <p style={{ margin: 0, fontSize: 11, letterSpacing: 6, textTransform: 'uppercase', color: '#0ea5e9', fontFamily: 'Arial, sans-serif' }}>
+            Certificate of Completion
+          </p>
+          <h1 style={{ margin: '6px 0 0', fontSize: 28, fontWeight: 800, color: '#0f172a', lineHeight: 1.2, fontFamily: 'Georgia, serif' }}>
+            {form.company_name || 'Company Name'}
+          </h1>
+          {form.company_address && (
+            <p style={{ margin: '4px 0 0', fontSize: 11, color: '#64748b', fontFamily: 'Arial, sans-serif' }}>
+              {form.company_address}
+            </p>
+          )}
+        </div>
 
-      {form.remarks && (
-        <p style={{ textAlign: 'center', fontSize: 13, color: '#475569', fontStyle: 'italic', margin: '12px 0' }}>
-          "{form.remarks}"
-        </p>
-      )}
+        {/* body */}
+        <div style={{ textAlign: 'center', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '16px 0' }}>
+          <p style={{ fontSize: 13, color: '#475569', margin: '0 0 10px', fontFamily: 'Arial, sans-serif' }}>
+            This is to certify that
+          </p>
+          <p style={{
+            fontSize: 36, fontWeight: 700, color: '#0f172a',
+            margin: '0 0 6px', lineHeight: 1.2,
+            borderBottom: '2px solid #e2e8f0', paddingBottom: 10,
+            fontFamily: 'Georgia, serif',
+          }}>
+            {form.recipient_name || 'Recipient Name'}
+          </p>
+          <p style={{ fontSize: 12, color: '#64748b', margin: '6px 0 0', fontFamily: 'Arial, sans-serif' }}>
+            {form.recipient_type === 'student' ? 'Student' : 'Instructor'}&nbsp;·&nbsp;{form.recipient_role_id || '—'}
+          </p>
 
-      {/* signature */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 40 }}>
-        <div style={{ textAlign: 'center', minWidth: 200 }}>
-          <div style={{ borderTop: '2px solid #334155', paddingTop: 6 }}>
-            <p style={{ margin: 0, fontWeight: 700, fontSize: 14 }}>{form.signatory_name || 'Signatory Name'}</p>
-            <p style={{ margin: 0, fontSize: 12, color: '#64748b' }}>{form.signatory_title || 'Title'}</p>
+          <p style={{ fontSize: 14, color: '#334155', lineHeight: 1.8, margin: '20px auto 0', maxWidth: 700, fontFamily: 'Georgia, serif' }}>
+            has successfully completed the internship program{' '}
+            <strong>"{form.internship_title || 'Internship Title'}"</strong>
+            {form.start_date && form.end_date && (
+              <> from <strong>{form.start_date}</strong> to <strong>{form.end_date}</strong></>
+            )}.
+          </p>
+
+          {form.remarks && (
+            <p style={{ fontSize: 13, color: '#475569', fontStyle: 'italic', margin: '12px auto 0', maxWidth: 620, fontFamily: 'Georgia, serif' }}>
+              "{form.remarks}"
+            </p>
+          )}
+        </div>
+
+        {/* footer: date + signature */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+          <div style={{ textAlign: 'left' }}>
+            <p style={{ margin: 0, fontSize: 11, color: '#94a3b8', fontFamily: 'Arial, sans-serif' }}>
+              Blockchain-verified · InterChain
+            </p>
+          </div>
+          <div style={{ textAlign: 'center', minWidth: 220 }}>
+            <div style={{ borderTop: '2px solid #334155', paddingTop: 6 }}>
+              <p style={{ margin: 0, fontWeight: 700, fontSize: 14, fontFamily: 'Arial, sans-serif' }}>
+                {form.signatory_name || 'Signatory Name'}
+              </p>
+              <p style={{ margin: 0, fontSize: 12, color: '#64748b', fontFamily: 'Arial, sans-serif' }}>
+                {form.signatory_title || 'Title'}
+              </p>
+            </div>
           </div>
         </div>
-      </div>
 
-      <p style={{ textAlign: 'center', fontSize: 10, color: '#94a3b8', marginTop: 24 }}>
-        Blockchain-verified · InterChain
-      </p>
+      </div>
     </div>
   )
 }
@@ -96,8 +164,12 @@ function CertHistoryRow({ cert }) {
       <span className="role-chip">{cert.payload.recipient_role_id}</span>
       <span className="muted" style={{ fontSize: '0.75rem' }}>{new Date(cert.created_at).toLocaleDateString()}</span>
       {cert.blockchain?.tx_hash && (
-        <a href={cert.blockchain.explorer_url} target="_blank" rel="noreferrer"
-          style={{ fontSize: '0.72rem', fontFamily: 'monospace', color: 'var(--accent)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 140 }}>
+        <a
+          href={cert.blockchain.explorer_url}
+          target="_blank"
+          rel="noreferrer"
+          style={{ fontSize: '0.72rem', fontFamily: 'monospace', color: 'var(--accent)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 140 }}
+        >
           {cert.blockchain.tx_hash.slice(0, 18)}…
         </a>
       )}
@@ -111,7 +183,8 @@ function EmployerCertificatesPanel() {
   const [logoSrc, setLogoSrc] = useState(null)
   const [issuing, setIssuing] = useState(false)
   const [history, setHistory] = useState([])
-  const [tab, setTab] = useState('form') // 'form' | 'history'
+  const [tab, setTab] = useState('form')
+  const [recipientResetKey, setRecipientResetKey] = useState(0)
 
   const loadHistory = async () => {
     try {
@@ -132,13 +205,30 @@ function EmployerCertificatesPanel() {
     reader.readAsDataURL(file)
   }
 
+  // capture the hidden full-size element, not the scaled preview
+  const captureCert = async () => {
+    const el = document.getElementById('cert-hidden')
+    return await html2canvas(el, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff',
+      width: CERT_W,
+      height: CERT_H,
+    })
+  }
+
   const downloadPDF = async () => {
-    const el = document.getElementById('cert-preview')
-    const canvas = await html2canvas(el, { scale: 2, useCORS: true })
-    const imgData = canvas.toDataURL('image/png')
-    const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [794, canvas.height / 2] })
-    pdf.addImage(imgData, 'PNG', 0, 0, 794, canvas.height / 2)
-    pdf.save(`certificate-${form.recipient_role_id || 'draft'}.pdf`)
+    try {
+      const canvas = await captureCert()
+      const imgData = canvas.toDataURL('image/png')
+      // A4 landscape in mm: 297 x 210
+      const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' })
+      pdf.addImage(imgData, 'PNG', 0, 0, 297, 210)
+      pdf.save(`certificate-${form.recipient_role_id || 'draft'}.pdf`)
+    } catch (err) {
+      showError('PDF export failed', err.message)
+    }
   }
 
   const handleIssue = async () => {
@@ -156,8 +246,7 @@ function EmployerCertificatesPanel() {
     })
     if (!ok) return
 
-    // get cert HTML
-    const certEl = document.getElementById('cert-preview')
+    const certEl = document.getElementById('cert-hidden')
     const certHtml = certEl ? certEl.outerHTML : ''
 
     setIssuing(true)
@@ -171,6 +260,7 @@ function EmployerCertificatesPanel() {
       showSuccess('Certificate issued', data.email_sent ? 'Email sent successfully.' : data.email_error ? `Saved (email error: ${data.email_error})` : 'Saved to blockchain.')
       setForm({ ...EMPTY, company_name: user?.institution || '' })
       setLogoSrc(null)
+      setRecipientResetKey((k) => k + 1)
       await loadHistory()
       setTab('history')
     } catch (err) {
@@ -180,8 +270,16 @@ function EmployerCertificatesPanel() {
     }
   }
 
+  // scale factor to fit 1122px cert into the preview card (~480px available)
+  const previewScale = 0.42
+
   return (
     <div className="dashboard-stack">
+      {/* hidden full-size cert used for PDF capture only */}
+      <div style={{ position: 'fixed', left: -9999, top: 0, pointerEvents: 'none', zIndex: -1 }}>
+        <CertLayout id="cert-hidden" form={form} logoSrc={logoSrc} />
+      </div>
+
       <div className="dashboard-card">
         <p className="eyebrow">Employer</p>
         <h2>E-Certificates</h2>
@@ -209,19 +307,40 @@ function EmployerCertificatesPanel() {
             <h3>Certificate Details</h3>
 
             <label>Recipient Type
-              <select value={form.recipient_type} onChange={(e) => set('recipient_type', e.target.value)}>
+              <select value={form.recipient_type} onChange={(e) => {
+                set('recipient_type', e.target.value)
+                set('recipient_role_id', '')
+                set('recipient_name', '')
+                set('recipient_email', '')
+                setRecipientResetKey((k) => k + 1)
+              }}>
                 <option value="student">Student</option>
                 <option value="instructor">Instructor</option>
               </select>
             </label>
+            <UserSearchField
+              label="Recipient (search by name or ID) *"
+              role={form.recipient_type}
+              callerRole="employer"
+              name="_recipient_search"
+              placeholder={`Search ${form.recipient_type} by name or ID…`}
+              resetKey={recipientResetKey}
+              onChange={(u) => {
+                if (u) {
+                  set('recipient_role_id', u.role_id)
+                  set('recipient_name', u.full_name)
+                  if (u.email) set('recipient_email', u.email)
+                } else {
+                  set('recipient_role_id', '')
+                  set('recipient_name', '')
+                }
+              }}
+            />
             <label>Recipient Full Name *
               <input type="text" value={form.recipient_name} onChange={(e) => set('recipient_name', e.target.value)} placeholder="Juan Dela Cruz" />
             </label>
             <label>Recipient Email *
               <input type="email" value={form.recipient_email} onChange={(e) => set('recipient_email', e.target.value)} placeholder="juan@email.com" />
-            </label>
-            <label>Recipient ID (STU-/INS-) *
-              <input type="text" value={form.recipient_role_id} onChange={(e) => set('recipient_role_id', e.target.value.toUpperCase())} placeholder="STU-12345" />
             </label>
             <label>Internship Title *
               <input type="text" value={form.internship_title} onChange={(e) => set('internship_title', e.target.value)} placeholder="Software Development Internship" />
@@ -263,11 +382,25 @@ function EmployerCertificatesPanel() {
             </div>
           </div>
 
-          {/* Preview */}
-          <div className="dashboard-card" style={{ overflow: 'auto' }}>
+          {/* Scaled preview — visual only, not used for capture */}
+          <div className="dashboard-card" style={{ overflow: 'hidden' }}>
             <p className="eyebrow" style={{ marginBottom: 12 }}>Live Preview</p>
-            <div style={{ transform: 'scale(0.62)', transformOrigin: 'top left', width: 794, pointerEvents: 'none' }}>
-              <CertPreview form={form} logoSrc={logoSrc} />
+            <div style={{
+              width: '100%',
+              height: Math.round(CERT_H * previewScale),
+              overflow: 'hidden',
+              borderRadius: 8,
+              border: '1px solid rgba(148,163,184,0.15)',
+            }}>
+              <div style={{
+                transform: `scale(${previewScale})`,
+                transformOrigin: 'top left',
+                width: CERT_W,
+                height: CERT_H,
+                pointerEvents: 'none',
+              }}>
+                <CertLayout id="cert-preview" form={form} logoSrc={logoSrc} />
+              </div>
             </div>
           </div>
         </div>

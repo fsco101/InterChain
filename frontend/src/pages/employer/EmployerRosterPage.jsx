@@ -3,6 +3,7 @@ import ProtectedRoute from '../../components/ProtectedRoute'
 import DashboardShell from '../../components/DashboardShell'
 import { fetchEmployerRoster, addInstructorToRoster, removeInstructorFromRoster } from '../../api/records'
 import { confirmAction, showError, showSuccess, extractError } from '../../utils/alerts'
+import { UserSearchField } from '../../components/SearchFields'
 
 const LINKS = [
   { to: '/employer/dashboard', label: 'Overview', description: 'Dashboard summary', end: true },
@@ -31,16 +32,19 @@ function StudentList({ students }) {
 
 function EmployerRosterPanel() {
   const [instructors, setInstructors] = useState([])
-  const [roleId, setRoleId] = useState('')
+  const [selectedInstructor, setSelectedInstructor] = useState(null)
   const [adding, setAdding] = useState(false)
   const [expanded, setExpanded] = useState({})
+  const [resetKey, setResetKey] = useState(0)
 
   const load = async () => {
     try {
       const { data } = await fetchEmployerRoster()
       setInstructors(data.instructors || [])
-    } catch {
-      showError('Failed to load roster')
+    } catch (err) {
+      const status = err?.response?.status
+      if (status !== 404) showError('Failed to load roster', extractError(err))
+      setInstructors([])
     }
   }
 
@@ -48,16 +52,16 @@ function EmployerRosterPanel() {
 
   const handleAdd = async (e) => {
     e.preventDefault()
-    const id = roleId.trim().toUpperCase()
-    if (!id.startsWith('INS-') || id.length < 9) {
-      showError('Invalid Instructor ID', 'Format must be INS-XXXXX')
+    if (!selectedInstructor?.role_id) {
+      showError('No instructor selected', 'Please search and select an instructor first.')
       return
     }
     setAdding(true)
     try {
-      const { data } = await addInstructorToRoster(id)
+      const { data } = await addInstructorToRoster(selectedInstructor.role_id)
       showSuccess('Instructor added', `${data.instructor.full_name} is now in your roster.`)
-      setRoleId('')
+      setSelectedInstructor(null)
+      setResetKey((k) => k + 1)
       await load()
     } catch (err) {
       showError('Could not add instructor', extractError(err))
@@ -92,15 +96,17 @@ function EmployerRosterPanel() {
         <p className="eyebrow">Employer</p>
         <h2>Instructor Roster</h2>
         <p className="muted">Add instructors by their Instructor ID to view the students they handle and their school.</p>
-        <form onSubmit={handleAdd} style={{ display: 'flex', gap: 10, marginTop: 14, flexWrap: 'wrap' }}>
-          <input
-            type="text"
-            value={roleId}
-            onChange={(e) => setRoleId(e.target.value)}
-            placeholder="Instructor ID  e.g. INS-12345"
-            style={{ flex: 1, minWidth: 200, minHeight: 44, borderRadius: 12, border: '1px solid rgba(148,163,184,0.28)', background: 'rgba(15,23,42,0.7)', color: 'var(--text)', padding: '0 14px' }}
+        <form onSubmit={handleAdd} style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
+          <UserSearchField
+            label="Instructor"
+            role="instructor"
+            callerRole="employer"
+            name="instructor_id"
+            placeholder="Search instructor by name or ID…"
+            onChange={setSelectedInstructor}
+            resetKey={resetKey}
           />
-          <button className="primary-button" type="submit" disabled={adding}>
+          <button className="primary-button" type="submit" disabled={adding} style={{ alignSelf: 'flex-start' }}>
             {adding ? 'Adding…' : 'Add Instructor'}
           </button>
         </form>

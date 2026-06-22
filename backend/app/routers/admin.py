@@ -57,6 +57,20 @@ async def users(current_user: dict = Depends(require_roles("admin"))):
     return {"users": [serialize_user(user) for user in await list_users()]}
 
 
+@router.post("/users/backfill-role-ids")
+async def backfill_role_ids(current_user: dict = Depends(require_roles("admin"))):
+    """One-time migration: assign role_id to all users that are missing it."""
+    from app.services.auth_service import _generate_role_id
+    database = get_database()
+    cursor = database.users.find({"role_id": {"$exists": False}})
+    updated = 0
+    async for user in cursor:
+        role_id = _generate_role_id(user["role"])
+        await database.users.update_one({"_id": user["_id"]}, {"$set": {"role_id": role_id}})
+        updated += 1
+    return {"message": f"Backfilled role_id for {updated} user(s)"}
+
+
 @router.post("/users", response_model=UserRead, status_code=status.HTTP_201_CREATED)
 async def create_user_admin(
     current_user: dict = Depends(require_roles("admin")),

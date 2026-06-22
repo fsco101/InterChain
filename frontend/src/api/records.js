@@ -11,6 +11,11 @@ export const fetchInstructorRecords = () => api.get('/records/instructor')
 export const createEmployerApproval = (payload) => api.post('/records/employer/approval', payload)
 export const fetchEmployerRecords = () => api.get('/records/employer')
 
+// Search
+export const searchUsers = (role, q, callerRole) => api.get(`/${callerRole}/search`, { params: { role, q } })
+export const searchInternships = (q) => api.get('/records/internships/search', { params: { q } })
+export const searchStudentsByInternshipId = (q) => api.get('/student/search', { params: { q } })
+
 // Instructor roster
 export const fetchInstructorRoster = () => api.get('/instructor/roster')
 export const addStudentToRoster = (role_id) => api.post('/instructor/roster/add', { role_id })

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import AvatarBadge from '../../components/AvatarBadge'
 import DashboardShell from '../../components/DashboardShell'
 import ProtectedRoute from '../../components/ProtectedRoute'
-import { fetchAdminUsers, updateAdminUserRole } from '../../api/admin'
+import { fetchAdminUsers, updateAdminUserRole, backfillRoleIds } from '../../api/admin'
 import { confirmAction, showError, showSuccess, extractError } from '../../utils/alerts'
 import { useAuth } from '../../context/AuthContext'
 
@@ -69,19 +69,34 @@ function AdminUsersPanel() {
     }
   }
 
+  const handleBackfill = async () => {
+    try {
+      const { data } = await backfillRoleIds()
+      showSuccess('Backfill complete', data.message)
+      await loadUsers()
+    } catch (error) {
+      showError('Backfill failed', extractError(error))
+    }
+  }
+
   return (
     <div className="dashboard-stack">
       <div className="dashboard-card">
         <p className="eyebrow">User Management</p>
         <h2>System Users</h2>
         <p className="muted">View all registered users. You can change a user's role but cannot modify other account details.</p>
-        <input
-          type="text"
-          placeholder="Search by name, email or role..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={{ marginTop: 14, width: '100%', minHeight: 44, borderRadius: 12, border: '1px solid rgba(148,163,184,0.28)', background: 'rgba(15,23,42,0.7)', color: 'var(--text)', padding: '0 14px' }}
-        />
+        <div style={{ display: 'flex', gap: 10, marginTop: 14, flexWrap: 'wrap', alignItems: 'center' }}>
+          <input
+            type="text"
+            placeholder="Search by name, email or role..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{ flex: 1, minWidth: 200, minHeight: 44, borderRadius: 12, border: '1px solid rgba(148,163,184,0.28)', background: 'rgba(15,23,42,0.7)', color: 'var(--text)', padding: '0 14px' }}
+          />
+          <button className="secondary-button" type="button" onClick={handleBackfill} title="Assign role IDs to users missing them">
+            Assign Missing Role IDs
+          </button>
+        </div>
       </div>
 
       {selectedUser && (
@@ -122,6 +137,9 @@ function AdminUsersPanel() {
                 <p className="muted" style={{ margin: 0, fontSize: '0.82rem' }}>{u.email}</p>
                 {u.role_id && (
                   <p style={{ margin: 0, fontSize: '0.75rem', fontFamily: 'monospace', color: 'var(--accent)' }}>{u.role_id}</p>
+                )}
+                {u.role === 'student' && u.internship_id && (
+                  <p style={{ margin: 0, fontSize: '0.75rem', fontFamily: 'monospace', color: '#a78bfa' }}>{u.internship_id}</p>
                 )}
                 {u.institution && (
                   <p className="muted" style={{ margin: 0, fontSize: '0.75rem' }}>{u.institution}</p>

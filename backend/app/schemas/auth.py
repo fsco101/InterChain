@@ -40,6 +40,7 @@ class UserLogin(BaseModel):
 class UserRead(UserBase):
     id: str
     role_id: str | None = None
+    internship_id: str | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
 

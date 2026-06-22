@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { createStudentActivity, createStudentReport, fetchStudentRecords } from '../../api/records'
 import { confirmAction, showError, showSuccess, extractError } from '../../utils/alerts'
 import { validateStudentActivity, validateStudentReport } from '../../utils/validation'
+import { InternshipSearchField } from '../SearchFields'
 
 function RecordList({ title, records }) {
   return (
@@ -22,6 +23,8 @@ function toFormValues(formData) {
 export default function StudentActions() {
   const [activityRecords, setActivityRecords] = useState([])
   const [reportRecords, setReportRecords] = useState([])
+  const [activityReset, setActivityReset] = useState(0)
+  const [reportReset, setReportReset] = useState(0)
 
   const loadRecords = async () => {
     try {
@@ -60,6 +63,7 @@ export default function StudentActions() {
       })
       showSuccess('Activity logged', 'Your internship activity has been saved.')
       event.currentTarget.reset()
+      setActivityReset((k) => k + 1)
       await loadRecords()
     } catch (error) {
       showError('Could not save activity', extractError(error))
@@ -87,6 +91,7 @@ export default function StudentActions() {
       })
       showSuccess('Report submitted', 'Your internship report has been saved.')
       event.currentTarget.reset()
+      setReportReset((k) => k + 1)
       await loadRecords()
     } catch (error) {
       showError('Could not submit report', extractError(error))
@@ -98,10 +103,7 @@ export default function StudentActions() {
       <div className="grid-two">
         <form className="dashboard-card form-card" onSubmit={submitActivity}>
           <h3>Daily Activity</h3>
-          <label>
-            Internship ID
-            <input name="internship_id" type="text" placeholder="INT-1001 (min 3 chars)" />
-          </label>
+          <InternshipSearchField name="internship_id" callerRole="student" resetKey={activityReset} />
           <label>
             Activity date
             <input name="activity_date" type="date" />
@@ -123,10 +125,7 @@ export default function StudentActions() {
 
         <form className="dashboard-card form-card" onSubmit={submitReport}>
           <h3>Internship Report</h3>
-          <label>
-            Internship ID
-            <input name="internship_id" type="text" placeholder="INT-1001 (min 3 chars)" />
-          </label>
+          <InternshipSearchField name="internship_id" callerRole="student" resetKey={reportReset} />
           <label>
             Report title
             <input name="report_title" type="text" placeholder="Weekly summary (min 3 chars)" />

@@ -28,6 +28,11 @@ def _generate_role_id(role: str) -> str:
     return f"{prefix}-{suffix}"
 
 
+def _generate_internship_id() -> str:
+    suffix = ''.join(random.choices(string.digits, k=5))
+    return f"INT-{suffix}"
+
+
 def serialize_user(document: dict) -> dict:
     return {
         "id": str(document["_id"]),
@@ -35,6 +40,7 @@ def serialize_user(document: dict) -> dict:
         "email": document["email"],
         "role": document["role"],
         "role_id": document.get("role_id"),
+        "internship_id": document.get("internship_id"),
         "institution": document.get("institution"),
         "avatar_url": document.get("avatar_url"),
         "created_at": document.get("created_at"),
@@ -59,7 +65,17 @@ async def get_user_by_id(user_id: str) -> dict | None:
     object_id = _object_id(user_id)
     if object_id is None:
         return None
-    return await database.users.find_one({"_id": object_id})
+    user = await database.users.find_one({"_id": object_id})
+    if user:
+        backfill: dict = {}
+        if not user.get("role_id"):
+            backfill["role_id"] = _generate_role_id(user["role"])
+        if user["role"] == "student" and not user.get("internship_id"):
+            backfill["internship_id"] = _generate_internship_id()
+        if backfill:
+            await database.users.update_one({"_id": object_id}, {"$set": backfill})
+            user.update(backfill)
+    return user
 
 
 async def create_user(user_data: UserCreate, avatar_file: UploadFile | None = None) -> dict:
@@ -68,11 +84,13 @@ async def create_user(user_data: UserCreate, avatar_file: UploadFile | None = No
     avatar_url, avatar_public_id = await _handle_avatar(avatar_file)
     if avatar_url is None:
         avatar_url = user_data.avatar_url.strip() if user_data.avatar_url else None
+    role_value = user_data.role.value
     document = {
         "full_name": user_data.full_name.strip(),
         "email": user_data.email.lower().strip(),
-        "role": user_data.role.value,
-        "role_id": _generate_role_id(user_data.role.value),
+        "role": role_value,
+        "role_id": _generate_role_id(role_value),
+        "internship_id": _generate_internship_id() if role_value == "student" else None,
         "institution": user_data.institution.strip() if user_data.institution else None,
         "avatar_url": avatar_url,
         "avatar_public_id": avatar_public_id,

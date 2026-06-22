@@ -83,6 +83,11 @@ function ProfileEditor() {
               {user.role_id}
             </span>
           )}
+          {user?.role === 'student' && user?.internship_id && (
+            <span style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: '#a78bfa', letterSpacing: '0.08em' }}>
+              {user.internship_id}
+            </span>
+          )}
           {user?.institution && (
             <span className="muted" style={{ fontSize: '0.8rem' }}>{user.institution}</span>
           )}

@@ -1,27 +1,34 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { createInstructorAttendance, createInstructorEvaluation, fetchInstructorRecords } from '../../api/records'
 import { confirmAction, showError, showSuccess, extractError } from '../../utils/alerts'
 import { validateInstructorAttendance, validateInstructorEvaluation } from '../../utils/validation'
+import { UserSearchField, InternshipSearchField } from '../SearchFields'
 
 function RecordList({ title, records }) {
   return (
     <div className="dashboard-card compact-card">
       <h3>{title}</h3>
       <div className="stack-list">
-        {records.length === 0 ? <p className="muted">No records yet.</p> : records.map((record) => <div key={record.id} className="mini-card">{record.payload.student_id} • {record.payload.status || record.payload.score}</div>)}
+        {records.length === 0
+          ? <p className="muted">No records yet.</p>
+          : records.map((r) => (
+            <div key={r.id} className="mini-card">
+              {r.payload.student_id} • {r.payload.status || r.payload.score}
+            </div>
+          ))}
       </div>
     </div>
   )
 }
 
-function toFormValues(formData) {
-  return Object.fromEntries(formData.entries())
-}
-
 export default function InstructorActions() {
   const [attendanceRecords, setAttendanceRecords] = useState([])
   const [evaluationRecords, setEvaluationRecords] = useState([])
+  const [attendStudent, setAttendStudent] = useState(null)
+  const [evalStudent, setEvalStudent] = useState(null)
+  const attendFormRef = useRef(null)
+  const evalFormRef = useRef(null)
 
   const loadRecords = async () => {
     try {
@@ -33,23 +40,15 @@ export default function InstructorActions() {
     }
   }
 
-  useEffect(() => {
-    loadRecords()
-  }, [])
+  useEffect(() => { loadRecords() }, [])
 
   const submitAttendance = async (event) => {
     event.preventDefault()
-    const values = toFormValues(new FormData(event.currentTarget))
+    const values = Object.fromEntries(new FormData(event.currentTarget).entries())
     const validationError = validateInstructorAttendance(values)
-
-    if (validationError) {
-      showError('Invalid input', validationError)
-      return
-    }
-
+    if (validationError) { showError('Invalid input', validationError); return }
     const confirmed = await confirmAction({ title: 'Validate attendance?', text: 'This will record attendance for the student internship.' })
     if (!confirmed) return
-
     try {
       await createInstructorAttendance({
         internship_id: values.internship_id,
@@ -59,7 +58,8 @@ export default function InstructorActions() {
         notes: values.notes || null,
       })
       showSuccess('Attendance recorded', `Marked as ${values.status} for student ${values.student_id}.`)
-      event.currentTarget.reset()
+      attendFormRef.current?.reset()
+      setAttendStudent(null)
       await loadRecords()
     } catch (error) {
       showError('Could not record attendance', extractError(error))
@@ -68,17 +68,11 @@ export default function InstructorActions() {
 
   const submitEvaluation = async (event) => {
     event.preventDefault()
-    const values = toFormValues(new FormData(event.currentTarget))
+    const values = Object.fromEntries(new FormData(event.currentTarget).entries())
     const validationError = validateInstructorEvaluation(values)
-
-    if (validationError) {
-      showError('Invalid input', validationError)
-      return
-    }
-
+    if (validationError) { showError('Invalid input', validationError); return }
     const confirmed = await confirmAction({ title: 'Submit evaluation?', text: 'This will save the performance evaluation to MongoDB.' })
     if (!confirmed) return
-
     try {
       await createInstructorEvaluation({
         internship_id: values.internship_id,
@@ -87,7 +81,8 @@ export default function InstructorActions() {
         feedback: values.feedback,
       })
       showSuccess('Evaluation submitted', `Score ${values.score}/10 saved for student ${values.student_id}.`)
-      event.currentTarget.reset()
+      evalFormRef.current?.reset()
+      setEvalStudent(null)
       await loadRecords()
     } catch (error) {
       showError('Could not submit evaluation', extractError(error))
@@ -97,16 +92,17 @@ export default function InstructorActions() {
   return (
     <div className="dashboard-stack">
       <div className="grid-two">
-        <form className="dashboard-card form-card" onSubmit={submitAttendance}>
+        <form className="dashboard-card form-card" onSubmit={submitAttendance} ref={attendFormRef}>
           <h3>Attendance Validation</h3>
-          <label>
-            Internship ID
-            <input name="internship_id" type="text" placeholder="INT-1001 (min 3 chars)" />
-          </label>
-          <label>
-            Student ID
-            <input name="student_id" type="text" placeholder="STU-204 (min 5 chars)" />
-          </label>
+          <InternshipSearchField name="internship_id" callerRole="instructor" />
+          <UserSearchField
+            label="Student"
+            role="student"
+            callerRole="instructor"
+            name="student_id"
+            placeholder="Search student by name or ID…"
+            onChange={setAttendStudent}
+          />
           <label>
             Attendance date
             <input name="attendance_date" type="date" />
@@ -126,16 +122,17 @@ export default function InstructorActions() {
           <button className="primary-button" type="submit">Save attendance</button>
         </form>
 
-        <form className="dashboard-card form-card" onSubmit={submitEvaluation}>
+        <form className="dashboard-card form-card" onSubmit={submitEvaluation} ref={evalFormRef}>
           <h3>Performance Evaluation</h3>
-          <label>
-            Internship ID
-            <input name="internship_id" type="text" placeholder="INT-1001 (min 3 chars)" />
-          </label>
-          <label>
-            Student ID
-            <input name="student_id" type="text" placeholder="STU-204 (min 5 chars)" />
-          </label>
+          <InternshipSearchField name="internship_id" callerRole="instructor" />
+          <UserSearchField
+            label="Student"
+            role="student"
+            callerRole="instructor"
+            name="student_id"
+            placeholder="Search student by name or ID…"
+            onChange={setEvalStudent}
+          />
           <label>
             Score
             <input name="score" type="number" min="1" max="10" step="1" placeholder="1–10" />

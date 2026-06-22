@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import AsyncIterator
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -9,13 +10,41 @@ from pathlib import Path
 from bson import ObjectId
 
 
+def _match_value(doc_value, condition) -> bool:
+    if isinstance(condition, dict):
+        for op, operand in condition.items():
+            if op == '$regex':
+                flags = 0
+                options = condition.get('$options', '')
+                if 'i' in options:
+                    flags |= re.IGNORECASE
+                if doc_value is None:
+                    return False
+                if not re.search(operand, str(doc_value), flags):
+                    return False
+            elif op == '$options':
+                continue
+            elif op == '$ne':
+                if doc_value == operand:
+                    return False
+        return True
+    return doc_value == condition
+
+
 def _matches(document: dict, query: dict | None) -> bool:
     if not query:
         return True
 
-    for key, expected_value in query.items():
-        if document.get(key) != expected_value:
-            return False
+    for key, condition in query.items():
+        if key == '$or':
+            if not any(_matches(document, branch) for branch in condition):
+                return False
+        elif key == '$and':
+            if not all(_matches(document, branch) for branch in condition):
+                return False
+        else:
+            if not _match_value(document.get(key), condition):
+                return False
     return True
 
 
@@ -132,15 +161,37 @@ class _FallbackCollection:
         self.storage.persist()
         return _InsertResult(inserted_id=stored_document["_id"])
 
-    async def update_one(self, query: dict, update: dict) -> _UpdateResult:
+    async def update_one(self, query: dict, update: dict, upsert: bool = False) -> _UpdateResult:
         for document in self.documents:
             if _matches(document, query):
-                update_payload = update.get("$set", update)
-                before = document.copy()
-                document.update(update_payload)
+                if '$set' in update:
+                    document.update(update['$set'])
+                if '$push' in update:
+                    for field, value in update['$push'].items():
+                        document.setdefault(field, []).append(value)
+                if '$pull' in update:
+                    for field, condition in update['$pull'].items():
+                        document[field] = [
+                            item for item in document.get(field, [])
+                            if not _matches(item, condition)
+                        ]
                 self.storage.persist()
-                modified_count = 1 if document != before else 0
-                return _UpdateResult(matched_count=1, modified_count=modified_count)
+                return _UpdateResult(matched_count=1, modified_count=1)
+        if upsert:
+            new_doc = {}
+            # extract equality fields from query as initial values
+            for key, val in query.items():
+                if not key.startswith('$') and not isinstance(val, dict):
+                    new_doc[key] = val
+            new_doc['_id'] = ObjectId()
+            if '$set' in update:
+                new_doc.update(update['$set'])
+            if '$push' in update:
+                for field, value in update['$push'].items():
+                    new_doc.setdefault(field, []).append(value)
+            self.documents.append(new_doc)
+            self.storage.persist()
+            return _UpdateResult(matched_count=0, modified_count=1)
         return _UpdateResult(matched_count=0, modified_count=0)
 
     async def delete_one(self, query: dict) -> _DeleteResult:

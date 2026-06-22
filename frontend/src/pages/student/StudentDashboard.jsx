@@ -58,6 +58,14 @@ function StudentDashboardContent() {
           <div>
             <p className="eyebrow">Student Dashboard</p>
             <h2>Welcome back, {user?.full_name}</h2>
+            <div style={{ display: 'flex', gap: 12, marginTop: 4, flexWrap: 'wrap' }}>
+              {user?.role_id && (
+                <span style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: 'var(--accent)' }}>{user.role_id}</span>
+              )}
+              {user?.internship_id && (
+                <span style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: '#a78bfa' }}>{user.internship_id}</span>
+              )}
+            </div>
           </div>
         </div>
 
