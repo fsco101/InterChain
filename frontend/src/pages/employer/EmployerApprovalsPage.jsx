@@ -5,6 +5,7 @@ import EmployerActions from '../../components/forms/EmployerActions'
 const LINKS = [
   { to: '/employer/dashboard', label: 'Overview', description: 'Dashboard summary', end: true },
   { to: '/employer/approvals', label: 'Approvals', description: 'Approve completions' },
+  { to: '/employer/history', label: 'History', description: 'All approval records' },
   { to: '/employer/rankings', label: 'Rankings', description: 'Student performance ranks' },
   { to: '/employer/roster', label: 'Roster', description: 'Instructors & their students' },
   { to: '/employer/certificates', label: 'Certificates', description: 'Issue e-certificates' },

@@ -2,6 +2,7 @@ import { Link, NavLink } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 
 import AvatarBadge from './AvatarBadge'
+import Notifications from './Notifications'
 import { useAuth } from '../context/AuthContext'
 import { confirmLogout, showSignedOut } from '../utils/alerts'
 
@@ -61,6 +62,28 @@ const ICONS = {
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
       <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
+    </svg>
+  ),
+  History: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="12 8 12 12 14 14" /><path d="M3.05 11a9 9 0 1 1 .5 4" /><polyline points="3 16 3 11 8 11" />
+    </svg>
+  ),
+  'My Students': (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="9" cy="8" r="3" /><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6" />
+      <circle cx="17" cy="8" r="3" /><path d="M21 20c0-3.3-2.7-6-6-6" />
+    </svg>
+  ),
+  Roster: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  ),
+  Certificates: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="8" r="6" /><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11" />
     </svg>
   ),
 }
@@ -180,7 +203,12 @@ export default function DashboardShell({ links = [], children }) {
         </button>
       </aside>
 
-      <main className="dashboard-main">{children}</main>
+      <main className="dashboard-main">
+        <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '0 4px 8px' }}>
+          <Notifications />
+        </div>
+        {children}
+      </main>
     </div>
   )
 }

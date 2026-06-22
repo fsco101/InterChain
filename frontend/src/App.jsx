@@ -8,13 +8,16 @@ import { useAuth } from './context/AuthContext'
 
 import StudentDashboard from './pages/student/StudentDashboard'
 import StudentActivitiesPage from './pages/student/StudentActivitiesPage'
+import StudentHistoryPage from './pages/student/StudentHistoryPage'
 
 import InstructorDashboard from './pages/instructor/InstructorDashboard'
 import InstructorRecordsPage from './pages/instructor/InstructorRecordsPage'
 import InstructorRosterPage from './pages/instructor/InstructorRosterPage'
+import InstructorHistoryPage from './pages/instructor/InstructorHistoryPage'
 
 import EmployerDashboard from './pages/employer/EmployerDashboard'
 import EmployerApprovalsPage from './pages/employer/EmployerApprovalsPage'
+import EmployerHistoryPage from './pages/employer/EmployerHistoryPage'
 import EmployerRankingsPage from './pages/employer/EmployerRankingsPage'
 import EmployerRosterPage from './pages/employer/EmployerRosterPage'
 import EmployerCertificatesPage from './pages/employer/EmployerCertificatesPage'
@@ -41,16 +44,19 @@ export default function App() {
       <Route path="/student/dashboard" element={<StudentDashboard />} />
       <Route path="/student/activities" element={<StudentActivitiesPage />} />
       <Route path="/student/reports" element={<StudentActivitiesPage />} />
+      <Route path="/student/history" element={<StudentHistoryPage />} />
 
       {/* Instructor */}
       <Route path="/instructor/dashboard" element={<InstructorDashboard />} />
       <Route path="/instructor/attendance" element={<InstructorRecordsPage />} />
       <Route path="/instructor/evaluations" element={<InstructorRecordsPage />} />
+      <Route path="/instructor/history" element={<InstructorHistoryPage />} />
       <Route path="/instructor/roster" element={<InstructorRosterPage />} />
 
       {/* Employer */}
       <Route path="/employer/dashboard" element={<EmployerDashboard />} />
       <Route path="/employer/approvals" element={<EmployerApprovalsPage />} />
+      <Route path="/employer/history" element={<EmployerHistoryPage />} />
       <Route path="/employer/rankings" element={<EmployerRankingsPage />} />
       <Route path="/employer/roster" element={<EmployerRosterPage />} />
       <Route path="/employer/certificates" element={<EmployerCertificatesPage />} />

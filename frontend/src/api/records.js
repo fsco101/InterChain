@@ -29,3 +29,24 @@ export const removeInstructorFromRoster = (role_id) => api.delete(`/employer/ros
 // Certificates
 export const issueCertificate = (payload) => api.post('/employer/certificates', payload)
 export const fetchCertificates = () => api.get('/employer/certificates')
+
+// History
+export const fetchStudentHistory = () => api.get('/records/student/history')
+export const fetchInstructorHistory = () => api.get('/records/instructor/history')
+export const fetchEmployerHistory = () => api.get('/records/employer/history')
+
+// Delete (student)
+export const deleteStudentActivity = (id) => api.delete(`/records/student/activity/${id}`)
+export const deleteStudentReport = (id) => api.delete(`/records/student/report/${id}`)
+export const bulkDeleteStudentActivity = (ids) => api.post('/records/student/activity/bulk-delete', { ids })
+export const bulkDeleteStudentReport = (ids) => api.post('/records/student/report/bulk-delete', { ids })
+
+// Delete (instructor)
+export const deleteInstructorAttendance = (id) => api.delete(`/records/instructor/attendance/${id}`)
+export const deleteInstructorEvaluation = (id) => api.delete(`/records/instructor/evaluation/${id}`)
+export const bulkDeleteInstructorAttendance = (ids) => api.post('/records/instructor/attendance/bulk-delete', { ids })
+export const bulkDeleteInstructorEvaluation = (ids) => api.post('/records/instructor/evaluation/bulk-delete', { ids })
+
+// Delete (employer)
+export const deleteEmployerApproval = (id) => api.delete(`/records/employer/approval/${id}`)
+export const bulkDeleteEmployerApproval = (ids) => api.post('/records/employer/approval/bulk-delete', { ids })

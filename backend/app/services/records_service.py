@@ -41,3 +41,35 @@ async def list_records(collection_name: str, user_id: str | None = None, limit: 
     query = {"user_id": user_id} if user_id else {}
     cursor = database[collection_name].find(query).sort("created_at", -1).limit(limit)
     return [serialize_record(document) async for document in cursor]
+
+
+async def list_all_records(collection_name: str, user_id: str) -> list[dict]:
+    database = get_database()
+    cursor = database[collection_name].find({"user_id": user_id}).sort("created_at", -1)
+    return [serialize_record(document) async for document in cursor]
+
+
+async def delete_record(collection_name: str, record_id: str, user_id: str) -> bool:
+    from bson import ObjectId
+    database = get_database()
+    try:
+        oid = ObjectId(record_id)
+    except Exception:
+        return False
+    result = await database[collection_name].delete_one({"_id": oid, "user_id": user_id})
+    return result.deleted_count > 0
+
+
+async def delete_records_bulk(collection_name: str, record_ids: list[str], user_id: str) -> int:
+    from bson import ObjectId
+    database = get_database()
+    oids = []
+    for rid in record_ids:
+        try:
+            oids.append(ObjectId(rid))
+        except Exception:
+            pass
+    if not oids:
+        return 0
+    result = await database[collection_name].delete_many({"_id": {"$in": oids}, "user_id": user_id})
+    return result.deleted_count

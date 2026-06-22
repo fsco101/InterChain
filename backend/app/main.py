@@ -9,6 +9,7 @@ from app.routers.auth import router as auth_router
 from app.routers.admin import router as admin_router
 from app.routers.employer import router as employer_router
 from app.routers.instructor import router as instructor_router
+from app.routers.notifications import router as notifications_router
 from app.routers.records import router as records_router
 from app.routers.student import router as student_router
 
@@ -36,6 +37,7 @@ app.include_router(records_router, prefix=settings.api_prefix)
 app.include_router(student_router, prefix=settings.api_prefix)
 app.include_router(instructor_router, prefix=settings.api_prefix)
 app.include_router(employer_router, prefix=settings.api_prefix)
+app.include_router(notifications_router, prefix=settings.api_prefix)
 
 
 @app.get("/")

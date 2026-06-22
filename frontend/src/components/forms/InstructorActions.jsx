@@ -14,7 +14,13 @@ function RecordList({ title, records }) {
           ? <p className="muted">No records yet.</p>
           : records.map((r) => (
             <div key={r.id} className="mini-card">
-              {r.payload.student_id} • {r.payload.status || r.payload.score}
+              {r.payload.student_id}
+              {r.payload.internship_id && (
+                <span style={{ fontFamily: 'monospace', color: '#a78bfa', marginLeft: 4 }}>
+                  · {r.payload.internship_id}
+                </span>
+              )}
+              {' '}• {r.payload.status || r.payload.score}
             </div>
           ))}
       </div>

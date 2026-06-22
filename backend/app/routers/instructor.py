@@ -26,6 +26,7 @@ async def search_users(
             {"full_name": {"$regex": q.strip(), "$options": "i"}},
             {"role_id": {"$regex": q.strip(), "$options": "i"}},
             {"email": {"$regex": q.strip(), "$options": "i"}},
+            {"internship_id": {"$regex": q.strip(), "$options": "i"}},
         ]
     cursor = db.users.find(query).limit(10)
     return {"users": [serialize_user(u) async for u in cursor]}

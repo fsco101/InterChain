@@ -128,6 +128,7 @@ export function UserSearchField({ label, role, callerRole, name, onChange, place
                   <p style={{ margin: 0, fontSize: '0.88rem', fontWeight: 600, color: 'var(--text)' }}>{u.full_name}</p>
                   <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--muted)' }}>
                     {u.role_id} {u.institution ? `· ${u.institution}` : ''}
+                    {u.internship_id ? ` · ${u.internship_id}` : ''}
                   </p>
                 </div>
               </div>
@@ -141,7 +142,7 @@ export function UserSearchField({ label, role, callerRole, name, onChange, place
           <AvatarBadge name={selected.full_name} avatarUrl={selected.avatar_url} size={32} />
           <div style={{ minWidth: 0, flex: 1 }}>
             <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 600, color: 'var(--text)' }}>{selected.full_name}</p>
-            <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--muted)' }}>{selected.role_id}{selected.email ? ` · ${selected.email}` : ''}</p>
+            <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--muted)' }}>{selected.role_id}{selected.internship_id ? ` · ${selected.internship_id}` : ''}{selected.email ? ` · ${selected.email}` : ''}</p>
           </div>
           <button
             type="button"
@@ -235,8 +236,9 @@ export function InternshipSearchField({ name, callerRole, resetKey }) {
                 <div style={{ minWidth: 0 }}>
                   <p style={{ margin: 0, fontSize: '0.88rem', fontWeight: 600, color: 'var(--text)' }}>{u.full_name}</p>
                   <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--muted)' }}>
-                    <span style={{ fontFamily: 'monospace', color: 'var(--accent)' }}>{u.internship_id}</span>
-                    {u.role_id ? ` · ${u.role_id}` : ''}
+                    <span style={{ fontFamily: 'monospace', color: 'var(--accent)' }}>{u.role_id}</span>
+                    {' · '}
+                    <span style={{ fontFamily: 'monospace', color: '#a78bfa' }}>{u.internship_id}</span>
                     {u.institution ? ` · ${u.institution}` : ''}
                   </p>
                 </div>
@@ -251,8 +253,11 @@ export function InternshipSearchField({ name, callerRole, resetKey }) {
           <div style={{ minWidth: 0, flex: 1 }}>
             <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 600, color: 'var(--text)' }}>{selected.full_name}</p>
             <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--muted)' }}>
-              <span style={{ fontFamily: 'monospace', color: 'var(--accent)' }}>{selected.internship_id}</span>
-              {selected.role_id ? ` · ${selected.role_id}` : ''}
+              <span style={{ fontFamily: 'monospace', color: 'var(--accent)' }}>{selected.role_id}</span>
+              {' · '}
+              <span style={{ fontFamily: 'monospace', color: '#a78bfa' }}>{selected.internship_id}</span>
+              {selected.institution ? ` · ${selected.institution}` : ''}
+              {selected.email ? ` · ${selected.email}` : ''}
             </p>
           </div>
           <button type="button" onClick={clear} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 16, padding: '0 4px' }}>✕</button>

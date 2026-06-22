@@ -10,6 +10,7 @@ const LINKS = [
   { to: '/instructor/dashboard', label: 'Overview', description: 'Dashboard summary', end: true },
   { to: '/instructor/attendance', label: 'Attendance', description: 'Validate student attendance' },
   { to: '/instructor/evaluations', label: 'Evaluations', description: 'Submit evaluations' },
+  { to: '/instructor/history', label: 'History', description: 'All attendance & evaluation records' },
   { to: '/instructor/roster', label: 'My Students', description: 'Manage student roster' },
   { to: '/profile', label: 'Profile', description: 'Edit your account' },
 ]
