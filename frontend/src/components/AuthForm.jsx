@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { useState } from 'react'
 
 import PasswordField from './PasswordField'
+import InstitutionField from './InstitutionField'
 import { useAuth } from '../context/AuthContext'
 import { showError, showSuccess, extractError } from '../utils/alerts'
 
@@ -11,11 +12,15 @@ function validateAuth(formData, isSignup) {
   const email = formData.get('email')?.trim() || ''
   const password = formData.get('password') || ''
   const confirm_password = formData.get('confirm_password') || ''
+  const role = formData.get('role') || ''
+  const institution = formData.get('institution')?.trim() || ''
   if (isSignup && full_name.length < 2) return 'Full name must be at least 2 characters'
   if (email.length < 5 || !email.includes('@')) return 'Please enter a valid email address'
   if (isSignup && password.length < 8) return 'Password must be at least 8 characters'
   if (!isSignup && !password) return 'Password is required'
   if (isSignup && password !== confirm_password) return 'Passwords do not match'
+  if (isSignup && (role === 'student' || role === 'instructor') && !institution)
+    return 'Please select your school'
   return ''
 }
 
@@ -24,6 +29,7 @@ export default function AuthForm({ mode }) {
   const { login, signup } = useAuth()
   const isSignup = mode === 'signup'
   const [avatarFile, setAvatarFile] = useState(null)
+  const [role, setRole] = useState('student')
 
   const handleSubmit = async (event) => {
     event.preventDefault()
@@ -37,7 +43,7 @@ export default function AuthForm({ mode }) {
       const response = isSignup
         ? await signup(buildSignupPayload(formData, avatarFile))
         : await login({ email: formData.get('email'), password: formData.get('password') })
-      showSuccess(isSignup ? 'Account created' : 'Welcome back!', `Redirecting to your dashboard`)
+      showSuccess(isSignup ? 'Account created' : 'Welcome back!', 'Redirecting to your dashboard')
       navigate(`/${response.user.role}/dashboard`)
     } catch (error) {
       showError(isSignup ? 'Sign up failed' : 'Login failed', extractError(error))
@@ -77,20 +83,22 @@ export default function AuthForm({ mode }) {
         {isSignup && (
           <label>
             Avatar upload
-            <input type="file" accept="image/*" onChange={(event) => setAvatarFile(event.target.files?.[0] || null)} />
+            <input type="file" accept="image/*" onChange={(e) => setAvatarFile(e.target.files?.[0] || null)} />
           </label>
         )}
 
         {isSignup && (
           <label>
             Role
-            <select name="role" defaultValue="student">
+            <select name="role" value={role} onChange={(e) => setRole(e.target.value)}>
               <option value="student">Student</option>
               <option value="instructor">Instructor</option>
               <option value="employer">Employer</option>
             </select>
           </label>
         )}
+
+        {isSignup && <InstitutionField role={role} />}
 
         <button className="primary-button" type="submit">
           {isSignup ? 'Sign up' : 'Login'}
@@ -111,6 +119,8 @@ function buildSignupPayload(formData, avatarFile) {
   payload.append('email', formData.get('email'))
   payload.append('password', formData.get('password'))
   payload.append('role', formData.get('role'))
+  const institution = formData.get('institution')
+  if (institution) payload.append('institution', institution)
   if (avatarFile) payload.append('avatar_file', avatarFile)
   return payload
 }

@@ -1,3 +1,5 @@
+import random
+import string
 from datetime import datetime, timezone
 
 from bson import ObjectId
@@ -10,16 +12,20 @@ from app.utils.security import hash_password, verify_password
 
 
 async def _handle_avatar(avatar_file: UploadFile | None, old_public_id: str | None = None) -> tuple[str | None, str | None]:
-    """Upload new avatar if provided. Returns (url, public_id) or (None, None)."""
+    """Read avatar file and upload to Cloudinary. Returns (url, public_id) or (None, None)."""
     if avatar_file is None:
         return None, None
     content = await avatar_file.read()
     if not content:
         return None, None
-    # rewind so upload_avatar can read it
-    await avatar_file.seek(0)
-    result = await upload_avatar(avatar_file, public_id=old_public_id)
+    result = await upload_avatar(content, public_id=old_public_id)
     return result["url"], result["public_id"]
+
+
+def _generate_role_id(role: str) -> str:
+    prefix = {"student": "STU", "instructor": "INS", "employer": "EMP", "admin": "ADM"}.get(role, "USR")
+    suffix = ''.join(random.choices(string.digits, k=5))
+    return f"{prefix}-{suffix}"
 
 
 def serialize_user(document: dict) -> dict:
@@ -28,6 +34,8 @@ def serialize_user(document: dict) -> dict:
         "full_name": document["full_name"],
         "email": document["email"],
         "role": document["role"],
+        "role_id": document.get("role_id"),
+        "institution": document.get("institution"),
         "avatar_url": document.get("avatar_url"),
         "created_at": document.get("created_at"),
         "updated_at": document.get("updated_at"),
@@ -64,6 +72,8 @@ async def create_user(user_data: UserCreate, avatar_file: UploadFile | None = No
         "full_name": user_data.full_name.strip(),
         "email": user_data.email.lower().strip(),
         "role": user_data.role.value,
+        "role_id": _generate_role_id(user_data.role.value),
+        "institution": user_data.institution.strip() if user_data.institution else None,
         "avatar_url": avatar_url,
         "avatar_public_id": avatar_public_id,
         "password_hash": hash_password(user_data.password),
@@ -125,7 +135,7 @@ async def delete_user(user_id: str) -> bool:
 
     existing = await database.users.find_one({"_id": object_id})
     if existing and existing.get("avatar_public_id"):
-        delete_avatar(existing["avatar_public_id"])
+        await delete_avatar(existing["avatar_public_id"])
 
     result = await database.users.delete_one({"_id": object_id})
     return getattr(result, "deleted_count", 0) > 0

@@ -16,6 +16,7 @@ class UserBase(BaseModel):
     email: str = Field(min_length=5, max_length=255)
     role: UserRole
     avatar_url: str | None = None
+    institution: str | None = None
 
 
 class UserCreate(UserBase):
@@ -38,6 +39,7 @@ class UserLogin(BaseModel):
 
 class UserRead(UserBase):
     id: str
+    role_id: str | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
 

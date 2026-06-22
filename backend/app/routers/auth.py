@@ -15,9 +15,10 @@ async def signup(
     email: str = Form(...),
     password: str = Form(...),
     role: str = Form(...),
+    institution: str | None = Form(None),
     avatar_file: UploadFile | None = File(None),
 ) -> AuthResponse:
-    payload = UserCreate(full_name=full_name, email=email, password=password, role=role)
+    payload = UserCreate(full_name=full_name, email=email, password=password, role=role, institution=institution)
     existing_user = await get_user_by_email(payload.email)
     if existing_user is not None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")

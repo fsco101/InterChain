@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import ProtectedRoute from '../../components/ProtectedRoute'
 import DashboardShell from '../../components/DashboardShell'
-import { fetchEmployerRecords, fetchInstructorRecords } from '../../api/records'
+import { fetchEmployerRecords } from '../../api/records'
 import { showError } from '../../utils/alerts'
 
 const LINKS = [
@@ -37,14 +37,12 @@ function RankTable({ title, rows, cols }) {
 
 export default function EmployerRankingsPage() {
   const [approvals, setApprovals] = useState([])
-  const [evaluations, setEvaluations] = useState([])
 
   useEffect(() => {
     const load = async () => {
       try {
-        const [empRes, instRes] = await Promise.all([fetchEmployerRecords(), fetchInstructorRecords()])
-        setApprovals(empRes.data.approvals || [])
-        setEvaluations(instRes.data.evaluations || [])
+        const { data } = await fetchEmployerRecords()
+        setApprovals(data.approvals || [])
       } catch {
         showError('Failed to load rankings')
       }
@@ -62,18 +60,6 @@ export default function EmployerRankingsPage() {
     }, {})
   ).sort((a, b) => b.Approvals - a.Approvals)
 
-  // rank students by avg evaluation score
-  const scoreMap = evaluations.reduce((acc, r) => {
-    const id = r.payload.student_id
-    if (!acc[id]) acc[id] = { total: 0, count: 0 }
-    acc[id].total += r.payload.score || 0
-    acc[id].count++
-    return acc
-  }, {})
-  const scoreRank = Object.entries(scoreMap)
-    .map(([id, v]) => ({ 'Student ID': id, 'Avg Score': (v.total / v.count).toFixed(1), Evaluations: v.count }))
-    .sort((a, b) => b['Avg Score'] - a['Avg Score'])
-
   return (
     <ProtectedRoute allowedRoles={['employer']}>
       <DashboardShell links={LINKS}>
@@ -86,7 +72,6 @@ export default function EmployerRankingsPage() {
           </div>
           <div className="dashboard-stack">
             <RankTable title="Top Students by Approvals" rows={approvalRank} cols={['Student ID', 'Approvals', 'Status']} />
-            <RankTable title="Top Students by Performance Score" rows={scoreRank} cols={['Student ID', 'Avg Score', 'Evaluations']} />
           </div>
         </div>
       </DashboardShell>

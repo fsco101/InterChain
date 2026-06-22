@@ -1,5 +1,4 @@
 import { createContext, useContext, useEffect, useState } from 'react'
-import { toast } from 'sonner'
 
 import { loginRequest, meRequest, signupRequest, updateProfileRequest } from '../api/auth'
 
@@ -44,14 +43,12 @@ export function AuthProvider({ children }) {
   const login = async (payload) => {
     const { data } = await loginRequest(payload)
     persistSession(data.access_token, data.user)
-    toast.success('Login successful')
     return data
   }
 
   const signup = async (payload) => {
     const { data } = await signupRequest(payload)
     persistSession(data.access_token, data.user)
-    toast.success('Account created')
     return data
   }
 
@@ -59,7 +56,6 @@ export function AuthProvider({ children }) {
     const { data } = await updateProfileRequest(payload)
     localStorage.setItem('internchain_user', JSON.stringify(data))
     setUser(data)
-    toast.success('Profile updated')
     return data
   }
 

@@ -78,6 +78,14 @@ function ProfileEditor() {
         <div className="profile-avatar-copy">
           <strong>{user?.full_name}</strong>
           <span className="muted">Upload an image to personalize your account.</span>
+          {user?.role_id && (
+            <span style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: 'var(--accent)', letterSpacing: '0.08em' }}>
+              {user.role_id}
+            </span>
+          )}
+          {user?.institution && (
+            <span className="muted" style={{ fontSize: '0.8rem' }}>{user.institution}</span>
+          )}
         </div>
       </div>
 

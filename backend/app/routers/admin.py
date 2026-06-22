@@ -52,9 +52,9 @@ async def review_records(current_user: dict = Depends(require_roles("admin"))):
     return {"records": records[:50]}
 
 
-@router.get("/users", response_model=list[UserRead])
+@router.get("/users")
 async def users(current_user: dict = Depends(require_roles("admin"))):
-    return [serialize_user(user) for user in await list_users()]
+    return {"users": [serialize_user(user) for user in await list_users()]}
 
 
 @router.post("/users", response_model=UserRead, status_code=status.HTTP_201_CREATED)

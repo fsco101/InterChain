@@ -26,7 +26,7 @@ function AdminUsersPanel() {
   const loadUsers = async () => {
     try {
       const { data } = await fetchAdminUsers()
-      setUsers(data)
+      setUsers(data.users)
     } catch (error) {
       showError('Failed to load users', extractError(error))
     }
@@ -120,6 +120,12 @@ function AdminUsersPanel() {
               <div>
                 <strong>{u.full_name}</strong>
                 <p className="muted" style={{ margin: 0, fontSize: '0.82rem' }}>{u.email}</p>
+                {u.role_id && (
+                  <p style={{ margin: 0, fontSize: '0.75rem', fontFamily: 'monospace', color: 'var(--accent)' }}>{u.role_id}</p>
+                )}
+                {u.institution && (
+                  <p className="muted" style={{ margin: 0, fontSize: '0.75rem' }}>{u.institution}</p>
+                )}
                 <p className="muted" style={{ margin: 0, fontSize: '0.75rem' }}>
                   Joined {u.created_at ? new Date(u.created_at).toLocaleDateString() : '—'}
                 </p>
