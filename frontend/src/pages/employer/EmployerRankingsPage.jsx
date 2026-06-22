@@ -8,6 +8,8 @@ const LINKS = [
   { to: '/employer/dashboard', label: 'Overview', description: 'Dashboard summary', end: true },
   { to: '/employer/approvals', label: 'Approvals', description: 'Approve completions' },
   { to: '/employer/rankings', label: 'Rankings', description: 'Student performance ranks' },
+  { to: '/employer/roster', label: 'Roster', description: 'Instructors & their students' },
+  { to: '/employer/certificates', label: 'Certificates', description: 'Issue e-certificates' },
   { to: '/profile', label: 'Profile', description: 'Edit your account' },
 ]
 

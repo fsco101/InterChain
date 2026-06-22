@@ -11,10 +11,13 @@ import StudentActivitiesPage from './pages/student/StudentActivitiesPage'
 
 import InstructorDashboard from './pages/instructor/InstructorDashboard'
 import InstructorRecordsPage from './pages/instructor/InstructorRecordsPage'
+import InstructorRosterPage from './pages/instructor/InstructorRosterPage'
 
 import EmployerDashboard from './pages/employer/EmployerDashboard'
 import EmployerApprovalsPage from './pages/employer/EmployerApprovalsPage'
 import EmployerRankingsPage from './pages/employer/EmployerRankingsPage'
+import EmployerRosterPage from './pages/employer/EmployerRosterPage'
+import EmployerCertificatesPage from './pages/employer/EmployerCertificatesPage'
 
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminUsersPage from './pages/admin/AdminUsersPage'
@@ -43,11 +46,14 @@ export default function App() {
       <Route path="/instructor/dashboard" element={<InstructorDashboard />} />
       <Route path="/instructor/attendance" element={<InstructorRecordsPage />} />
       <Route path="/instructor/evaluations" element={<InstructorRecordsPage />} />
+      <Route path="/instructor/roster" element={<InstructorRosterPage />} />
 
       {/* Employer */}
       <Route path="/employer/dashboard" element={<EmployerDashboard />} />
       <Route path="/employer/approvals" element={<EmployerApprovalsPage />} />
       <Route path="/employer/rankings" element={<EmployerRankingsPage />} />
+      <Route path="/employer/roster" element={<EmployerRosterPage />} />
+      <Route path="/employer/certificates" element={<EmployerCertificatesPage />} />
 
       {/* Admin */}
       <Route path="/admin/dashboard" element={<AdminDashboard />} />
