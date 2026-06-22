@@ -1,26 +1,25 @@
 from datetime import datetime, timezone
-from pathlib import Path
-import base64
 
 from bson import ObjectId
 from fastapi import UploadFile
 
 from app.db.mongodb import get_database
 from app.schemas.auth import AdminUserUpdate, UserCreate, UserUpdate
+from app.services.cloudinary_service import delete_avatar, upload_avatar
 from app.utils.security import hash_password, verify_password
 
 
-async def _avatar_file_to_data_url(avatar_file: UploadFile | None) -> str | None:
+async def _handle_avatar(avatar_file: UploadFile | None, old_public_id: str | None = None) -> tuple[str | None, str | None]:
+    """Upload new avatar if provided. Returns (url, public_id) or (None, None)."""
     if avatar_file is None:
-        return None
-
+        return None, None
     content = await avatar_file.read()
     if not content:
-        return None
-
-    media_type = avatar_file.content_type or "application/octet-stream"
-    encoded = base64.b64encode(content).decode("ascii")
-    return f"data:{media_type};base64,{encoded}"
+        return None, None
+    # rewind so upload_avatar can read it
+    await avatar_file.seek(0)
+    result = await upload_avatar(avatar_file, public_id=old_public_id)
+    return result["url"], result["public_id"]
 
 
 def serialize_user(document: dict) -> dict:
@@ -58,7 +57,7 @@ async def get_user_by_id(user_id: str) -> dict | None:
 async def create_user(user_data: UserCreate, avatar_file: UploadFile | None = None) -> dict:
     database = get_database()
     now = datetime.now(timezone.utc)
-    avatar_url = await _avatar_file_to_data_url(avatar_file)
+    avatar_url, avatar_public_id = await _handle_avatar(avatar_file)
     if avatar_url is None:
         avatar_url = user_data.avatar_url.strip() if user_data.avatar_url else None
     document = {
@@ -66,6 +65,7 @@ async def create_user(user_data: UserCreate, avatar_file: UploadFile | None = No
         "email": user_data.email.lower().strip(),
         "role": user_data.role.value,
         "avatar_url": avatar_url,
+        "avatar_public_id": avatar_public_id,
         "password_hash": hash_password(user_data.password),
         "created_at": now,
         "updated_at": now,
@@ -88,6 +88,10 @@ async def update_user(user_id: str, updates: UserUpdate | AdminUserUpdate, avata
     if object_id is None:
         return None
 
+    existing = await database.users.find_one({"_id": object_id})
+    if existing is None:
+        return None
+
     update_fields: dict = {"updated_at": datetime.now(timezone.utc)}
     if updates.full_name is not None:
         update_fields["full_name"] = updates.full_name.strip()
@@ -95,18 +99,21 @@ async def update_user(user_id: str, updates: UserUpdate | AdminUserUpdate, avata
         update_fields["email"] = updates.email.lower().strip()
     if updates.password is not None:
         update_fields["password_hash"] = hash_password(updates.password)
-    avatar_url = await _avatar_file_to_data_url(avatar_file)
+
+    avatar_url, avatar_public_id = await _handle_avatar(
+        avatar_file, old_public_id=existing.get("avatar_public_id")
+    )
     if avatar_url is not None:
         update_fields["avatar_url"] = avatar_url
+        update_fields["avatar_public_id"] = avatar_public_id
     elif updates.avatar_url is not None:
         update_fields["avatar_url"] = updates.avatar_url.strip() or None
+
     role = getattr(updates, "role", None)
     if role is not None:
         update_fields["role"] = role.value
 
-    result = await database.users.update_one({"_id": object_id}, {"$set": update_fields})
-    if getattr(result, "matched_count", 0) == 0:
-        return None
+    await database.users.update_one({"_id": object_id}, {"$set": update_fields})
     return await database.users.find_one({"_id": object_id})
 
 
@@ -115,6 +122,10 @@ async def delete_user(user_id: str) -> bool:
     object_id = _object_id(user_id)
     if object_id is None:
         return False
+
+    existing = await database.users.find_one({"_id": object_id})
+    if existing and existing.get("avatar_public_id"):
+        delete_avatar(existing["avatar_public_id"])
 
     result = await database.users.delete_one({"_id": object_id})
     return getattr(result, "deleted_count", 0) > 0

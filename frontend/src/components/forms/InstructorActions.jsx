@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 
 import { createInstructorAttendance, createInstructorEvaluation, fetchInstructorRecords } from '../../api/records'
-import { confirmAction, showError, showSuccess } from '../../utils/alerts'
+import { confirmAction, showError, showSuccess, extractError } from '../../utils/alerts'
 import { validateInstructorAttendance, validateInstructorEvaluation } from '../../utils/validation'
 
 function RecordList({ title, records }) {
@@ -43,14 +43,12 @@ export default function InstructorActions() {
     const validationError = validateInstructorAttendance(values)
 
     if (validationError) {
-      showError(validationError)
+      showError('Invalid input', validationError)
       return
     }
 
     const confirmed = await confirmAction({ title: 'Validate attendance?', text: 'This will record attendance for the student internship.' })
-    if (!confirmed) {
-      return
-    }
+    if (!confirmed) return
 
     try {
       await createInstructorAttendance({
@@ -60,11 +58,11 @@ export default function InstructorActions() {
         status: values.status,
         notes: values.notes || null,
       })
-      showSuccess('Attendance recorded successfully')
+      showSuccess('Attendance recorded', `Marked as ${values.status} for student ${values.student_id}.`)
       event.currentTarget.reset()
       await loadRecords()
     } catch (error) {
-      showError(error?.response?.data?.detail || 'Could not record attendance')
+      showError('Could not record attendance', extractError(error))
     }
   }
 
@@ -74,14 +72,12 @@ export default function InstructorActions() {
     const validationError = validateInstructorEvaluation(values)
 
     if (validationError) {
-      showError(validationError)
+      showError('Invalid input', validationError)
       return
     }
 
     const confirmed = await confirmAction({ title: 'Submit evaluation?', text: 'This will save the performance evaluation to MongoDB.' })
-    if (!confirmed) {
-      return
-    }
+    if (!confirmed) return
 
     try {
       await createInstructorEvaluation({
@@ -90,11 +86,11 @@ export default function InstructorActions() {
         score: Number(values.score),
         feedback: values.feedback,
       })
-      showSuccess('Evaluation submitted successfully')
+      showSuccess('Evaluation submitted', `Score ${values.score}/10 saved for student ${values.student_id}.`)
       event.currentTarget.reset()
       await loadRecords()
     } catch (error) {
-      showError(error?.response?.data?.detail || 'Could not submit evaluation')
+      showError('Could not submit evaluation', extractError(error))
     }
   }
 
@@ -105,19 +101,19 @@ export default function InstructorActions() {
           <h3>Attendance Validation</h3>
           <label>
             Internship ID
-            <input name="internship_id" type="text" placeholder="INT-1001" required />
+            <input name="internship_id" type="text" placeholder="INT-1001 (min 3 chars)" />
           </label>
           <label>
             Student ID
-            <input name="student_id" type="text" placeholder="STU-204" required />
+            <input name="student_id" type="text" placeholder="STU-204 (min 5 chars)" />
           </label>
           <label>
             Attendance date
-            <input name="attendance_date" type="date" required />
+            <input name="attendance_date" type="date" />
           </label>
           <label>
             Status
-            <select name="status" defaultValue="present" required>
+            <select name="status" defaultValue="present">
               <option value="present">Present</option>
               <option value="absent">Absent</option>
               <option value="late">Late</option>
@@ -134,19 +130,19 @@ export default function InstructorActions() {
           <h3>Performance Evaluation</h3>
           <label>
             Internship ID
-            <input name="internship_id" type="text" placeholder="INT-1001" required />
+            <input name="internship_id" type="text" placeholder="INT-1001 (min 3 chars)" />
           </label>
           <label>
             Student ID
-            <input name="student_id" type="text" placeholder="STU-204" required />
+            <input name="student_id" type="text" placeholder="STU-204 (min 5 chars)" />
           </label>
           <label>
             Score
-            <input name="score" type="number" min="1" max="10" step="1" placeholder="8" required />
+            <input name="score" type="number" min="1" max="10" step="1" placeholder="1–10" />
           </label>
           <label>
             Feedback
-            <textarea name="feedback" rows="6" placeholder="Explain the student performance" required />
+            <textarea name="feedback" rows="6" placeholder="Explain the student performance (min 10 chars)" />
           </label>
           <button className="primary-button" type="submit">Submit evaluation</button>
         </form>

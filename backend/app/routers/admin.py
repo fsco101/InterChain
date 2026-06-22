@@ -1,13 +1,18 @@
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from pydantic import BaseModel
 
 from app.deps import require_roles
 from app.db.mongodb import get_database
-from app.schemas.auth import AdminUserUpdate, UserCreate, UserRead
+from app.schemas.auth import AdminUserUpdate, UserCreate, UserRead, UserRole
 from app.services.auth_service import create_user, delete_user, list_users, serialize_user, update_user
 from app.services.records_service import list_records
 
 
 router = APIRouter(prefix="/admin", tags=["admin"])
+
+
+class RolePatch(BaseModel):
+    role: UserRole
 
 
 @router.get("/dashboard")
@@ -49,7 +54,7 @@ async def review_records(current_user: dict = Depends(require_roles("admin"))):
 
 @router.get("/users", response_model=list[UserRead])
 async def users(current_user: dict = Depends(require_roles("admin"))):
-    return [UserRead(**serialize_user(user)) for user in await list_users()]
+    return [serialize_user(user) for user in await list_users()]
 
 
 @router.post("/users", response_model=UserRead, status_code=status.HTTP_201_CREATED)
@@ -63,7 +68,7 @@ async def create_user_admin(
 ):
     payload = UserCreate(full_name=full_name, email=email, password=password, role=role)
     created_user = await create_user(payload, avatar_file=avatar_file)
-    return UserRead(**serialize_user(created_user))
+    return serialize_user(created_user)
 
 
 @router.put("/users/{user_id}", response_model=UserRead)
@@ -81,7 +86,22 @@ async def update_user_admin(
     updated_user = await update_user(user_id, payload, avatar_file=avatar_file)
     if updated_user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-    return UserRead(**serialize_user(updated_user))
+    return serialize_user(updated_user)
+
+
+@router.patch("/users/{user_id}/role", response_model=UserRead)
+async def patch_user_role(
+    user_id: str,
+    body: RolePatch,
+    current_user: dict = Depends(require_roles("admin")),
+):
+    if current_user["id"] == user_id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="You cannot change your own role")
+    payload = AdminUserUpdate(role=body.role)
+    updated_user = await update_user(user_id, payload)
+    if updated_user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    return serialize_user(updated_user)
 
 
 @router.delete("/users/{user_id}")

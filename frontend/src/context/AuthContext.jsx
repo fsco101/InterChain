@@ -68,7 +68,6 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('internchain_user')
     setToken(null)
     setUser(null)
-    toast.message('Signed out')
   }
 
   return (

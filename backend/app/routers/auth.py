@@ -25,7 +25,7 @@ async def signup(
     created_user = await create_user(payload, avatar_file=avatar_file)
     user_data = serialize_user(created_user)
     token = create_access_token({"sub": user_data["id"], "role": user_data["role"]})
-    return AuthResponse(access_token=token, user=UserRead(**user_data))
+    return AuthResponse(access_token=token, user=user_data)
 
 
 @router.post("/login", response_model=AuthResponse)
@@ -36,12 +36,12 @@ async def login(payload: UserLogin) -> AuthResponse:
 
     user_data = serialize_user(user)
     token = create_access_token({"sub": user_data["id"], "role": user_data["role"]})
-    return AuthResponse(access_token=token, user=UserRead(**user_data))
+    return AuthResponse(access_token=token, user=user_data)
 
 
 @router.get("/me", response_model=UserRead)
 async def me(current_user: dict = Depends(get_current_user)):
-    return UserRead(**current_user)
+    return current_user
 
 
 @router.put("/me", response_model=UserRead)
@@ -57,4 +57,4 @@ async def update_me(
     updated_user = await update_user(current_user["id"], payload, avatar_file=avatar_file)
     if updated_user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-    return UserRead(**serialize_user(updated_user))
+    return serialize_user(updated_user)

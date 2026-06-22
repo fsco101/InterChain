@@ -5,7 +5,8 @@ import DashboardShell from '../components/DashboardShell'
 import ProtectedRoute from '../components/ProtectedRoute'
 import PasswordField from '../components/PasswordField'
 import { useAuth } from '../context/AuthContext'
-import { showError } from '../utils/alerts'
+import { showError, showSuccess, extractError } from '../utils/alerts'
+import { validateProfile } from '../utils/validation'
 
 const buildLinks = (role) => {
   const links = [
@@ -41,35 +42,24 @@ function ProfileEditor() {
 
   const handleSubmit = async (event) => {
     event.preventDefault()
+    const validationError = validateProfile(form)
+    if (validationError) {
+      showError('Invalid input', validationError)
+      return
+    }
     setSaving(true)
-
     try {
-      if (form.password.trim() || form.confirm_password.trim()) {
-        if (form.password.trim() !== form.confirm_password.trim()) {
-          throw new Error('Passwords do not match')
-        }
-      }
-
-      const payload = {
-        full_name: form.full_name.trim(),
-        email: form.email.trim(),
-      }
-
       const multipart = new FormData()
-      multipart.append('full_name', payload.full_name)
-      multipart.append('email', payload.email)
-      if (form.password.trim()) {
-        multipart.append('password', form.password)
-      }
-      if (avatarFile) {
-        multipart.append('avatar_file', avatarFile)
-      }
-
+      multipart.append('full_name', form.full_name.trim())
+      multipart.append('email', form.email.trim())
+      if (form.password.trim()) multipart.append('password', form.password)
+      if (avatarFile) multipart.append('avatar_file', avatarFile)
       await updateProfile(multipart)
+      showSuccess('Profile updated', 'Your changes have been saved.')
       setForm((current) => ({ ...current, password: '', confirm_password: '' }))
       setAvatarFile(null)
     } catch (error) {
-      showError(error?.response?.data?.detail || error.message || 'Unable to update profile')
+      showError('Update failed', extractError(error))
     } finally {
       setSaving(false)
     }
@@ -94,12 +84,12 @@ function ProfileEditor() {
       <form className="form-card profile-form" onSubmit={handleSubmit}>
         <label>
           Full name
-          <input name="full_name" value={form.full_name} onChange={handleChange} type="text" required />
+          <input name="full_name" value={form.full_name} onChange={handleChange} type="text" />
         </label>
 
         <label>
           Email
-          <input name="email" value={form.email} onChange={handleChange} type="email" required />
+          <input name="email" value={form.email} onChange={handleChange} type="email" />
         </label>
 
         <label>

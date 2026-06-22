@@ -15,7 +15,7 @@ class UserBase(BaseModel):
     full_name: str = Field(min_length=2, max_length=120)
     email: str = Field(min_length=5, max_length=255)
     role: UserRole
-    avatar_url: str | None = Field(default=None, max_length=500)
+    avatar_url: str | None = None
 
 
 class UserCreate(UserBase):
@@ -25,7 +25,7 @@ class UserUpdate(BaseModel):
     full_name: str | None = Field(default=None, min_length=2, max_length=120)
     email: str | None = Field(default=None, min_length=5, max_length=255)
     password: str | None = Field(default=None, min_length=8, max_length=128)
-    avatar_url: str | None = Field(default=None, max_length=500)
+    avatar_url: str | None = None
 
 class AdminUserUpdate(UserUpdate):
     role: UserRole | None = None

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 
 import { createEmployerApproval, fetchEmployerRecords } from '../../api/records'
-import { confirmAction, showError, showSuccess } from '../../utils/alerts'
+import { confirmAction, showError, showSuccess, extractError } from '../../utils/alerts'
 import { validateEmployerApproval } from '../../utils/validation'
 
 function RecordList({ title, records }) {
@@ -41,14 +41,12 @@ export default function EmployerActions() {
     const validationError = validateEmployerApproval(values)
 
     if (validationError) {
-      showError(validationError)
+      showError('Invalid input', validationError)
       return
     }
 
     const confirmed = await confirmAction({ title: 'Approve internship completion?', text: 'This will save the completion approval to MongoDB.' })
-    if (!confirmed) {
-      return
-    }
+    if (!confirmed) return
 
     try {
       await createEmployerApproval({
@@ -58,11 +56,12 @@ export default function EmployerActions() {
         approved: values.approved === 'true',
         notes: values.notes || null,
       })
-      showSuccess('Completion approval saved successfully')
+      const status = values.approved === 'true' ? 'Approved' : 'Not approved'
+      showSuccess('Approval saved', `${status} for student ${values.student_id}.`)
       event.currentTarget.reset()
       await loadRecords()
     } catch (error) {
-      showError(error?.response?.data?.detail || 'Could not save completion approval')
+      showError('Could not save approval', extractError(error))
     }
   }
 
@@ -72,19 +71,19 @@ export default function EmployerActions() {
         <h3>Completion Approval</h3>
         <label>
           Internship ID
-          <input name="internship_id" type="text" placeholder="INT-1001" required />
+          <input name="internship_id" type="text" placeholder="INT-1001 (min 3 chars)" />
         </label>
         <label>
           Student ID
-          <input name="student_id" type="text" placeholder="STU-204" required />
+          <input name="student_id" type="text" placeholder="STU-204 (min 5 chars)" />
         </label>
         <label>
           Approval date
-          <input name="approval_date" type="date" required />
+          <input name="approval_date" type="date" />
         </label>
         <label>
           Approval status
-          <select name="approved" defaultValue="true" required>
+          <select name="approved" defaultValue="true">
             <option value="true">Approved</option>
             <option value="false">Not approved</option>
           </select>

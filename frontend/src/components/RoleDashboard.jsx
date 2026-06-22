@@ -9,16 +9,33 @@ export default function RoleDashboard({ role, title, description, children }) {
   const [summary, setSummary] = React.useState(null)
   const [error, setError] = React.useState('')
   const links = React.useMemo(() => {
-    const baseLinks = [
-      { to: `/${role}/dashboard`, label: 'Overview', description: 'Role dashboard', end: true },
-      { to: '/profile', label: 'Profile', description: 'Edit your account' },
-    ]
-
-    if (role === 'admin') {
-      baseLinks.splice(1, 0, { to: '/admin/users', label: 'Users', description: 'Manage accounts' })
+    const byRole = {
+      student: [
+        { to: '/student/dashboard', label: 'Overview', description: 'Dashboard summary', end: true },
+        { to: '/student/activities', label: 'Activities', description: 'Log daily activities' },
+        { to: '/student/reports', label: 'Reports', description: 'Submit internship reports' },
+        { to: '/profile', label: 'Profile', description: 'Edit your account' },
+      ],
+      instructor: [
+        { to: '/instructor/dashboard', label: 'Overview', description: 'Dashboard summary', end: true },
+        { to: '/instructor/attendance', label: 'Attendance', description: 'Validate student attendance' },
+        { to: '/instructor/evaluations', label: 'Evaluations', description: 'Submit evaluations' },
+        { to: '/profile', label: 'Profile', description: 'Edit your account' },
+      ],
+      employer: [
+        { to: '/employer/dashboard', label: 'Overview', description: 'Dashboard summary', end: true },
+        { to: '/employer/approvals', label: 'Approvals', description: 'Approve completions' },
+        { to: '/employer/rankings', label: 'Rankings', description: 'Student performance ranks' },
+        { to: '/profile', label: 'Profile', description: 'Edit your account' },
+      ],
+      admin: [
+        { to: '/admin/dashboard', label: 'Overview', description: 'Dashboard summary', end: true },
+        { to: '/admin/users', label: 'Users', description: 'Manage accounts' },
+        { to: '/admin/records', label: 'Records', description: 'Review all records' },
+        { to: '/profile', label: 'Profile', description: 'Edit your account' },
+      ],
     }
-
-    return baseLinks
+    return byRole[role] || byRole.student
   }, [role])
 
   React.useEffect(() => {

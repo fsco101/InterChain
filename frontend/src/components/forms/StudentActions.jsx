@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 
 import { createStudentActivity, createStudentReport, fetchStudentRecords } from '../../api/records'
-import { confirmAction, showError, showSuccess } from '../../utils/alerts'
+import { confirmAction, showError, showSuccess, extractError } from '../../utils/alerts'
 import { validateStudentActivity, validateStudentReport } from '../../utils/validation'
 
 function RecordList({ title, records }) {
@@ -43,14 +43,12 @@ export default function StudentActions() {
     const validationError = validateStudentActivity(values)
 
     if (validationError) {
-      showError(validationError)
+      showError('Invalid input', validationError)
       return
     }
 
     const confirmed = await confirmAction({ title: 'Submit activity log?', text: 'This will save the internship activity to MongoDB.' })
-    if (!confirmed) {
-      return
-    }
+    if (!confirmed) return
 
     try {
       await createStudentActivity({
@@ -60,11 +58,11 @@ export default function StudentActions() {
         description: values.description,
         hours_spent: Number(values.hours_spent),
       })
-      showSuccess('Activity logged successfully')
+      showSuccess('Activity logged', 'Your internship activity has been saved.')
       event.currentTarget.reset()
       await loadRecords()
     } catch (error) {
-      showError(error?.response?.data?.detail || 'Could not save activity log')
+      showError('Could not save activity', extractError(error))
     }
   }
 
@@ -74,14 +72,12 @@ export default function StudentActions() {
     const validationError = validateStudentReport(values)
 
     if (validationError) {
-      showError(validationError)
+      showError('Invalid input', validationError)
       return
     }
 
     const confirmed = await confirmAction({ title: 'Submit report?', text: 'This will save the internship report to MongoDB.' })
-    if (!confirmed) {
-      return
-    }
+    if (!confirmed) return
 
     try {
       await createStudentReport({
@@ -89,11 +85,11 @@ export default function StudentActions() {
         report_title: values.report_title,
         summary: values.summary,
       })
-      showSuccess('Report submitted successfully')
+      showSuccess('Report submitted', 'Your internship report has been saved.')
       event.currentTarget.reset()
       await loadRecords()
     } catch (error) {
-      showError(error?.response?.data?.detail || 'Could not submit report')
+      showError('Could not submit report', extractError(error))
     }
   }
 
@@ -104,23 +100,23 @@ export default function StudentActions() {
           <h3>Daily Activity</h3>
           <label>
             Internship ID
-            <input name="internship_id" type="text" placeholder="INT-1001" required />
+            <input name="internship_id" type="text" placeholder="INT-1001 (min 3 chars)" />
           </label>
           <label>
             Activity date
-            <input name="activity_date" type="date" required />
+            <input name="activity_date" type="date" />
           </label>
           <label>
             Title
-            <input name="title" type="text" placeholder="Client onboarding" required />
+            <input name="title" type="text" placeholder="Client onboarding (min 3 chars)" />
           </label>
           <label>
             Description
-            <textarea name="description" rows="4" placeholder="Describe the work completed" required />
+            <textarea name="description" rows="4" placeholder="Describe the work completed (min 10 chars)" />
           </label>
           <label>
             Hours spent
-            <input name="hours_spent" type="number" step="0.5" min="0.5" max="24" placeholder="6" required />
+            <input name="hours_spent" type="number" step="0.5" min="0.5" max="24" placeholder="6" />
           </label>
           <button className="primary-button" type="submit">Save activity</button>
         </form>
@@ -129,15 +125,15 @@ export default function StudentActions() {
           <h3>Internship Report</h3>
           <label>
             Internship ID
-            <input name="internship_id" type="text" placeholder="INT-1001" required />
+            <input name="internship_id" type="text" placeholder="INT-1001 (min 3 chars)" />
           </label>
           <label>
             Report title
-            <input name="report_title" type="text" placeholder="Weekly summary" required />
+            <input name="report_title" type="text" placeholder="Weekly summary (min 3 chars)" />
           </label>
           <label>
             Summary
-            <textarea name="summary" rows="6" placeholder="Summarize your progress and outcomes" required />
+            <textarea name="summary" rows="6" placeholder="Summarize your progress and outcomes (min 20 chars)" />
           </label>
           <button className="primary-button" type="submit">Submit report</button>
         </form>

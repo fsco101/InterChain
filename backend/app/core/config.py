@@ -16,6 +16,9 @@ class Settings:
     jwt_algorithm = os.getenv("JWT_ALGORITHM", "HS256")
     jwt_expires_minutes = int(os.getenv("JWT_EXPIRES_MINUTES", "120"))
     frontend_origin = os.getenv("FRONTEND_ORIGIN", "http://localhost:5173")
+    cloudinary_cloud_name = os.getenv("CLOUDINARY_CLOUD_NAME", "")
+    cloudinary_api_key = os.getenv("CLOUDINARY_API_KEY", "")
+    cloudinary_api_secret = os.getenv("CLOUDINARY_API_SECRET", "")
 
 
 settings = Settings()
