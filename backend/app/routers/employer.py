@@ -7,7 +7,7 @@ from pydantic import BaseModel, EmailStr
 from app.deps import require_roles
 from app.db.mongodb import get_database
 from app.services.auth_service import serialize_user
-from app.services.blockchain_service import build_blockchain_metadata
+from app.services.blockchain_service import build_blockchain_metadata_async
 from app.services.email_service import send_certificate_email
 
 
@@ -150,7 +150,7 @@ async def issue_certificate(body: CertificateCreate, current_user: dict = Depend
         "issued_by_id": current_user["id"],
     }
 
-    blockchain = build_blockchain_metadata("certificate", current_user["id"], payload)
+    blockchain = await build_blockchain_metadata_async("certificate", current_user["id"], payload)
 
     document = {
         "employer_id": current_user["id"],

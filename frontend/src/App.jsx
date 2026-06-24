@@ -26,6 +26,7 @@ import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminUsersPage from './pages/admin/AdminUsersPage'
 import AdminRecordsPage from './pages/admin/AdminRecordsPage'
 import NotificationsPage from './pages/NotificationsPage'
+import IpfsViewerPage from './pages/IpfsViewerPage'
 
 function RoleRedirect() {
   const { user } = useAuth()
@@ -69,6 +70,9 @@ export default function App() {
 
       {/* Notifications */}
       <Route path="/notifications" element={<NotificationsPage />} />
+
+      {/* IPFS Records Viewer */}
+      <Route path="/ipfs-records" element={<IpfsViewerPage />} />
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

@@ -24,6 +24,12 @@ class Settings:
     smtp_user = os.getenv("SMTP_USER", "")
     smtp_pass = os.getenv("SMTP_PASS", "")
     smtp_from = os.getenv("SMTP_FROM", "")
+    pinata_jwt = os.getenv("PINATA_JWT", "")
+    pinata_gateway = os.getenv("PINATA_GATEWAY", "https://gateway.pinata.cloud/ipfs")
+    amoy_rpc_url = os.getenv("AMOY_RPC_URL", "https://rpc-amoy.polygon.technology")
+    polygon_wallet_address = os.getenv("POLYGON_WALLET_ADDRESS", "")
+    polygon_private_key = os.getenv("POLYGON_PRIVATE_KEY", "")
+    polygon_contract_address = os.getenv("POLYGON_CONTRACT_ADDRESS", "")
 
 
 settings = Settings()

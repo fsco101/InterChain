@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 
 from app.db.mongodb import get_database
-from app.services.blockchain_service import build_blockchain_metadata
+from app.services.blockchain_service import build_blockchain_metadata_async
 
 
 def serialize_record(document: dict) -> dict:
@@ -19,7 +19,7 @@ def serialize_record(document: dict) -> dict:
 
 async def create_record(collection_name: str, record_type: str, role: str, user: dict, payload: dict) -> dict:
     database = get_database()
-    blockchain = build_blockchain_metadata(record_type, user["id"], payload)
+    blockchain = await build_blockchain_metadata_async(record_type, user["id"], payload)
     document = {
         "record_type": record_type,
         "role": role,
