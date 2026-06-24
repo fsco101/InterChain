@@ -9,6 +9,7 @@ const LINKS = [
   { to: '/employer/rankings', label: 'Rankings', description: 'Student performance ranks' },
   { to: '/employer/roster', label: 'Roster', description: 'Instructors & their students' },
   { to: '/employer/certificates', label: 'Certificates', description: 'Issue e-certificates' },
+  { to: '/notifications', label: 'Notifications', description: 'View all notifications' },
   { to: '/profile', label: 'Profile', description: 'Edit your account' },
 ]
 

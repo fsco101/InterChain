@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useNotifications } from '../context/NotificationContext'
+
+const PREVIEW_LIMIT = 5
 
 const TYPE_COLOR = { success: '#22c55e', info: '#38bdf8', warning: '#f59e0b', error: '#ef4444' }
 
@@ -39,8 +42,13 @@ export default function Notifications() {
     setSelected(new Set())
   }
 
-  const allSelected = notifications.length > 0 && notifications.every((n) => selected.has(n.id))
-  const toggleAll = () => setSelected(allSelected ? new Set() : new Set(notifications.map((n) => n.id)))
+  const navigate = useNavigate()
+  const hasMore = notifications.length > PREVIEW_LIMIT
+  const visible = hasMore ? notifications.slice(0, PREVIEW_LIMIT) : notifications
+  const allSelected = visible.length > 0 && visible.every((n) => selected.has(n.id))
+  const toggleAll = () => setSelected(allSelected ? new Set() : new Set(visible.map((n) => n.id)))
+
+  const handleSeeAll = () => { setOpen(false); navigate('/notifications') }
 
   return (
     <div className="notif-wrap" ref={ref}>
@@ -77,7 +85,7 @@ export default function Notifications() {
                 </label>
               </div>
               <div className="notif-list">
-                {notifications.map((n) => (
+                {visible.map((n) => (
                   <div
                     key={n.id}
                     className={`notif-item${n.read ? ' read' : ''}`}
@@ -100,6 +108,11 @@ export default function Notifications() {
                   </div>
                 ))}
               </div>
+              {hasMore && (
+                <button className="notif-see-all" onClick={handleSeeAll}>
+                  See all {notifications.length} notifications →
+                </button>
+              )}
             </>
           )}
         </div>

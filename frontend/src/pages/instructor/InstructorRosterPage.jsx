@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import ProtectedRoute from '../../components/ProtectedRoute'
 import DashboardShell from '../../components/DashboardShell'
-import { fetchInstructorRoster, addStudentToRoster, removeStudentFromRoster } from '../../api/records'
+import { fetchInstructorRoster, addStudentToRoster, removeStudentFromRoster, fetchInstructorEmployers } from '../../api/records'
 import { confirmAction, showError, showSuccess, extractError } from '../../utils/alerts'
 import { UserSearchField } from '../../components/SearchFields'
 import AvatarBadge from '../../components/AvatarBadge'
@@ -12,11 +12,13 @@ const LINKS = [
   { to: '/instructor/evaluations', label: 'Evaluations', description: 'Submit evaluations' },
   { to: '/instructor/history', label: 'History', description: 'All attendance & evaluation records' },
   { to: '/instructor/roster', label: 'My Students', description: 'Manage student roster' },
+  { to: '/notifications', label: 'Notifications', description: 'View all notifications' },
   { to: '/profile', label: 'Profile', description: 'Edit your account' },
 ]
 
 function InstructorRosterPanel() {
   const [students, setStudents] = useState([])
+  const [employers, setEmployers] = useState([])
   const [selectedStudent, setSelectedStudent] = useState(null)
   const [adding, setAdding] = useState(false)
   const [resetKey, setResetKey] = useState(0)
@@ -29,6 +31,12 @@ function InstructorRosterPanel() {
       const status = err?.response?.status
       if (status !== 404) showError('Failed to load roster', extractError(err))
       setStudents([])
+    }
+    try {
+      const { data } = await fetchInstructorEmployers()
+      setEmployers(data.employers || [])
+    } catch {
+      setEmployers([])
     }
   }
 
@@ -107,6 +115,27 @@ function InstructorRosterPanel() {
                 </div>
                 <span className="role-chip">{s.role_id}</span>
                 <button className="secondary-button" onClick={() => handleRemove(s)}>Remove</button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="dashboard-card">
+        <p className="eyebrow" style={{ marginBottom: 12 }}>Connected Employers ({employers.length})</p>
+        <p className="muted" style={{ marginBottom: 12, fontSize: '0.85rem' }}>Employers who have added you to their roster.</p>
+        {employers.length === 0 ? (
+          <p className="muted">No employers linked yet.</p>
+        ) : (
+          <div className="users-table">
+            {employers.map((emp) => (
+              <div key={emp.id} className="users-row">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <strong>{emp.full_name}</strong>
+                  <span className="muted" style={{ fontSize: '0.82rem' }}>{emp.email}</span>
+                  {emp.institution && <span className="muted" style={{ fontSize: '0.75rem' }}>🏢 {emp.institution}</span>}
+                </div>
+                <span className="role-chip">{emp.role_id}</span>
               </div>
             ))}
           </div>

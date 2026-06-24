@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import AvatarBadge from './AvatarBadge'
 import Notifications from './Notifications'
 import { useAuth } from '../context/AuthContext'
+import { useNotifications } from '../context/NotificationContext'
 import { confirmLogout, showSignedOut } from '../utils/alerts'
 
 const ICONS = {
@@ -86,6 +87,12 @@ const ICONS = {
       <circle cx="12" cy="8" r="6" /><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11" />
     </svg>
   ),
+  Notifications: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+    </svg>
+  ),
 }
 
 const LOGOUT_ICON = (
@@ -120,6 +127,7 @@ function getIcon(label) {
 
 export default function DashboardShell({ links = [], children }) {
   const { user, logout } = useAuth()
+  const { unread } = useNotifications()
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('internchain_sidebar_collapsed') === 'true')
 
   useEffect(() => {
@@ -179,12 +187,33 @@ export default function DashboardShell({ links = [], children }) {
               className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
               title={collapsed ? link.label : undefined}
             >
-              <span className="sidebar-link-icon" aria-hidden="true">
+              <span className="sidebar-link-icon" aria-hidden="true" style={{ position: 'relative' }}>
                 {getIcon(link.label)}
+                {link.label === 'Notifications' && unread > 0 && (
+                  <span style={{
+                    position: 'absolute', top: -4, right: -4,
+                    minWidth: 16, height: 16, padding: '0 3px',
+                    borderRadius: 999, background: '#ef4444',
+                    color: '#fff', fontSize: '0.6rem', fontWeight: 800,
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    border: '2px solid var(--bg)',
+                  }}>
+                    {unread > 99 ? '99+' : unread}
+                  </span>
+                )}
               </span>
               {!collapsed && (
                 <span className="sidebar-link-content">
-                  <span className="sidebar-link-text">{link.label}</span>
+                  <span className="sidebar-link-text">
+                    {link.label}
+                    {link.label === 'Notifications' && unread > 0 && (
+                      <span style={{
+                        marginLeft: 6, padding: '1px 6px', borderRadius: 999,
+                        background: 'rgba(239,68,68,0.18)', color: '#f87171',
+                        fontSize: '0.68rem', fontWeight: 800,
+                      }}>{unread}</span>
+                    )}
+                  </span>
                   {link.description ? <small>{link.description}</small> : null}
                 </span>
               )}
@@ -204,7 +233,7 @@ export default function DashboardShell({ links = [], children }) {
       </aside>
 
       <main className="dashboard-main">
-        <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '0 4px 8px' }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '0 4px 4px' }}>
           <Notifications />
         </div>
         {children}

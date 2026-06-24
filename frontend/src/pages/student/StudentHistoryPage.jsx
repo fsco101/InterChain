@@ -14,6 +14,7 @@ const LINKS = [
   { to: '/student/activities', label: 'Activities', description: 'Log daily activities' },
   { to: '/student/reports', label: 'Reports', description: 'Submit internship reports' },
   { to: '/student/history', label: 'History', description: 'All activity & report records' },
+  { to: '/notifications', label: 'Notifications', description: 'View all notifications' },
   { to: '/profile', label: 'Profile', description: 'Edit your account' },
 ]
 

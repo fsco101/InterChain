@@ -96,3 +96,19 @@ async def remove_student(role_id: str, current_user: dict = Depends(require_role
     if result.modified_count == 0:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student not in roster")
     return {"message": f"Student {role_id} removed"}
+
+
+@router.get("/employers")
+async def get_linked_employers(current_user: dict = Depends(require_roles("instructor"))):
+    db = get_database()
+    from bson import ObjectId
+    employers = []
+    cursor = db.employer_rosters.find({"instructors.user_id": current_user["id"]})
+    async for doc in cursor:
+        try:
+            employer = await db.users.find_one({"_id": ObjectId(doc["employer_id"])})
+        except Exception:
+            employer = await db.users.find_one({"_id": doc["employer_id"]})
+        if employer:
+            employers.append(serialize_user(employer))
+    return {"employers": employers}

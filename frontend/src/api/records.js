@@ -20,6 +20,7 @@ export const searchStudentsByInternshipId = (q) => api.get('/student/search', { 
 export const fetchInstructorRoster = () => api.get('/instructor/roster')
 export const addStudentToRoster = (role_id) => api.post('/instructor/roster/add', { role_id })
 export const removeStudentFromRoster = (role_id) => api.delete(`/instructor/roster/${role_id}`)
+export const fetchInstructorEmployers = () => api.get('/instructor/employers')
 
 // Employer roster
 export const fetchEmployerRoster = () => api.get('/employer/roster')

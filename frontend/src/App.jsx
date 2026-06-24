@@ -25,6 +25,7 @@ import EmployerCertificatesPage from './pages/employer/EmployerCertificatesPage'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminUsersPage from './pages/admin/AdminUsersPage'
 import AdminRecordsPage from './pages/admin/AdminRecordsPage'
+import NotificationsPage from './pages/NotificationsPage'
 
 function RoleRedirect() {
   const { user } = useAuth()
@@ -65,6 +66,9 @@ export default function App() {
       <Route path="/admin/dashboard" element={<AdminDashboard />} />
       <Route path="/admin/users" element={<AdminUsersPage />} />
       <Route path="/admin/records" element={<AdminRecordsPage />} />
+
+      {/* Notifications */}
+      <Route path="/notifications" element={<NotificationsPage />} />
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

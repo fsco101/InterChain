@@ -15,6 +15,7 @@ const LINKS = [
   { to: '/instructor/evaluations', label: 'Evaluations', description: 'Submit evaluations' },
   { to: '/instructor/history', label: 'History', description: 'All attendance & evaluation records' },
   { to: '/instructor/roster', label: 'My Students', description: 'Manage student roster' },
+  { to: '/notifications', label: 'Notifications', description: 'View all notifications' },
   { to: '/profile', label: 'Profile', description: 'Edit your account' },
 ]
 
