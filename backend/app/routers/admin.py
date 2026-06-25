@@ -18,6 +18,50 @@ class RolePatch(BaseModel):
 @router.get("/dashboard")
 async def dashboard(current_user: dict = Depends(require_roles("admin"))):
     database = get_database()
+    
+    # 1. User Roles Distribution
+    roles_cursor = database.users.aggregate([
+        {"$group": {"_id": "$role", "count": {"$sum": 1}}}
+    ])
+    user_roles = {doc["_id"]: doc["count"] async for doc in roles_cursor}
+
+    # 2. Activity Timeline (last 14 days)
+    from datetime import datetime, timedelta, timezone
+    now = datetime.now(timezone.utc)
+    cutoff = now - timedelta(days=14)
+    
+    # We will sum across multiple core collections to get a sense of "system activity"
+    # Using attendance_records and performance_evaluations and completion_approvals
+    timeline_cursor = database.attendance_records.aggregate([
+        {"$match": {"created_at": {"$gte": cutoff}}},
+        {"$group": {
+            "_id": {"$dateToString": {"format": "%Y-%m-%d", "date": "$created_at"}},
+            "count": {"$sum": 1}
+        }}
+    ])
+    raw_timeline = {doc["_id"]: doc["count"] async for doc in timeline_cursor}
+
+    # Let's also add users created to the timeline
+    users_cursor = database.users.aggregate([
+        {"$match": {"created_at": {"$gte": cutoff}}},
+        {"$group": {
+            "_id": {"$dateToString": {"format": "%Y-%m-%d", "date": "$created_at"}},
+            "count": {"$sum": 1}
+        }}
+    ])
+    async for doc in users_cursor:
+        day = doc["_id"]
+        if day:
+            raw_timeline[day] = raw_timeline.get(day, 0) + doc["count"]
+
+    activity_timeline = []
+    for i in range(13, -1, -1):
+        day = (now - timedelta(days=i)).strftime("%Y-%m-%d")
+        activity_timeline.append({
+            "date": day,
+            "count": raw_timeline.get(day, 0)
+        })
+
     return {
         "message": f"Welcome to the admin dashboard, {current_user['full_name']}",
         "role": current_user["role"],
@@ -30,6 +74,8 @@ async def dashboard(current_user: dict = Depends(require_roles("admin"))):
             "performance_evaluations": await database.performance_evaluations.count_documents({}),
             "completion_approvals": await database.completion_approvals.count_documents({}),
         },
+        "user_roles": user_roles,
+        "activity_timeline": activity_timeline
     }
 
 

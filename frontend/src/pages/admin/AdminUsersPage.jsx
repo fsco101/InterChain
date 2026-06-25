@@ -20,6 +20,7 @@ function AdminUsersPanel() {
   const { user: currentUser } = useAuth()
   const [users, setUsers] = useState([])
   const [search, setSearch] = useState('')
+  const [roleFilter, setRoleFilter] = useState('all')
   const [selectedUser, setSelectedUser] = useState(null)
   const [newRole, setNewRole] = useState('')
   const [saving, setSaving] = useState(false)
@@ -35,11 +36,13 @@ function AdminUsersPanel() {
 
   useEffect(() => { loadUsers() }, [])
 
-  const filtered = users.filter((u) =>
-    u.full_name.toLowerCase().includes(search.toLowerCase()) ||
-    u.email.toLowerCase().includes(search.toLowerCase()) ||
-    u.role.toLowerCase().includes(search.toLowerCase())
-  )
+  const filtered = users.filter((u) => {
+    const matchesSearch = u.full_name.toLowerCase().includes(search.toLowerCase()) ||
+                          u.email.toLowerCase().includes(search.toLowerCase()) ||
+                          u.role.toLowerCase().includes(search.toLowerCase())
+    const matchesRole = roleFilter === 'all' || u.role === roleFilter
+    return matchesSearch && matchesRole
+  })
 
   const openRoleChange = (user) => {
     setSelectedUser(user)
@@ -94,6 +97,14 @@ function AdminUsersPanel() {
             onChange={(e) => setSearch(e.target.value)}
             style={{ flex: 1, minWidth: 200, minHeight: 44, borderRadius: 12, border: '1px solid rgba(148,163,184,0.28)', background: 'rgba(15,23,42,0.7)', color: 'var(--text)', padding: '0 14px' }}
           />
+          <select
+            value={roleFilter}
+            onChange={(e) => setRoleFilter(e.target.value)}
+            style={{ minHeight: 44, borderRadius: 12, border: '1px solid rgba(148,163,184,0.28)', background: 'rgba(15,23,42,0.7)', color: 'var(--text)', padding: '0 14px' }}
+          >
+            <option value="all">All Roles</option>
+            {ROLES.map((r) => <option key={r} value={r} style={{ textTransform: 'capitalize' }}>{r}</option>)}
+          </select>
           <button className="secondary-button" type="button" onClick={handleBackfill} title="Assign role IDs to users missing them">
             Assign Missing Role IDs
           </button>

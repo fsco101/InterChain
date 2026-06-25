@@ -31,6 +31,7 @@ function ReviewCard({ record }) {
 export default function RecordReviewPanel() {
   const [records, setRecords] = useState([])
   const [filter, setFilter] = useState('all')
+  const [search, setSearch] = useState('')
 
   useEffect(() => {
     const loadReview = async () => {
@@ -46,12 +47,27 @@ export default function RecordReviewPanel() {
   }, [])
 
   const filteredRecords = useMemo(() => {
-    if (filter === 'all') {
-      return records
+    let result = records
+
+    if (filter !== 'all') {
+      result = result.filter((record) => record.collection === filter)
     }
 
-    return records.filter((record) => record.collection === filter)
-  }, [filter, records])
+    if (search.trim()) {
+      const q = search.toLowerCase()
+      result = result.filter((record) => {
+        return (
+          (record.user_name || '').toLowerCase().includes(q) ||
+          (record.user_id || '').toLowerCase().includes(q) ||
+          (record.record_type || '').toLowerCase().includes(q) ||
+          (record.blockchain?.tx_hash || '').toLowerCase().includes(q) ||
+          JSON.stringify(record.payload).toLowerCase().includes(q)
+        )
+      })
+    }
+
+    return result
+  }, [filter, search, records])
 
   const copyTip = async () => {
     const confirmed = await confirmAction({
@@ -80,7 +96,17 @@ export default function RecordReviewPanel() {
             <option value="completion_approvals">Approvals</option>
           </select>
         </label>
-        <button className="secondary-button" onClick={copyTip} type="button">
+        <label style={{ flex: 1, marginLeft: 12, marginRight: 12 }}>
+          Search Records
+          <input 
+            type="text" 
+            placeholder="Search by name, ID, payload, or hash..." 
+            value={search} 
+            onChange={(e) => setSearch(e.target.value)}
+            style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(148,163,184,0.3)', background: 'rgba(15,23,42,0.5)', color: 'var(--text)', outline: 'none' }}
+          />
+        </label>
+        <button className="secondary-button" onClick={copyTip} type="button" style={{ alignSelf: 'flex-end', padding: '9px 16px' }}>
           Review status
         </button>
       </div>

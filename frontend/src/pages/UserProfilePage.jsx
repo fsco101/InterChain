@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, Link } from 'react-router-dom'
 import DashboardShell from '../components/DashboardShell'
 import AvatarBadge from '../components/AvatarBadge'
 import ProtectedRoute from '../components/ProtectedRoute'
@@ -87,6 +87,36 @@ function UserProfileContent() {
                 </div>
               )}
 
+              {profile.role === 'student' && profile.supervisors && (
+                <div className="grid-two" style={{ marginBottom: 18 }}>
+                  <div className="dashboard-card">
+                    <p className="eyebrow" style={{ marginBottom: 12 }}>Instructor</p>
+                    {profile.supervisors.instructor ? (
+                      <Link to={`/profile/${profile.supervisors.instructor.id}`} style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}>
+                        <AvatarBadge name={profile.supervisors.instructor.full_name} avatarUrl={profile.supervisors.instructor.avatar_url} size={40} />
+                        <div>
+                          <p style={{ margin: 0, fontWeight: 600, color: 'var(--text)' }}>{profile.supervisors.instructor.full_name}</p>
+                          <p className="muted" style={{ margin: 0, fontSize: '0.8rem', fontFamily: 'monospace' }}>{profile.supervisors.instructor.role_id}</p>
+                        </div>
+                      </Link>
+                    ) : <p className="muted">No instructor assigned.</p>}
+                  </div>
+
+                  <div className="dashboard-card">
+                    <p className="eyebrow" style={{ marginBottom: 12 }}>Employer</p>
+                    {profile.supervisors.employer ? (
+                      <Link to={`/profile/${profile.supervisors.employer.id}`} style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}>
+                        <AvatarBadge name={profile.supervisors.employer.full_name} avatarUrl={profile.supervisors.employer.avatar_url} size={40} />
+                        <div>
+                          <p style={{ margin: 0, fontWeight: 600, color: 'var(--text)' }}>{profile.supervisors.employer.full_name}</p>
+                          <p className="muted" style={{ margin: 0, fontSize: '0.8rem', fontFamily: 'monospace' }}>{profile.supervisors.employer.role_id}</p>
+                        </div>
+                      </Link>
+                    ) : <p className="muted">No employer assigned.</p>}
+                  </div>
+                </div>
+              )}
+
               {profile.role === 'student' && profile.tasks && profile.tasks.length > 0 && (
                 <div className="dashboard-card">
                   <p className="eyebrow" style={{ marginBottom: 12 }}>Assigned Tasks</p>
@@ -105,7 +135,7 @@ function UserProfileContent() {
               {profile.role === 'instructor' && profile.instructor_summary && (
                 <div className="dashboard-card">
                   <p className="eyebrow">Instructor Overview</p>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 16, marginTop: 16 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 16, marginTop: 16, marginBottom: 16 }}>
                     <div>
                       <p className="muted" style={{ margin: 0, fontSize: '0.8rem' }}>Students Handled</p>
                       <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#38bdf8' }}>{profile.instructor_summary.student_count}</p>
@@ -115,6 +145,19 @@ function UserProfileContent() {
                       <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700 }}>{profile.instructor_summary.employer_count}</p>
                     </div>
                   </div>
+                  {profile.instructor_summary.students && profile.instructor_summary.students.length > 0 && (
+                    <>
+                      <p className="muted" style={{ margin: '16px 0 8px', fontSize: '0.85rem' }}>Students in Roster</p>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                        {profile.instructor_summary.students.map((student) => (
+                          <Link key={student.role_id} to={student.user_id ? `/profile/${student.user_id}` : '#'} title={student.full_name} style={{ display: 'flex', alignItems: 'center', gap: 6, textDecoration: 'none', background: 'rgba(255,255,255,0.05)', padding: '6px 12px', borderRadius: 20 }}>
+                            <AvatarBadge name={student.full_name} avatarUrl={student.avatar_url} size={24} />
+                            <span style={{ fontSize: '0.85rem', color: 'var(--text)' }}>{student.full_name || student.role_id}</span>
+                          </Link>
+                        ))}
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
 
@@ -135,6 +178,20 @@ function UserProfileContent() {
                       <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700 }}>{profile.employer_summary.instructor_count}</p>
                     </div>
                   </div>
+
+                  {profile.employer_summary.instructors && profile.employer_summary.instructors.length > 0 && (
+                    <>
+                      <p className="muted" style={{ margin: '16px 0 8px', fontSize: '0.85rem' }}>Instructors in Roster</p>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                        {profile.employer_summary.instructors.map((ins) => (
+                          <Link key={ins.role_id} to={ins.user_id ? `/profile/${ins.user_id}` : '#'} title={ins.full_name} style={{ display: 'flex', alignItems: 'center', gap: 6, textDecoration: 'none', background: 'rgba(255,255,255,0.05)', padding: '6px 12px', borderRadius: 20 }}>
+                            <AvatarBadge name={ins.full_name} avatarUrl={ins.avatar_url} size={24} />
+                            <span style={{ fontSize: '0.85rem', color: 'var(--text)' }}>{ins.full_name || ins.role_id}</span>
+                          </Link>
+                        ))}
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
             </>

@@ -120,6 +120,48 @@ async def get_user_profile(
         else:
             profile["evaluation_summary"] = None
 
+        # Determine Instructor and Employer
+        instructor_doc = await db.instructor_rosters.find_one({"students.role_id": role_id}) if role_id else None
+        instructor_info = None
+        employer_info = None
+
+        if instructor_doc:
+            from bson import ObjectId
+            ins_id = instructor_doc["instructor_id"]
+            if ObjectId.is_valid(ins_id):
+                instructor_user = await db.users.find_one({"_id": ObjectId(ins_id)})
+            else:
+                instructor_user = await db.users.find_one({"_id": ins_id})
+
+            if instructor_user:
+                instructor_info = {
+                    "id": str(instructor_user["_id"]),
+                    "full_name": instructor_user.get("full_name"),
+                    "role_id": instructor_user.get("role_id"),
+                    "avatar_url": instructor_user.get("avatar_url")
+                }
+
+                employer_doc = await db.employer_rosters.find_one({"instructors.user_id": str(instructor_user["_id"])})
+                if employer_doc:
+                    emp_id = employer_doc["employer_id"]
+                    if ObjectId.is_valid(emp_id):
+                        employer_user = await db.users.find_one({"_id": ObjectId(emp_id)})
+                    else:
+                        employer_user = await db.users.find_one({"_id": emp_id})
+                    
+                    if employer_user:
+                        employer_info = {
+                            "id": str(employer_user["_id"]),
+                            "full_name": employer_user.get("full_name"),
+                            "role_id": employer_user.get("role_id"),
+                            "avatar_url": employer_user.get("avatar_url")
+                        }
+
+        profile["supervisors"] = {
+            "instructor": instructor_info,
+            "employer": employer_info
+        }
+
         # Tasks assigned to this student
         cursor = db.tasks.find({"student_ids": sid, "status": {"$ne": "cancelled"}}).sort("created_at", -1).limit(10)
         tasks = []
@@ -134,32 +176,60 @@ async def get_user_profile(
         profile["tasks"] = tasks
 
     elif profile["role"] == "instructor":
-        role_id = profile.get("role_id")
-        if role_id:
-            roster = await db.instructor_rosters.find_one({"instructor_id": role_id})
-            student_count = len(roster.get("student_ids", [])) if roster else 0
+        user_id = profile.get("id")
+        if user_id:
+            roster = await db.instructor_rosters.find_one({"instructor_id": user_id})
+            students = roster.get("students", []) if roster else []
             
-            cursor = db.employer_rosters.find({"instructor_ids": role_id})
+            enriched_students = []
+            for s in students:
+                s_user = await db.users.find_one({"role_id": s["role_id"]})
+                if s_user:
+                    enriched_students.append({
+                        "user_id": str(s_user["_id"]),
+                        "role_id": s["role_id"],
+                        "full_name": s_user.get("full_name", s.get("full_name")),
+                        "avatar_url": s_user.get("avatar_url")
+                    })
+                else:
+                    enriched_students.append(s)
+
+            cursor = db.employer_rosters.find({"instructors.user_id": user_id})
             employer_count = len([doc async for doc in cursor])
             
             profile["instructor_summary"] = {
-                "student_count": student_count,
-                "employer_count": employer_count
+                "student_count": len(enriched_students),
+                "employer_count": employer_count,
+                "students": enriched_students
             }
 
     elif profile["role"] == "employer":
-        role_id = profile.get("role_id")
-        if role_id:
-            roster = await db.employer_rosters.find_one({"employer_id": role_id})
-            instructor_count = len(roster.get("instructor_ids", [])) if roster else 0
+        user_id = profile.get("id")
+        if user_id:
+            roster = await db.employer_rosters.find_one({"employer_id": user_id})
+            instructors = roster.get("instructors", []) if roster else []
             
-            task_count = await db.tasks.count_documents({"employer_id": role_id})
-            pos_count = await db.positions.count_documents({"employer_id": role_id})
+            enriched_instructors = []
+            for ins in instructors:
+                ins_user = await db.users.find_one({"role_id": ins.get("role_id")})
+                if ins_user:
+                    enriched_instructors.append({
+                        "user_id": str(ins_user["_id"]),
+                        "role_id": ins.get("role_id"),
+                        "full_name": ins_user.get("full_name", ins.get("full_name")),
+                        "avatar_url": ins_user.get("avatar_url")
+                    })
+                else:
+                    enriched_instructors.append(ins)
+            
+            task_count = await db.tasks.count_documents({"employer_id": user_id})
+            pos_count = await db.positions.count_documents({"employer_id": user_id})
             
             profile["employer_summary"] = {
-                "instructor_count": instructor_count,
+                "instructor_count": len(enriched_instructors),
                 "task_count": task_count,
-                "position_count": pos_count
+                "position_count": pos_count,
+                "instructors": enriched_instructors
             }
 
     return profile
