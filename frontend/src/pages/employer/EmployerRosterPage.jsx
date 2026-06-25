@@ -1,31 +1,40 @@
 import { useEffect, useState } from 'react'
 import ProtectedRoute from '../../components/ProtectedRoute'
 import DashboardShell from '../../components/DashboardShell'
-import { fetchEmployerRoster, addInstructorToRoster, removeInstructorFromRoster } from '../../api/records'
+import { fetchEmployerRoster, addInstructorToRoster, removeInstructorFromRoster, fetchPositions, assignStudentPosition } from '../../api/records'
 import { confirmAction, showError, showSuccess, extractError } from '../../utils/alerts'
 import { UserSearchField } from '../../components/SearchFields'
+import { EMPLOYER_LINKS } from '../../utils/links'
 
-const LINKS = [
-  { to: '/employer/dashboard', label: 'Overview', description: 'Dashboard summary', end: true },
-  { to: '/employer/approvals', label: 'Approvals', description: 'Approve completions' },
-  { to: '/employer/history', label: 'History', description: 'All approval records' },
-  { to: '/employer/rankings', label: 'Rankings', description: 'Student performance ranks' },
-  { to: '/employer/roster', label: 'Roster', description: 'Instructors & their students' },
-  { to: '/employer/certificates', label: 'Certificates', description: 'Issue e-certificates' },
-  { to: '/notifications', label: 'Notifications', description: 'View all notifications' },
-  { to: '/profile', label: 'Profile', description: 'Edit your account' },
-]
+import { Link } from 'react-router-dom'
+import AvatarBadge from '../../components/AvatarBadge'
 
-function StudentList({ students }) {
+function StudentList({ students, positions, onPositionChange }) {
   if (!students || students.length === 0)
     return <p className="muted" style={{ margin: '8px 0 0', fontSize: '0.82rem' }}>No students linked yet.</p>
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 10 }}>
       {students.map((s) => (
-        <div key={s.role_id} style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '8px 12px', borderRadius: 10, background: 'rgba(15,23,42,0.5)', border: '1px solid rgba(148,163,184,0.12)' }}>
+        <div key={s.role_id} style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '8px 12px', borderRadius: 10, background: 'rgba(15,23,42,0.5)', border: '1px solid rgba(148,163,184,0.12)', flexWrap: 'wrap' }}>
+          <Link to={`/profile/${s.user_id || s.id}`} style={{ flexShrink: 0, display: 'block' }}>
+            <AvatarBadge name={s.full_name} avatarUrl={s.avatar_url} size={28} />
+          </Link>
           <span style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: 'var(--accent)' }}>{s.role_id}</span>
-          <span style={{ flex: 1, fontSize: '0.85rem' }}>{s.full_name}</span>
+          <Link to={`/profile/${s.user_id || s.id}`} style={{ flex: 1, minWidth: 150, fontSize: '0.85rem', textDecoration: 'none' }}>
+            {s.full_name}
+          </Link>
           {s.institution && <span className="muted" style={{ fontSize: '0.75rem' }}>🏫 {s.institution}</span>}
+          
+          <select 
+            value={s.ojt_position || ''} 
+            onChange={(e) => onPositionChange(s.user_id, e.target.value)}
+            style={{ fontSize: '0.75rem', padding: '4px 8px', borderRadius: 6, minHeight: 'unset', width: 140, background: 'rgba(15,23,42,0.8)', color: 'var(--text)', border: '1px solid rgba(148,163,184,0.2)' }}
+          >
+            <option value="">No position</option>
+            {positions.map(p => (
+              <option key={p.id} value={p.name}>{p.name}</option>
+            ))}
+          </select>
         </div>
       ))}
     </div>
@@ -34,6 +43,7 @@ function StudentList({ students }) {
 
 function EmployerRosterPanel() {
   const [instructors, setInstructors] = useState([])
+  const [positions, setPositions] = useState([])
   const [selectedInstructor, setSelectedInstructor] = useState(null)
   const [adding, setAdding] = useState(false)
   const [expanded, setExpanded] = useState({})
@@ -41,8 +51,12 @@ function EmployerRosterPanel() {
 
   const load = async () => {
     try {
-      const { data } = await fetchEmployerRoster()
-      setInstructors(data.instructors || [])
+      const [rosterRes, posRes] = await Promise.all([
+        fetchEmployerRoster(),
+        fetchPositions()
+      ])
+      setInstructors(rosterRes.data.instructors || [])
+      setPositions(posRes.data.positions || [])
     } catch (err) {
       const status = err?.response?.status
       if (status !== 404) showError('Failed to load roster', extractError(err))
@@ -88,6 +102,16 @@ function EmployerRosterPanel() {
     }
   }
 
+  const handlePositionChange = async (studentId, positionName) => {
+    try {
+      await assignStudentPosition(studentId, positionName)
+      showSuccess('Position updated', `Assigned position to student.`)
+      await load() // refresh the roster to reflect changes
+    } catch (err) {
+      showError('Failed to update position', extractError(err))
+    }
+  }
+
   const toggle = (id) => setExpanded((p) => ({ ...p, [id]: !p[id] }))
 
   const totalStudents = instructors.reduce((s, i) => s + (i.students?.length || 0), 0)
@@ -97,7 +121,7 @@ function EmployerRosterPanel() {
       <div className="dashboard-card">
         <p className="eyebrow">Employer</p>
         <h2>Instructor Roster</h2>
-        <p className="muted">Add instructors by their Instructor ID to view the students they handle and their school.</p>
+        <p className="muted">Add instructors by their Instructor ID to view the students they handle. You can assign OJT positions to students below.</p>
         <form onSubmit={handleAdd} style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
           <UserSearchField
             label="Instructor"
@@ -137,8 +161,13 @@ function EmployerRosterPanel() {
               {instructors.map((ins) => (
                 <div key={ins.role_id} style={{ borderRadius: 18, border: '1px solid rgba(148,163,184,0.18)', background: 'rgba(15,23,42,0.62)', padding: 16, marginBottom: 4 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                    <Link to={`/profile/${ins.user_id || ins.id}`} style={{ flexShrink: 0, display: 'block' }}>
+                      <AvatarBadge name={ins.full_name} avatarUrl={ins.avatar_url} size={42} />
+                    </Link>
                     <div style={{ flex: 1 }}>
-                      <strong>{ins.full_name}</strong>
+                      <Link to={`/profile/${ins.user_id || ins.id}`} style={{ textDecoration: 'none' }}>
+                        <strong>{ins.full_name}</strong>
+                      </Link>
                       <p className="muted" style={{ margin: 0, fontSize: '0.82rem' }}>{ins.email}</p>
                       {ins.institution && <p className="muted" style={{ margin: 0, fontSize: '0.75rem' }}>🏫 {ins.institution}</p>}
                     </div>
@@ -148,7 +177,7 @@ function EmployerRosterPanel() {
                     </button>
                     <button className="secondary-button danger-button" onClick={() => handleRemove(ins)}>Remove</button>
                   </div>
-                  {expanded[ins.role_id] && <StudentList students={ins.students} />}
+                  {expanded[ins.role_id] && <StudentList students={ins.students} positions={positions} onPositionChange={handlePositionChange} />}
                 </div>
               ))}
             </div>
@@ -162,7 +191,7 @@ function EmployerRosterPanel() {
 export default function EmployerRosterPage() {
   return (
     <ProtectedRoute allowedRoles={['employer']}>
-      <DashboardShell links={LINKS}>
+      <DashboardShell links={EMPLOYER_LINKS}>
         <div className="page-shell dashboard-shell">
           <EmployerRosterPanel />
         </div>

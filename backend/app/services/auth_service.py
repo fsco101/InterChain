@@ -43,6 +43,7 @@ def serialize_user(document: dict) -> dict:
         "internship_id": document.get("internship_id"),
         "institution": document.get("institution"),
         "avatar_url": document.get("avatar_url"),
+        "ojt_position": document.get("ojt_position"),
         "created_at": document.get("created_at"),
         "updated_at": document.get("updated_at"),
     }
@@ -92,6 +93,7 @@ async def create_user(user_data: UserCreate, avatar_file: UploadFile | None = No
         "role_id": _generate_role_id(role_value),
         "internship_id": _generate_internship_id() if role_value == "student" else None,
         "institution": user_data.institution.strip() if user_data.institution else None,
+        "ojt_position": user_data.ojt_position.strip() if user_data.ojt_position else None,
         "avatar_url": avatar_url,
         "avatar_public_id": avatar_public_id,
         "password_hash": hash_password(user_data.password),
@@ -140,6 +142,10 @@ async def update_user(user_id: str, updates: UserUpdate | AdminUserUpdate, avata
     role = getattr(updates, "role", None)
     if role is not None:
         update_fields["role"] = role.value
+
+    ojt_position = getattr(updates, "ojt_position", None)
+    if ojt_position is not None:
+        update_fields["ojt_position"] = ojt_position.strip() or None
 
     await database.users.update_one({"_id": object_id}, {"$set": update_fields})
     return await database.users.find_one({"_id": object_id})

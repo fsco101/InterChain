@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import AvatarBadge from './AvatarBadge'
 import { searchUsers, searchStudentsByInternshipId } from '../api/records'
 
@@ -123,12 +124,17 @@ export function UserSearchField({ label, role, callerRole, name, onChange, place
           {results.map((u) => (
             <DropItem key={u.id} onMouseDown={() => pick(u)}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <AvatarBadge name={u.full_name} avatarUrl={u.avatar_url} size={36} />
+                <Link to={`/profile/${u.id}`} onMouseDown={(e) => e.stopPropagation()} style={{ flexShrink: 0, display: 'block' }}>
+                  <AvatarBadge name={u.full_name} avatarUrl={u.avatar_url} size={36} />
+                </Link>
                 <div style={{ minWidth: 0 }}>
-                  <p style={{ margin: 0, fontSize: '0.88rem', fontWeight: 600, color: 'var(--text)' }}>{u.full_name}</p>
+                  <Link to={`/profile/${u.id}`} onMouseDown={(e) => e.stopPropagation()} style={{ textDecoration: 'none' }}>
+                    <p style={{ margin: 0, fontSize: '0.88rem', fontWeight: 600, color: 'var(--text)' }}>{u.full_name}</p>
+                  </Link>
                   <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--muted)' }}>
                     {u.role_id} {u.institution ? `· ${u.institution}` : ''}
                     {u.internship_id ? ` · ${u.internship_id}` : ''}
+                    {u.ojt_position ? ` · ${u.ojt_position}` : ''}
                   </p>
                 </div>
               </div>
@@ -139,10 +145,19 @@ export function UserSearchField({ label, role, callerRole, name, onChange, place
 
       {selected && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', borderRadius: 10, background: 'rgba(56,189,248,0.07)', border: '1px solid rgba(56,189,248,0.2)' }}>
-          <AvatarBadge name={selected.full_name} avatarUrl={selected.avatar_url} size={32} />
+          <Link to={`/profile/${selected.id}`} style={{ flexShrink: 0, display: 'block' }}>
+            <AvatarBadge name={selected.full_name} avatarUrl={selected.avatar_url} size={32} />
+          </Link>
           <div style={{ minWidth: 0, flex: 1 }}>
-            <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 600, color: 'var(--text)' }}>{selected.full_name}</p>
-            <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--muted)' }}>{selected.role_id}{selected.internship_id ? ` · ${selected.internship_id}` : ''}{selected.email ? ` · ${selected.email}` : ''}</p>
+            <Link to={`/profile/${selected.id}`} style={{ textDecoration: 'none' }}>
+              <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 600, color: 'var(--text)' }}>{selected.full_name}</p>
+            </Link>
+            <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--muted)' }}>
+              {selected.role_id}
+              {selected.internship_id ? ` · ${selected.internship_id}` : ''}
+              {selected.email ? ` · ${selected.email}` : ''}
+              {selected.ojt_position ? ` · ${selected.ojt_position}` : ''}
+            </p>
           </div>
           <button
             type="button"
@@ -232,9 +247,13 @@ export function InternshipSearchField({ name, callerRole, resetKey }) {
           {results.map((u) => (
             <DropItem key={u.id} onMouseDown={() => pick(u)}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <AvatarBadge name={u.full_name} avatarUrl={u.avatar_url} size={36} />
+                <Link to={`/profile/${u.id}`} onMouseDown={(e) => e.stopPropagation()} style={{ flexShrink: 0, display: 'block' }}>
+                  <AvatarBadge name={u.full_name} avatarUrl={u.avatar_url} size={36} />
+                </Link>
                 <div style={{ minWidth: 0 }}>
-                  <p style={{ margin: 0, fontSize: '0.88rem', fontWeight: 600, color: 'var(--text)' }}>{u.full_name}</p>
+                  <Link to={`/profile/${u.id}`} onMouseDown={(e) => e.stopPropagation()} style={{ textDecoration: 'none' }}>
+                    <p style={{ margin: 0, fontSize: '0.88rem', fontWeight: 600, color: 'var(--text)' }}>{u.full_name}</p>
+                  </Link>
                   <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--muted)' }}>
                     <span style={{ fontFamily: 'monospace', color: 'var(--accent)' }}>{u.role_id}</span>
                     {' · '}
@@ -249,9 +268,13 @@ export function InternshipSearchField({ name, callerRole, resetKey }) {
       )}
       {selected && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', borderRadius: 10, background: 'rgba(56,189,248,0.07)', border: '1px solid rgba(56,189,248,0.2)' }}>
-          <AvatarBadge name={selected.full_name} avatarUrl={selected.avatar_url} size={32} />
+          <Link to={`/profile/${selected.id}`} style={{ flexShrink: 0, display: 'block' }}>
+            <AvatarBadge name={selected.full_name} avatarUrl={selected.avatar_url} size={32} />
+          </Link>
           <div style={{ minWidth: 0, flex: 1 }}>
-            <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 600, color: 'var(--text)' }}>{selected.full_name}</p>
+            <Link to={`/profile/${selected.id}`} style={{ textDecoration: 'none' }}>
+              <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 600, color: 'var(--text)' }}>{selected.full_name}</p>
+            </Link>
             <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--muted)' }}>
               <span style={{ fontFamily: 'monospace', color: 'var(--accent)' }}>{selected.role_id}</span>
               {' · '}

@@ -8,15 +8,7 @@ import {
   deleteStudentReport, bulkDeleteStudentReport,
 } from '../../api/records'
 import { showError } from '../../utils/alerts'
-
-const LINKS = [
-  { to: '/student/dashboard', label: 'Overview', description: 'Dashboard summary', end: true },
-  { to: '/student/activities', label: 'Activities', description: 'Log daily activities' },
-  { to: '/student/reports', label: 'Reports', description: 'Submit internship reports' },
-  { to: '/student/history', label: 'History', description: 'All activity & report records' },
-  { to: '/notifications', label: 'Notifications', description: 'View all notifications' },
-  { to: '/profile', label: 'Profile', description: 'Edit your account' },
-]
+import { STUDENT_LINKS } from '../../utils/links'
 
 function StudentHistoryContent() {
   const [activities, setActivities] = useState([])
@@ -40,7 +32,7 @@ function StudentHistoryContent() {
   const removeBulkReport = async (ids) => { await bulkDeleteStudentReport(ids); setReports((p) => p.filter((r) => !ids.includes(r.id))) }
 
   return (
-    <DashboardShell links={LINKS}>
+    <DashboardShell links={STUDENT_LINKS}>
       <div className="page-shell dashboard-shell">
         <div className="dashboard-topbar">
           <div><p className="eyebrow">Student</p><h2>History</h2></div>

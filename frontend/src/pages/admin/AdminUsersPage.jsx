@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import AvatarBadge from '../../components/AvatarBadge'
 import DashboardShell from '../../components/DashboardShell'
 import ProtectedRoute from '../../components/ProtectedRoute'
@@ -103,9 +104,13 @@ function AdminUsersPanel() {
         <div className="dashboard-card" style={{ border: '1px solid rgba(56,189,248,0.3)' }}>
           <p className="eyebrow">Change Role</p>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14 }}>
-            <AvatarBadge name={selectedUser.full_name} avatarUrl={selectedUser.avatar_url} size={48} />
+            <Link to={`/profile/${selectedUser.id}`} style={{ flexShrink: 0, display: 'block' }}>
+              <AvatarBadge name={selectedUser.full_name} avatarUrl={selectedUser.avatar_url} size={48} />
+            </Link>
             <div>
-              <strong>{selectedUser.full_name}</strong>
+              <Link to={`/profile/${selectedUser.id}`} style={{ textDecoration: 'none' }}>
+                <strong>{selectedUser.full_name}</strong>
+              </Link>
               <p className="muted" style={{ margin: 0 }}>{selectedUser.email}</p>
             </div>
           </div>
@@ -131,9 +136,13 @@ function AdminUsersPanel() {
           {filtered.length === 0 && <p className="muted">No users match your search.</p>}
           {filtered.map((u) => (
             <div key={u.id} className="users-row">
-              <AvatarBadge name={u.full_name} avatarUrl={u.avatar_url} size={48} />
+              <Link to={`/profile/${u.id}`} style={{ flexShrink: 0, display: 'block' }}>
+                <AvatarBadge name={u.full_name} avatarUrl={u.avatar_url} size={48} />
+              </Link>
               <div>
-                <strong>{u.full_name}</strong>
+                <Link to={`/profile/${u.id}`} style={{ textDecoration: 'none' }}>
+                  <strong>{u.full_name}</strong>
+                </Link>
                 <p className="muted" style={{ margin: 0, fontSize: '0.82rem' }}>{u.email}</p>
                 {u.role_id && (
                   <p style={{ margin: 0, fontSize: '0.75rem', fontFamily: 'monospace', color: 'var(--accent)' }}>{u.role_id}</p>

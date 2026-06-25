@@ -36,6 +36,26 @@ async def upload_avatar(file_bytes: bytes, public_id: str | None = None) -> dict
     }
 
 
+async def upload_attendance_photo(file_bytes: bytes) -> dict:
+    """Upload an attendance proof photo to Cloudinary. Returns {url, public_id}."""
+    upload_kwargs = {
+        "folder": "interchain/attendance",
+        "resource_type": "image",
+        "overwrite": False,
+        "transformation": [{"width": 1024, "height": 1024, "crop": "limit"}],
+    }
+
+    loop = asyncio.get_event_loop()
+    result = await loop.run_in_executor(
+        None,
+        lambda: cloudinary.uploader.upload(io.BytesIO(file_bytes), **upload_kwargs),
+    )
+    return {
+        "url": result["secure_url"],
+        "public_id": result["public_id"],
+    }
+
+
 async def delete_avatar(public_id: str) -> None:
     """Delete an avatar from Cloudinary in a thread."""
     loop = asyncio.get_event_loop()

@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import ProtectedRoute from '../components/ProtectedRoute'
 import DashboardShell from '../components/DashboardShell'
 import { useNotifications } from '../context/NotificationContext'
 import { useAuth } from '../context/AuthContext'
 import { confirmAction, showSuccess } from '../utils/alerts'
+import { ROLE_LINKS } from '../utils/links'
 
 const TYPE_COLOR = { success: '#22c55e', info: '#38bdf8', warning: '#f59e0b', error: '#ef4444' }
 
@@ -13,45 +13,10 @@ function fmt(val) {
   catch { return '' }
 }
 
-const ROLE_LINKS = {
-  student: [
-    { to: '/student/dashboard', label: 'Overview', description: 'Dashboard summary', end: true },
-    { to: '/student/activities', label: 'Activities', description: 'Log daily activities' },
-    { to: '/student/history', label: 'History', description: 'All records' },
-    { to: '/notifications', label: 'Notifications', description: 'All notifications' },
-    { to: '/profile', label: 'Profile', description: 'Edit your account' },
-  ],
-  instructor: [
-    { to: '/instructor/dashboard', label: 'Overview', description: 'Dashboard summary', end: true },
-    { to: '/instructor/attendance', label: 'Attendance', description: 'Validate student attendance' },
-    { to: '/instructor/evaluations', label: 'Evaluations', description: 'Submit evaluations' },
-    { to: '/instructor/history', label: 'History', description: 'All attendance & evaluation records' },
-    { to: '/instructor/roster', label: 'My Students', description: 'Manage student roster' },
-    { to: '/notifications', label: 'Notifications', description: 'All notifications' },
-    { to: '/profile', label: 'Profile', description: 'Edit your account' },
-  ],
-  employer: [
-    { to: '/employer/dashboard', label: 'Overview', description: 'Dashboard summary', end: true },
-    { to: '/employer/approvals', label: 'Approvals', description: 'Approve completions' },
-    { to: '/employer/history', label: 'History', description: 'All approval records' },
-    { to: '/employer/rankings', label: 'Rankings', description: 'Student performance ranks' },
-    { to: '/employer/roster', label: 'Roster', description: 'Instructors & their students' },
-    { to: '/employer/certificates', label: 'Certificates', description: 'Issue e-certificates' },
-    { to: '/notifications', label: 'Notifications', description: 'All notifications' },
-    { to: '/profile', label: 'Profile', description: 'Edit your account' },
-  ],
-  admin: [
-    { to: '/admin/dashboard', label: 'Overview', description: 'Dashboard summary', end: true },
-    { to: '/admin/users', label: 'Users', description: 'Manage users' },
-    { to: '/admin/records', label: 'Records', description: 'Review all records' },
-    { to: '/notifications', label: 'Notifications', description: 'All notifications' },
-    { to: '/profile', label: 'Profile', description: 'Edit your account' },
-  ],
-}
-
 function NotificationsPanel() {
   const { notifications, unread, doMarkRead, doMarkAllRead, doDelete, doBulkDelete } = useNotifications()
   const [selected, setSelected] = useState(new Set())
+  const [search, setSearch] = useState('')
 
   const toggle = (id) => setSelected((prev) => {
     const next = new Set(prev)
@@ -59,8 +24,13 @@ function NotificationsPanel() {
     return next
   })
 
-  const allSelected = notifications.length > 0 && notifications.every((n) => selected.has(n.id))
-  const toggleAll = () => setSelected(allSelected ? new Set() : new Set(notifications.map((n) => n.id)))
+  const filtered = notifications.filter((n) =>
+    (n.title && n.title.toLowerCase().includes(search.toLowerCase())) ||
+    (n.message && n.message.toLowerCase().includes(search.toLowerCase()))
+  )
+
+  const allSelected = filtered.length > 0 && filtered.every((n) => selected.has(n.id))
+  const toggleAll = () => setSelected(allSelected ? new Set() : new Set(filtered.map((n) => n.id)))
 
   const handleDelete = async (id) => {
     await doDelete(id)
@@ -95,6 +65,14 @@ function NotificationsPanel() {
             )}
           </h2>
           <div style={{ display: 'flex', gap: 8 }}>
+            <input 
+              type="text" 
+              placeholder="Search..." 
+              value={search} 
+              onChange={(e) => setSearch(e.target.value)}
+              className="notif-search-input"
+              style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(148,163,184,0.28)', background: 'rgba(15,23,42,0.7)', color: 'var(--text)' }}
+            />
             {selected.size > 0 && (
               <button className="notif-action-btn danger" onClick={handleBulkDelete}>Delete {selected.size}</button>
             )}
@@ -105,19 +83,19 @@ function NotificationsPanel() {
         </div>
       </div>
 
-      <div className="dashboard-card" style={{ padding: 0, overflow: 'hidden' }}>
-        {notifications.length === 0 ? (
-          <p className="muted" style={{ padding: '24px', margin: 0 }}>No notifications yet.</p>
+      <div className="dashboard-card" style={{ padding: 0, overflow: 'hidden', overflowY: 'auto', maxHeight: 'calc(100vh - 200px)' }}>
+        {filtered.length === 0 ? (
+          <p className="muted" style={{ padding: '24px', margin: 0 }}>No notifications found.</p>
         ) : (
           <>
             <div style={{ padding: '12px 18px 8px', borderBottom: '1px solid rgba(148,163,184,0.1)' }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', color: 'var(--muted)', cursor: 'pointer' }}>
                 <input type="checkbox" checked={allSelected} onChange={toggleAll} />
-                Select all ({notifications.length})
+                Select all ({filtered.length})
               </label>
             </div>
             <div>
-              {notifications.map((n) => (
+              {filtered.map((n) => (
                 <div
                   key={n.id}
                   className={`notif-item${n.read ? ' read' : ''}`}

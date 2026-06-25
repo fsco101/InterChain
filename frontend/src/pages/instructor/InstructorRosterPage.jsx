@@ -1,20 +1,12 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import ProtectedRoute from '../../components/ProtectedRoute'
 import DashboardShell from '../../components/DashboardShell'
 import { fetchInstructorRoster, addStudentToRoster, removeStudentFromRoster, fetchInstructorEmployers } from '../../api/records'
 import { confirmAction, showError, showSuccess, extractError } from '../../utils/alerts'
 import { UserSearchField } from '../../components/SearchFields'
 import AvatarBadge from '../../components/AvatarBadge'
-
-const LINKS = [
-  { to: '/instructor/dashboard', label: 'Overview', description: 'Dashboard summary', end: true },
-  { to: '/instructor/attendance', label: 'Attendance', description: 'Validate student attendance' },
-  { to: '/instructor/evaluations', label: 'Evaluations', description: 'Submit evaluations' },
-  { to: '/instructor/history', label: 'History', description: 'All attendance & evaluation records' },
-  { to: '/instructor/roster', label: 'My Students', description: 'Manage student roster' },
-  { to: '/notifications', label: 'Notifications', description: 'View all notifications' },
-  { to: '/profile', label: 'Profile', description: 'Edit your account' },
-]
+import { INSTRUCTOR_LINKS } from '../../utils/links'
 
 function InstructorRosterPanel() {
   const [students, setStudents] = useState([])
@@ -108,8 +100,13 @@ function InstructorRosterPanel() {
           <div className="users-table">
             {students.map((s) => (
               <div key={s.role_id} className="users-row">
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <strong>{s.full_name}</strong>
+                <Link to={`/profile/${s.user_id || s.id}`} style={{ flexShrink: 0, display: 'block' }}>
+                  <AvatarBadge name={s.full_name} avatarUrl={s.avatar_url} size={42} />
+                </Link>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1 }}>
+                  <Link to={`/profile/${s.user_id || s.id}`} style={{ textDecoration: 'none' }}>
+                    <strong>{s.full_name}</strong>
+                  </Link>
                   <span className="muted" style={{ fontSize: '0.82rem' }}>{s.email}</span>
                   {s.institution && <span className="muted" style={{ fontSize: '0.75rem' }}>🏫 {s.institution}</span>}
                 </div>
@@ -130,8 +127,13 @@ function InstructorRosterPanel() {
           <div className="users-table">
             {employers.map((emp) => (
               <div key={emp.id} className="users-row">
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <strong>{emp.full_name}</strong>
+                <Link to={`/profile/${emp.user_id || emp.id}`} style={{ flexShrink: 0, display: 'block' }}>
+                  <AvatarBadge name={emp.full_name} avatarUrl={emp.avatar_url} size={42} />
+                </Link>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1 }}>
+                  <Link to={`/profile/${emp.user_id || emp.id}`} style={{ textDecoration: 'none' }}>
+                    <strong>{emp.full_name}</strong>
+                  </Link>
                   <span className="muted" style={{ fontSize: '0.82rem' }}>{emp.email}</span>
                   {emp.institution && <span className="muted" style={{ fontSize: '0.75rem' }}>🏢 {emp.institution}</span>}
                 </div>
@@ -148,7 +150,7 @@ function InstructorRosterPanel() {
 export default function InstructorRosterPage() {
   return (
     <ProtectedRoute allowedRoles={['instructor']}>
-      <DashboardShell links={LINKS}>
+      <DashboardShell links={INSTRUCTOR_LINKS}>
         <div className="page-shell dashboard-shell">
           <InstructorRosterPanel />
         </div>

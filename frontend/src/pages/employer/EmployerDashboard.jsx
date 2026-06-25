@@ -5,17 +5,7 @@ import DashboardShell from '../../components/DashboardShell'
 import Sparkline from '../../components/Sparkline'
 import { fetchEmployerRecords } from '../../api/records'
 import { useAuth } from '../../context/AuthContext'
-
-const LINKS = [
-  { to: '/employer/dashboard', label: 'Overview', description: 'Dashboard summary', end: true },
-  { to: '/employer/approvals', label: 'Approvals', description: 'Approve completions' },
-  { to: '/employer/history', label: 'History', description: 'All approval records' },
-  { to: '/employer/rankings', label: 'Rankings', description: 'Student performance ranks' },
-  { to: '/employer/roster', label: 'Roster', description: 'Instructors & their students' },
-  { to: '/employer/certificates', label: 'Certificates', description: 'Issue e-certificates' },
-  { to: '/notifications', label: 'Notifications', description: 'View all notifications' },
-  { to: '/profile', label: 'Profile', description: 'Edit your account' },
-]
+import { EMPLOYER_LINKS } from '../../utils/links'
 
 function StatCard({ label, value, sub, sparkData, color }) {
   return (
@@ -46,7 +36,7 @@ function EmployerDashboardContent() {
   const approvalData = approvals.slice(0, 7).reverse().map((r) => r.payload.approved ? 1 : 0)
 
   return (
-    <DashboardShell links={LINKS}>
+    <DashboardShell links={EMPLOYER_LINKS}>
       <div className="page-shell dashboard-shell">
         <div className="dashboard-topbar">
           <div>

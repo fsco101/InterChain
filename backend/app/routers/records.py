@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from pydantic import BaseModel
 
 from app.deps import require_roles
@@ -7,11 +7,15 @@ from app.schemas.records import (
     AttendanceValidationCreate,
     CompletionApprovalCreate,
     EvaluationCreate,
+    EmployerEvaluationCreate,
     StudentActivityCreate,
     StudentReportCreate,
 )
 from app.services.records_service import create_record, list_records, list_all_records, delete_record, delete_records_bulk
+from app.services.cloudinary_service import upload_attendance_photo
+from app.services.blockchain_service import build_blockchain_metadata_async
 from app.routers.notifications import push_notification
+from datetime import datetime, timezone
 
 
 class BulkDeleteBody(BaseModel):
@@ -72,6 +76,80 @@ async def create_student_report(payload: StudentReportCreate, current_user: dict
     db = get_database()
     await push_notification(db, current_user["id"], "Report submitted", f"'{payload.report_title}' has been saved.", "success")
     return record
+
+
+@router.post("/student/attendance")
+async def create_student_attendance(
+    internship_id: str = Form(...),
+    attendance_date: str = Form(...),
+    time_in: str = Form(...),
+    time_out: str = Form(...),
+    hours: float = Form(...),
+    notes: str | None = Form(None),
+    photo: UploadFile = File(...),
+    current_user: dict = Depends(require_roles("student")),
+):
+    """Student logs attendance with a required photo as proof. Photo is uploaded to Cloudinary."""
+    if not photo or not photo.filename:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Attendance photo is required as proof.")
+
+    photo_bytes = await photo.read()
+    if not photo_bytes:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Uploaded photo is empty.")
+
+    # Upload photo to Cloudinary
+    photo_result = await upload_attendance_photo(photo_bytes)
+
+    payload = {
+        "internship_id": internship_id,
+        "attendance_date": attendance_date,
+        "time_in": time_in,
+        "time_out": time_out,
+        "hours": hours,
+        "notes": notes,
+        "photo_url": photo_result["url"],
+        "photo_public_id": photo_result["public_id"],
+        "validation_status": "pending",  # pending | validated | rejected
+    }
+
+    db = get_database()
+    blockchain = await build_blockchain_metadata_async("student_attendance", current_user["id"], payload)
+    document = {
+        "record_type": "student_attendance",
+        "role": "student",
+        "user_id": current_user["id"],
+        "user_name": current_user["full_name"],
+        "payload": payload,
+        "blockchain": blockchain,
+        "created_at": datetime.now(timezone.utc),
+    }
+    result = await db.student_attendance.insert_one(document)
+    created = await db.student_attendance.find_one({"_id": result.inserted_id})
+    from app.services.records_service import serialize_record
+    await push_notification(db, current_user["id"], "Attendance logged", f"Attendance for {attendance_date} has been saved with photo proof.", "success")
+    return serialize_record(created)
+
+
+@router.get("/student/attendance")
+async def get_student_attendance(current_user: dict = Depends(require_roles("student"))):
+    db = get_database()
+    cursor = db.student_attendance.find({"user_id": current_user["id"]}).sort("created_at", -1).limit(20)
+    from app.services.records_service import serialize_record
+    return {"attendance": [serialize_record(doc) async for doc in cursor]}
+
+
+@router.get("/student/attendance/history")
+async def get_student_attendance_history(current_user: dict = Depends(require_roles("student"))):
+    db = get_database()
+    cursor = db.student_attendance.find({"user_id": current_user["id"]}).sort("created_at", -1)
+    from app.services.records_service import serialize_record
+    return {"attendance": [serialize_record(doc) async for doc in cursor]}
+
+
+@router.delete("/student/attendance/{record_id}")
+async def delete_student_attendance(record_id: str, current_user: dict = Depends(require_roles("student"))):
+    ok = await delete_record("student_attendance", record_id, current_user["id"])
+    return {"deleted": ok}
 
 
 @router.get("/student")
@@ -176,6 +254,32 @@ async def approve_completion(payload: CompletionApprovalCreate, current_user: di
     db = get_database()
     await push_notification(db, current_user["id"], "Approval saved", f"Student {payload.student_id} {'approved' if payload.approved else 'not approved'} on {payload.approval_date}.", "success")
     return record
+
+
+@router.post("/employer/evaluation")
+async def submit_employer_evaluation(payload: EmployerEvaluationCreate, current_user: dict = Depends(require_roles("employer"))):
+    record = await create_record("employer_evaluations", "employer_evaluation", "employer", current_user, payload.model_dump(mode="json"))
+    db = get_database()
+    await push_notification(db, current_user["id"], "Evaluation submitted", f"Score {payload.score}/10 saved for student {payload.student_id}.", "success")
+    return record
+
+
+@router.get("/employer/evaluations")
+async def get_employer_evaluations(current_user: dict = Depends(require_roles("employer"))):
+    evaluations = await list_records("employer_evaluations", current_user["id"])
+    return {"evaluations": evaluations}
+
+
+@router.get("/employer/evaluations/history")
+async def get_employer_evaluations_history(current_user: dict = Depends(require_roles("employer"))):
+    evaluations = await list_all_records("employer_evaluations", current_user["id"])
+    return {"evaluations": evaluations}
+
+
+@router.delete("/employer/evaluation/{record_id}")
+async def delete_employer_evaluation(record_id: str, current_user: dict = Depends(require_roles("employer"))):
+    ok = await delete_record("employer_evaluations", record_id, current_user["id"])
+    return {"deleted": ok}
 
 
 @router.get("/employer")

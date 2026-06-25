@@ -3,9 +3,9 @@ import { Link } from 'react-router-dom'
 import ProtectedRoute from '../../components/ProtectedRoute'
 import DashboardShell from '../../components/DashboardShell'
 import AvatarBadge from '../../components/AvatarBadge'
-import { fetchEmployerRankings } from '../../api/records'
+import { fetchInstructorRankings } from '../../api/records'
 import { showError } from '../../utils/alerts'
-import { EMPLOYER_LINKS } from '../../utils/links'
+import { INSTRUCTOR_LINKS } from '../../utils/links'
 
 function RankTable({ title, rows }) {
   if (!rows || rows.length === 0) return (
@@ -47,12 +47,12 @@ function RankTable({ title, rows }) {
   )
 }
 
-function EmployerRankingsPanel() {
+function InstructorRankingsPanel() {
   const [data, setData] = useState({ overall: [], by_school: {}, by_position: {} })
   const [view, setView] = useState('overall')
 
   useEffect(() => {
-    fetchEmployerRankings()
+    fetchInstructorRankings()
       .then(({ data }) => setData(data))
       .catch(() => showError('Failed to load rankings'))
   }, [])
@@ -60,9 +60,9 @@ function EmployerRankingsPanel() {
   return (
     <div className="dashboard-stack">
       <div className="dashboard-card">
-        <p className="eyebrow">Employer</p>
+        <p className="eyebrow">Instructor</p>
         <h2>Student Rankings</h2>
-        <p className="muted">View top-performing students based on your evaluations.</p>
+        <p className="muted">View how your students rank based on employer evaluations. This is a read-only view.</p>
         <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
           {[['overall', 'Overall'], ['school', 'By School'], ['position', 'By Position']].map(([k, l]) => (
             <button key={k} className={view === k ? 'primary-button' : 'secondary-button'} onClick={() => setView(k)}>{l}</button>
@@ -87,12 +87,12 @@ function EmployerRankingsPanel() {
   )
 }
 
-export default function EmployerRankingsPage() {
+export default function InstructorRankingsPage() {
   return (
-    <ProtectedRoute allowedRoles={['employer']}>
-      <DashboardShell links={EMPLOYER_LINKS}>
+    <ProtectedRoute allowedRoles={['instructor']}>
+      <DashboardShell links={INSTRUCTOR_LINKS}>
         <div className="page-shell dashboard-shell">
-          <EmployerRankingsPanel />
+          <InstructorRankingsPanel />
         </div>
       </DashboardShell>
     </ProtectedRoute>

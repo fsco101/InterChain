@@ -17,6 +17,7 @@ class UserBase(BaseModel):
     role: UserRole
     avatar_url: str | None = None
     institution: str | None = None
+    ojt_position: str | None = None
 
 
 class UserCreate(UserBase):
@@ -27,6 +28,7 @@ class UserUpdate(BaseModel):
     email: str | None = Field(default=None, min_length=5, max_length=255)
     password: str | None = Field(default=None, min_length=8, max_length=128)
     avatar_url: str | None = None
+    ojt_position: str | None = None
 
 class AdminUserUpdate(UserUpdate):
     role: UserRole | None = None

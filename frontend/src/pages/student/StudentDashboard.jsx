@@ -5,15 +5,7 @@ import DashboardShell from '../../components/DashboardShell'
 import Sparkline from '../../components/Sparkline'
 import { fetchStudentRecords } from '../../api/records'
 import { useAuth } from '../../context/AuthContext'
-
-const LINKS = [
-  { to: '/student/dashboard', label: 'Overview', description: 'Dashboard summary', end: true },
-  { to: '/student/activities', label: 'Activities', description: 'Log daily activities' },
-  { to: '/student/reports', label: 'Reports', description: 'Submit internship reports' },
-  { to: '/student/history', label: 'History', description: 'All activity & report records' },
-  { to: '/notifications', label: 'Notifications', description: 'View all notifications' },
-  { to: '/profile', label: 'Profile', description: 'Edit your account' },
-]
+import { STUDENT_LINKS } from '../../utils/links'
 
 function StatCard({ label, value, sub, sparkData, color }) {
   return (
@@ -54,7 +46,7 @@ function StudentDashboardContent() {
   const recent = activities.slice(0, 5)
 
   return (
-    <DashboardShell links={LINKS}>
+    <DashboardShell links={STUDENT_LINKS}>
       <div className="page-shell dashboard-shell">
         <div className="dashboard-topbar">
           <div>
