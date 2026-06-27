@@ -11,19 +11,22 @@ import StudentDashboard from './pages/student/StudentDashboard'
 import StudentActivitiesPage from './pages/student/StudentActivitiesPage'
 import StudentHistoryPage from './pages/student/StudentHistoryPage'
 import StudentAttendancePage from './pages/student/StudentAttendancePage'
+import StudentTasksPage from './pages/student/StudentTasksPage'
 
 import InstructorDashboard from './pages/instructor/InstructorDashboard'
 import InstructorSchedulePage from './pages/instructor/InstructorSchedulePage'
 import InstructorRosterPage from './pages/instructor/InstructorRosterPage'
 import InstructorRankingsPage from './pages/instructor/InstructorRankingsPage'
+import InstructorHoursTrackingPage from './pages/instructor/InstructorHoursTrackingPage'
 
-import EmployerDashboard from './pages/employer/EmployerDashboard'
-import EmployerAttendancePage from './pages/employer/EmployerAttendancePage'
-import EmployerEvaluationsPage from './pages/employer/EmployerEvaluationsPage'
-import EmployerCompletionPage from './pages/employer/EmployerCompletionPage'
-import EmployerRankingsPage from './pages/employer/EmployerRankingsPage'
-import EmployerTasksPage from './pages/employer/EmployerTasksPage'
-import EmployerRosterPage from './pages/employer/EmployerRosterPage'
+import SupervisorDashboard from './pages/supervisor/SupervisorDashboard'
+import SupervisorAttendancePage from './pages/supervisor/SupervisorAttendancePage'
+import SupervisorEvaluationsPage from './pages/supervisor/SupervisorEvaluationsPage'
+import SupervisorCompletionPage from './pages/supervisor/SupervisorCompletionPage'
+import SupervisorRankingsPage from './pages/supervisor/SupervisorRankingsPage'
+import SupervisorTasksPage from './pages/supervisor/SupervisorTasksPage'
+import SupervisorRosterPage from './pages/supervisor/SupervisorRosterPage'
+import SupervisorInternRosterPage from './pages/supervisor/SupervisorInternRosterPage'
 
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminUsersPage from './pages/admin/AdminUsersPage'
@@ -51,21 +54,24 @@ export default function App() {
       <Route path="/student/activities" element={<StudentActivitiesPage />} />
       <Route path="/student/attendance" element={<StudentAttendancePage />} />
       <Route path="/student/history" element={<StudentHistoryPage />} />
+      <Route path="/student/tasks" element={<StudentTasksPage />} />
 
       {/* Instructor */}
       <Route path="/instructor/dashboard" element={<InstructorDashboard />} />
       <Route path="/instructor/schedule" element={<InstructorSchedulePage />} />
+      <Route path="/instructor/hours" element={<InstructorHoursTrackingPage />} />
       <Route path="/instructor/rankings" element={<InstructorRankingsPage />} />
       <Route path="/instructor/roster" element={<InstructorRosterPage />} />
 
-      {/* Employer */}
-      <Route path="/employer/dashboard" element={<EmployerDashboard />} />
-      <Route path="/employer/attendance" element={<EmployerAttendancePage />} />
-      <Route path="/employer/evaluations" element={<EmployerEvaluationsPage />} />
-      <Route path="/employer/completion" element={<EmployerCompletionPage />} />
-      <Route path="/employer/rankings" element={<EmployerRankingsPage />} />
-      <Route path="/employer/tasks" element={<EmployerTasksPage />} />
-      <Route path="/employer/roster" element={<EmployerRosterPage />} />
+      {/* Supervisor */}
+      <Route path="/supervisor/dashboard" element={<SupervisorDashboard />} />
+      <Route path="/supervisor/attendance" element={<SupervisorAttendancePage />} />
+      <Route path="/supervisor/evaluations" element={<SupervisorEvaluationsPage />} />
+      <Route path="/supervisor/completion" element={<SupervisorCompletionPage />} />
+      <Route path="/supervisor/rankings" element={<SupervisorRankingsPage />} />
+      <Route path="/supervisor/tasks" element={<SupervisorTasksPage />} />
+      <Route path="/supervisor/roster" element={<SupervisorRosterPage />} />
+      <Route path="/supervisor/interns" element={<SupervisorInternRosterPage />} />
 
       {/* Admin */}
       <Route path="/admin/dashboard" element={<AdminDashboard />} />

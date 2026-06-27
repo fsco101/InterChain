@@ -14,7 +14,7 @@ const LINKS = [
   { to: '/profile', label: 'Profile', description: 'Edit your account' },
 ]
 
-const ROLES = ['student', 'instructor', 'employer', 'admin']
+const ROLES = ['student', 'instructor', 'supervisor', 'admin']
 
 function AdminUsersPanel() {
   const { user: currentUser } = useAuth()

@@ -11,7 +11,7 @@ const INPUT_STYLE = {
 }
 
 const DROP_STYLE = {
-  position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100,
+  position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 9999,
   background: 'rgba(10,18,36,0.98)', border: '1px solid rgba(56,189,248,0.25)',
   borderRadius: 14, marginTop: 4, maxHeight: 260, overflowY: 'auto',
   backdropFilter: 'blur(16px)', boxShadow: '0 12px 40px rgba(2,6,23,0.7)',
@@ -30,7 +30,7 @@ function DropItem({ children, onMouseDown }) {
   )
 }
 
-// callerRole: 'instructor' | 'employer'
+// callerRole: 'instructor' | 'supervisor'
 // role: 'student' | 'instructor'
 // onChange: (user) => void  — called with the selected user object
 // name: hidden input name for FormData

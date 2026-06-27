@@ -19,6 +19,15 @@ export default function InstitutionField({ role }) {
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
+  if (role === 'supervisor') {
+    return (
+      <label>
+        Company Name *
+        <input name="company" type="text" placeholder="e.g. Acme Corporation" required />
+      </label>
+    )
+  }
+
   if (!isPhRole) {
     return (
       <label>

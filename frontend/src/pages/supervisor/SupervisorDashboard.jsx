@@ -3,9 +3,9 @@ import { Link } from 'react-router-dom'
 import ProtectedRoute from '../../components/ProtectedRoute'
 import DashboardShell from '../../components/DashboardShell'
 import Sparkline from '../../components/Sparkline'
-import { fetchEmployerRecords } from '../../api/records'
+import { fetchSupervisorRecords } from '../../api/records'
 import { useAuth } from '../../context/AuthContext'
-import { EMPLOYER_LINKS } from '../../utils/links'
+import { SUPERVISOR_LINKS } from '../../utils/links'
 
 function StatCard({ label, value, sub, sparkData, color }) {
   return (
@@ -22,12 +22,12 @@ function StatCard({ label, value, sub, sparkData, color }) {
   )
 }
 
-function EmployerDashboardContent() {
+function SupervisorDashboardContent() {
   const { user } = useAuth()
   const [approvals, setApprovals] = useState([])
 
   useEffect(() => {
-    fetchEmployerRecords()
+    fetchSupervisorRecords()
       .then(({ data }) => { setApprovals(data.approvals || []) })
       .catch(() => {})
   }, [])
@@ -36,11 +36,11 @@ function EmployerDashboardContent() {
   const approvalData = approvals.slice(0, 7).reverse().map((r) => r.payload.approved ? 1 : 0)
 
   return (
-    <DashboardShell links={EMPLOYER_LINKS}>
+    <DashboardShell links={SUPERVISOR_LINKS}>
       <div className="page-shell dashboard-shell">
         <div className="dashboard-topbar">
           <div>
-            <p className="eyebrow">Employer Dashboard</p>
+            <p className="eyebrow">Supervisor Dashboard</p>
             <h2>Welcome back, {user?.full_name}</h2>
           </div>
         </div>
@@ -53,19 +53,19 @@ function EmployerDashboardContent() {
           <div className="dashboard-card">
             <p className="eyebrow" style={{ marginBottom: 10 }}>Quick Actions</p>
             <div className="shortcut-grid">
-              <Link to="/employer/approvals" className="shortcut-card">
+              <Link to="/supervisor/completion" className="shortcut-card">
                 <strong>Approve Completion</strong>
                 <p>Review and approve internship completion</p>
               </Link>
-              <Link to="/employer/rankings" className="shortcut-card">
+              <Link to="/supervisor/rankings" className="shortcut-card">
                 <strong>View Rankings</strong>
                 <p>See top performing students</p>
               </Link>
-              <Link to="/employer/roster" className="shortcut-card">
+              <Link to="/supervisor/roster" className="shortcut-card">
                 <strong>Roster</strong>
                 <p>View instructors and their students</p>
               </Link>
-              <Link to="/employer/certificates" className="shortcut-card">
+              <Link to="/supervisor/completion" className="shortcut-card">
                 <strong>Issue Certificate</strong>
                 <p>Generate blockchain-verified e-certificate</p>
               </Link>
@@ -77,10 +77,10 @@ function EmployerDashboardContent() {
   )
 }
 
-export default function EmployerDashboard() {
+export default function SupervisorDashboard() {
   return (
-    <ProtectedRoute allowedRoles={['employer']}>
-      <EmployerDashboardContent />
+    <ProtectedRoute allowedRoles={['supervisor']}>
+      <SupervisorDashboardContent />
     </ProtectedRoute>
   )
 }

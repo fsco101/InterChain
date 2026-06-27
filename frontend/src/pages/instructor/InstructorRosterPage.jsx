@@ -2,15 +2,15 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import ProtectedRoute from '../../components/ProtectedRoute'
 import DashboardShell from '../../components/DashboardShell'
-import { fetchInstructorRoster, addStudentToRoster, removeStudentFromRoster, fetchInstructorEmployers } from '../../api/records'
-import { confirmAction, showError, showSuccess, extractError } from '../../utils/alerts'
+import { fetchInstructorRoster, addStudentToRoster, removeStudentFromRoster, fetchInstructorSupervisors, unlinkSupervisor } from '../../api/records'
+import { confirmAction, showError, showSuccess, extractError, showLoading, closeAlert } from '../../utils/alerts'
 import { UserSearchField } from '../../components/SearchFields'
 import AvatarBadge from '../../components/AvatarBadge'
 import { INSTRUCTOR_LINKS } from '../../utils/links'
 
 function InstructorRosterPanel() {
   const [students, setStudents] = useState([])
-  const [employers, setEmployers] = useState([])
+  const [supervisors, setSupervisors] = useState([])
   const [selectedStudent, setSelectedStudent] = useState(null)
   const [adding, setAdding] = useState(false)
   const [resetKey, setResetKey] = useState(0)
@@ -25,10 +25,10 @@ function InstructorRosterPanel() {
       setStudents([])
     }
     try {
-      const { data } = await fetchInstructorEmployers()
-      setEmployers(data.employers || [])
+      const { data } = await fetchInstructorSupervisors()
+      setSupervisors(data.supervisors || [])
     } catch {
-      setEmployers([])
+      setSupervisors([])
     }
   }
 
@@ -62,11 +62,34 @@ function InstructorRosterPanel() {
     })
     if (!ok) return
     try {
+      showLoading('Removing student...')
       await removeStudentFromRoster(student.role_id)
+      closeAlert()
       showSuccess('Student removed')
       await load()
     } catch (err) {
+      closeAlert()
       showError('Could not remove student', extractError(err))
+    }
+  }
+
+  const handleUnlinkSupervisor = async (supervisor) => {
+    const ok = await confirmAction({
+      title: 'Unlink supervisor?',
+      text: `Are you sure you want to unlink from ${supervisor.full_name}? You will no longer be on their roster.`,
+      confirmButtonText: 'Unlink'
+    })
+    if (!ok) return
+
+    try {
+      showLoading('Unlinking supervisor...')
+      await unlinkSupervisor(supervisor.id)
+      closeAlert()
+      showSuccess('Supervisor unlinked')
+      await load()
+    } catch (err) {
+      closeAlert()
+      showError('Could not unlink supervisor', extractError(err))
     }
   }
 
@@ -75,7 +98,7 @@ function InstructorRosterPanel() {
       <div className="dashboard-card">
         <p className="eyebrow">Instructor</p>
         <h2>My Students</h2>
-        <p className="muted">Add students by their Student ID. Employers can see this roster and the school they belong to.</p>
+        <p className="muted">Add students by their Student ID. Supervisors can see this roster and the school they belong to.</p>
         <form onSubmit={handleAdd} style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
           <UserSearchField
             label="Student"
@@ -109,6 +132,7 @@ function InstructorRosterPanel() {
                   </Link>
                   <span className="muted" style={{ fontSize: '0.82rem' }}>{s.email}</span>
                   {s.institution && <span className="muted" style={{ fontSize: '0.75rem' }}>🏫 {s.institution}</span>}
+                  {s.internship_id && <span className="muted" style={{ fontSize: '0.75rem' }}>💼 Internship ID: {s.internship_id}</span>}
                 </div>
                 <span className="role-chip">{s.role_id}</span>
                 <button className="secondary-button" onClick={() => handleRemove(s)}>Remove</button>
@@ -118,26 +142,21 @@ function InstructorRosterPanel() {
         )}
       </div>
 
-      <div className="dashboard-card">
-        <p className="eyebrow" style={{ marginBottom: 12 }}>Connected Employers ({employers.length})</p>
-        <p className="muted" style={{ marginBottom: 12, fontSize: '0.85rem' }}>Employers who have added you to their roster.</p>
-        {employers.length === 0 ? (
-          <p className="muted">No employers linked yet.</p>
+      <div className="dashboard-card" style={{ padding: '16px 20px', minWidth: 260, alignSelf: 'start', position: 'sticky', top: 20 }}>
+        <p className="eyebrow" style={{ marginBottom: 12 }}>Connected Supervisors ({supervisors.length})</p>
+        <p className="muted" style={{ marginBottom: 12, fontSize: '0.85rem' }}>Supervisors who have added you to their roster.</p>
+        {supervisors.length === 0 ? (
+          <p className="muted">No supervisors linked yet.</p>
         ) : (
-          <div className="users-table">
-            {employers.map((emp) => (
-              <div key={emp.id} className="users-row">
-                <Link to={`/profile/${emp.user_id || emp.id}`} style={{ flexShrink: 0, display: 'block' }}>
-                  <AvatarBadge name={emp.full_name} avatarUrl={emp.avatar_url} size={42} />
-                </Link>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1 }}>
-                  <Link to={`/profile/${emp.user_id || emp.id}`} style={{ textDecoration: 'none' }}>
-                    <strong>{emp.full_name}</strong>
-                  </Link>
-                  <span className="muted" style={{ fontSize: '0.82rem' }}>{emp.email}</span>
-                  {emp.institution && <span className="muted" style={{ fontSize: '0.75rem' }}>🏢 {emp.institution}</span>}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {supervisors.map((sup) => (
+              <div key={sup.id} style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(148,163,184,0.04)', padding: '8px 12px', borderRadius: 10 }}>
+                <Link to={`/profile/${sup.id}`}><AvatarBadge name={sup.full_name} avatarUrl={sup.avatar_url} size={28} /></Link>
+                <div style={{ flex: 1 }}>
+                  <Link to={`/profile/${sup.id}`} style={{ textDecoration: 'none' }}><strong>{sup.full_name}</strong></Link>
+                  <p className="muted" style={{ margin: 0, fontSize: '0.75rem' }}>{sup.company || 'Unknown Company'}</p>
                 </div>
-                <span className="role-chip">{emp.role_id}</span>
+                <button className="secondary-button" style={{ padding: '4px 8px', fontSize: '0.75rem' }} onClick={() => handleUnlinkSupervisor(sup)}>Unlink</button>
               </div>
             ))}
           </div>

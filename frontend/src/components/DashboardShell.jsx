@@ -6,6 +6,7 @@ import Notifications from './Notifications'
 import { useAuth } from '../context/AuthContext'
 import { useNotifications } from '../context/NotificationContext'
 import { confirmLogout, showSignedOut } from '../utils/alerts'
+import { fetchStudentTasks } from '../api/records'
 
 const ICONS = {
   Overview: (
@@ -152,10 +153,20 @@ export default function DashboardShell({ links = [], children }) {
   const { user, logout } = useAuth()
   const { unread } = useNotifications()
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('internchain_sidebar_collapsed') === 'true')
+  const [pendingTasksCount, setPendingTasksCount] = useState(0)
 
   useEffect(() => {
     localStorage.setItem('internchain_sidebar_collapsed', String(collapsed))
   }, [collapsed])
+
+  useEffect(() => {
+    if (user?.role === 'student') {
+      fetchStudentTasks().then(({ data }) => {
+        const pending = (data.tasks || []).filter(t => t.status === 'pending').length
+        setPendingTasksCount(pending)
+      }).catch(() => {})
+    }
+  }, [user?.role])
 
   const handleLogout = async () => {
     const confirmed = await confirmLogout()
@@ -224,6 +235,18 @@ export default function DashboardShell({ links = [], children }) {
                     {unread > 99 ? '99+' : unread}
                   </span>
                 )}
+                {link.label === 'Given Tasks' && pendingTasksCount > 0 && (
+                  <span style={{
+                    position: 'absolute', top: -4, right: -4,
+                    minWidth: 16, height: 16, padding: '0 3px',
+                    borderRadius: 999, background: '#f59e0b',
+                    color: '#fff', fontSize: '0.6rem', fontWeight: 800,
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    border: '2px solid var(--bg)',
+                  }}>
+                    {pendingTasksCount > 99 ? '99+' : pendingTasksCount}
+                  </span>
+                )}
               </span>
               {!collapsed && (
                 <span className="sidebar-link-content">
@@ -235,6 +258,13 @@ export default function DashboardShell({ links = [], children }) {
                         background: 'rgba(239,68,68,0.18)', color: '#f87171',
                         fontSize: '0.68rem', fontWeight: 800,
                       }}>{unread}</span>
+                    )}
+                    {link.label === 'Given Tasks' && pendingTasksCount > 0 && (
+                      <span style={{
+                        marginLeft: 6, padding: '1px 6px', borderRadius: 999,
+                        background: 'rgba(245,158,11,0.18)', color: '#f59e0b',
+                        fontSize: '0.68rem', fontWeight: 800,
+                      }}>{pendingTasksCount}</span>
                     )}
                   </span>
                   {link.description ? <small>{link.description}</small> : null}

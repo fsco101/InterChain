@@ -3,12 +3,12 @@ import html2canvas from 'html2canvas'
 import jsPDF from 'jspdf'
 import ProtectedRoute from '../../components/ProtectedRoute'
 import DashboardShell from '../../components/DashboardShell'
-import { createEmployerApproval, fetchEmployerRecords, fetchEmployerHistory, issueCertificate, fetchCertificates, fetchStudentHours } from '../../api/records'
-import { showError, showSuccess, extractError, confirmAction } from '../../utils/alerts'
+import { createSupervisorApproval, fetchSupervisorRecords, fetchSupervisorHistory, issueCertificate, fetchCertificates, fetchStudentHours } from '../../api/records'
+import { showError, showSuccess, extractError, confirmAction, showLoading, closeAlert } from '../../utils/alerts'
 import { useAuth } from '../../context/AuthContext'
 import { UserSearchField, InternshipSearchField } from '../../components/SearchFields'
-import { EMPLOYER_LINKS } from '../../utils/links'
-import { validateEmployerApproval } from '../../utils/validation'
+import { SUPERVISOR_LINKS } from '../../utils/links'
+import { validateSupervisorApproval } from '../../utils/validation'
 
 // ── Certificate Layout (unchanged) ────────────────────────────────────────────
 const CERT_W = 1122
@@ -60,33 +60,38 @@ function ApprovalTab({ onApprovalSaved }) {
   const formRef = useRef(null)
 
   const load = async () => {
-    try { const { data } = await fetchEmployerRecords(); setApprovals(data.approvals || []) } catch { /* silent */ }
+    try { const { data } = await fetchSupervisorRecords(); setApprovals(data.approvals || []) } catch { /* silent */ }
   }
   useEffect(() => { load() }, [])
 
   const submit = async (e) => {
     e.preventDefault()
     const values = Object.fromEntries(new FormData(e.currentTarget).entries())
-    const err = validateEmployerApproval(values)
+    const err = validateSupervisorApproval(values)
     if (err) { showError('Invalid input', err); return }
     const ok = await confirmAction({ title: 'Approve internship completion?', text: 'This will save the completion approval.' })
     if (!ok) return
+    showLoading('Saving approval...')
     try {
-      await createEmployerApproval({ internship_id: values.internship_id, student_id: values.student_id, approval_date: values.approval_date, approved: values.approved === 'true', notes: values.notes || null })
+      await createSupervisorApproval({ internship_id: values.internship_id, student_id: values.student_id, approval_date: values.approval_date, approved: values.approved === 'true', notes: values.notes || null })
+      closeAlert()
       showSuccess('Approval saved', `${values.approved === 'true' ? 'Approved' : 'Not approved'} for student ${values.student_id}.`)
       formRef.current?.reset()
       setSelectedStudent(null)
       await load()
       onApprovalSaved?.()
-    } catch (error) { showError('Could not save approval', extractError(error)) }
+    } catch (error) { 
+      closeAlert()
+      showError('Could not save approval', extractError(error)) 
+    }
   }
 
   return (
     <div className="dashboard-stack">
       <form className="dashboard-card form-card single-form" onSubmit={submit} ref={formRef}>
         <h3>Completion Approval</h3>
-        <InternshipSearchField name="internship_id" callerRole="employer" />
-        <UserSearchField label="Student" role="student" callerRole="employer" name="student_id" placeholder="Search student by name or ID…" onChange={setSelectedStudent} />
+        <InternshipSearchField name="internship_id" callerRole="supervisor" />
+        <UserSearchField label="Student" role="student" callerRole="supervisor" name="student_id" placeholder="Search student by name or ID…" onChange={setSelectedStudent} />
         <label>Approval date<input name="approval_date" type="date" /></label>
         <label>Approval status
           <select name="approved" defaultValue="true"><option value="true">Approved</option><option value="false">Not approved</option></select>
@@ -110,7 +115,9 @@ const EMPTY = { recipient_name:'', recipient_email:'', recipient_role_id:'', rec
 
 function CertificateTab() {
   const { user } = useAuth()
-  const [form, setForm] = useState({ ...EMPTY, company_name: user?.institution || '' })
+  // Use company for supervisor, fallback to institution
+  const defaultCompanyName = user?.company || user?.institution || ''
+  const [form, setForm] = useState({ ...EMPTY, company_name: defaultCompanyName })
   const [logoSrc, setLogoSrc] = useState(null)
   const [issuing, setIssuing] = useState(false)
   const [recipientResetKey, setRecipientResetKey] = useState(0)
@@ -155,7 +162,7 @@ function CertificateTab() {
     try {
       const { data } = await issueCertificate({ ...form, send_email: Boolean(form.send_email), override_hours: Boolean(form.override_hours), company_logo_b64: logoSrc || null, cert_html: certHtml })
       showSuccess('Certificate issued', data.email_sent ? 'Email sent successfully.' : data.email_error ? `Saved (email error: ${data.email_error})` : 'Saved to blockchain.')
-      setForm({ ...EMPTY, company_name: user?.institution || '' })
+      setForm({ ...EMPTY, company_name: defaultCompanyName })
       setLogoSrc(null)
       setRecipientResetKey((k) => k + 1)
       setHoursInfo(null)
@@ -181,47 +188,60 @@ function CertificateTab() {
         </div>
       )}
 
-      <div className="grid-two" style={{ alignItems: 'start' }}>
-        <div className="dashboard-card form-card">
-          <h3>Certificate Details</h3>
-          <label>Recipient Type
-            <select value={form.recipient_type} onChange={(e) => { set('recipient_type', e.target.value); set('recipient_role_id',''); set('recipient_name',''); set('recipient_email',''); setRecipientResetKey((k)=>k+1) }}>
-              <option value="student">Student</option><option value="instructor">Instructor</option>
-            </select>
-          </label>
-          <UserSearchField label="Recipient (search by name or ID) *" role={form.recipient_type} callerRole="employer" name="_recipient_search" placeholder={`Search ${form.recipient_type} by name or ID…`} resetKey={recipientResetKey}
-            onChange={(u) => { if (u) { set('recipient_role_id', u.role_id); set('recipient_name', u.full_name); if (u.email) set('recipient_email', u.email) } else { set('recipient_role_id',''); set('recipient_name','') } }}
-          />
-          <label>Recipient Full Name *<input type="text" value={form.recipient_name} onChange={(e)=>set('recipient_name',e.target.value)} placeholder="Juan Dela Cruz" /></label>
-          <label>Recipient Email *<input type="email" value={form.recipient_email} onChange={(e)=>set('recipient_email',e.target.value)} placeholder="juan@email.com" /></label>
-          <label>Internship Title *<input type="text" value={form.internship_title} onChange={(e)=>set('internship_title',e.target.value)} placeholder="Software Development Internship" /></label>
-          <label>Company Name *<input type="text" value={form.company_name} onChange={(e)=>set('company_name',e.target.value)} placeholder="Acme Corporation" /></label>
-          <label>Company Address<input type="text" value={form.company_address} onChange={(e)=>set('company_address',e.target.value)} placeholder="123 Main St, City, Country" /></label>
-          <label>Company Logo<input type="file" accept="image/*" onChange={handleLogo} /></label>
-          <label>Start Date *<input type="date" value={form.start_date} onChange={(e)=>set('start_date',e.target.value)} /></label>
-          <label>End Date *<input type="date" value={form.end_date} onChange={(e)=>set('end_date',e.target.value)} /></label>
-          <label>Signatory Name *<input type="text" value={form.signatory_name} onChange={(e)=>set('signatory_name',e.target.value)} placeholder="Maria Santos" /></label>
-          <label>Signatory Title *<input type="text" value={form.signatory_title} onChange={(e)=>set('signatory_title',e.target.value)} placeholder="HR Manager" /></label>
-          <label>Remarks / Notes<textarea rows={3} value={form.remarks} onChange={(e)=>set('remarks',e.target.value)} placeholder="Outstanding performance." /></label>
-          <label style={{ flexDirection:'row', alignItems:'center', gap:10, cursor:'pointer' }}>
-            <input type="checkbox" checked={form.send_email} onChange={(e)=>set('send_email',e.target.checked)} style={{ width:18, height:18, minHeight:'unset' }} />
-            Send certificate to recipient's email
-          </label>
-          <label style={{ flexDirection:'row', alignItems:'center', gap:10, cursor:'pointer' }}>
-            <input type="checkbox" checked={form.override_hours} onChange={(e)=>set('override_hours',e.target.checked)} style={{ width:18, height:18, minHeight:'unset' }} />
-            Override hours/approval check
-          </label>
-          <div style={{ display:'flex', gap:10, flexWrap:'wrap', marginTop:4 }}>
-            <button className="secondary-button" type="button" onClick={downloadPDF}>⬇ Download PDF</button>
-            <button className="primary-button" type="button" onClick={handleIssue} disabled={issuing}>{issuing ? 'Issuing…' : '✦ Issue & Save to Blockchain'}</button>
-          </div>
-        </div>
-        <div className="dashboard-card" style={{ overflow: 'hidden' }}>
-          <p className="eyebrow" style={{ marginBottom: 12 }}>Live Preview</p>
-          <div style={{ width:'100%', height:Math.round(CERT_H*previewScale), overflow:'hidden', borderRadius:8, border:'1px solid rgba(148,163,184,0.15)' }}>
-            <div style={{ transform:`scale(${previewScale})`, transformOrigin:'top left', width:CERT_W, height:CERT_H, pointerEvents:'none' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 24, alignItems: 'center' }}>
+        <div className="dashboard-card" style={{ overflow: 'hidden', width: '100%', maxWidth: CERT_W * previewScale + 48 }}>
+          <p className="eyebrow" style={{ marginBottom: 12, textAlign: 'center' }}>Live Preview</p>
+          <div style={{ width: Math.round(CERT_W * previewScale), height: Math.round(CERT_H * previewScale), overflow: 'hidden', borderRadius: 8, border: '1px solid rgba(148,163,184,0.15)', margin: '0 auto' }}>
+            <div style={{ transform: `scale(${previewScale})`, transformOrigin: 'top left', width: CERT_W, height: CERT_H, pointerEvents: 'none' }}>
               <CertLayout id="cert-preview" form={form} logoSrc={logoSrc} />
             </div>
+          </div>
+        </div>
+
+        <div className="dashboard-card form-card" style={{ width: '100%' }}>
+          <h3 style={{ marginBottom: 20 }}>Certificate Details</h3>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
+            <label>Recipient Type
+              <select value={form.recipient_type} onChange={(e) => { set('recipient_type', e.target.value); set('recipient_role_id',''); set('recipient_name',''); set('recipient_email',''); setRecipientResetKey((k)=>k+1) }}>
+                <option value="student">Student</option><option value="instructor">Instructor</option>
+              </select>
+            </label>
+            <UserSearchField label="Recipient (search by name or ID) *" role={form.recipient_type} callerRole="supervisor" name="_recipient_search" placeholder={`Search ${form.recipient_type} by name or ID…`} resetKey={recipientResetKey}
+              onChange={(u) => { if (u) { set('recipient_role_id', u.role_id); set('recipient_name', u.full_name); if (u.email) set('recipient_email', u.email) } else { set('recipient_role_id',''); set('recipient_name','') } }}
+            />
+            <label>Recipient Full Name *<input type="text" value={form.recipient_name} onChange={(e)=>set('recipient_name',e.target.value)} placeholder="Juan Dela Cruz" /></label>
+            <label>Recipient Email *<input type="email" value={form.recipient_email} onChange={(e)=>set('recipient_email',e.target.value)} placeholder="juan@email.com" /></label>
+            
+            <label>Internship Title *<input type="text" value={form.internship_title} onChange={(e)=>set('internship_title',e.target.value)} placeholder="Software Development Internship" /></label>
+            <label>Company Name *<input type="text" value={form.company_name} onChange={(e)=>set('company_name',e.target.value)} placeholder="Acme Corporation" /></label>
+            
+            <label>Company Address<input type="text" value={form.company_address} onChange={(e)=>set('company_address',e.target.value)} placeholder="123 Main St, City, Country" /></label>
+            <label>Company Logo<input type="file" accept="image/*" onChange={handleLogo} /></label>
+            
+            <label>Start Date *<input type="date" value={form.start_date} onChange={(e)=>set('start_date',e.target.value)} /></label>
+            <label>End Date *<input type="date" value={form.end_date} onChange={(e)=>set('end_date',e.target.value)} /></label>
+            
+            <label>Signatory Name *<input type="text" value={form.signatory_name} onChange={(e)=>set('signatory_name',e.target.value)} placeholder="Maria Santos" /></label>
+            <label>Signatory Title *<input type="text" value={form.signatory_title} onChange={(e)=>set('signatory_title',e.target.value)} placeholder="HR Manager" /></label>
+          </div>
+
+          <label style={{ marginTop: 16 }}>Remarks / Notes<textarea rows={2} value={form.remarks} onChange={(e)=>set('remarks',e.target.value)} placeholder="Outstanding performance." /></label>
+          
+          <div style={{ display: 'flex', gap: 24, marginTop: 16, flexWrap: 'wrap' }}>
+            <label style={{ flexDirection:'row', alignItems:'center', gap:10, cursor:'pointer' }}>
+              <input type="checkbox" checked={form.send_email} onChange={(e)=>set('send_email',e.target.checked)} style={{ width:18, height:18, minHeight:'unset' }} />
+              Send certificate to recipient's email
+            </label>
+            <label style={{ flexDirection:'row', alignItems:'center', gap:10, cursor:'pointer' }}>
+              <input type="checkbox" checked={form.override_hours} onChange={(e)=>set('override_hours',e.target.checked)} style={{ width:18, height:18, minHeight:'unset' }} />
+              Override hours/approval check
+            </label>
+          </div>
+
+          <div style={{ display:'flex', gap:10, flexWrap:'wrap', marginTop:24, justifyContent: 'flex-end' }}>
+            <button className="secondary-button" type="button" onClick={downloadPDF}>⬇ Download PDF</button>
+            <button className="primary-button" type="button" onClick={handleIssue} disabled={issuing}>{issuing ? 'Issuing…' : '✦ Issue & Save to Blockchain'}</button>
           </div>
         </div>
       </div>
@@ -233,18 +253,45 @@ function CertificateTab() {
 function HistoryTab() {
   const [approvals, setApprovals] = useState([])
   const [certs, setCerts] = useState([])
+  const [search, setSearch] = useState('')
 
   useEffect(() => {
-    fetchEmployerHistory().then(({ data }) => setApprovals(data.approvals || [])).catch(() => {})
+    fetchSupervisorHistory().then(({ data }) => setApprovals(data.approvals || [])).catch(() => {})
     fetchCertificates().then(({ data }) => setCerts(data.certificates || [])).catch(() => {})
   }, [])
 
+  const filteredApprovals = approvals.filter(r => {
+    const q = search.toLowerCase()
+    const p = r.payload
+    return !q || (p.student_id || '').toLowerCase().includes(q)
+  })
+
+  const filteredCerts = certs.filter(c => {
+    const q = search.toLowerCase()
+    const p = c.payload
+    return !q || 
+      (p.recipient_name || '').toLowerCase().includes(q) ||
+      (p.recipient_role_id || '').toLowerCase().includes(q) ||
+      (p.internship_title || '').toLowerCase().includes(q) ||
+      (p.company_name || '').toLowerCase().includes(q)
+  })
+
   return (
     <div className="dashboard-stack">
+      <div className="dashboard-card" style={{ paddingBottom: 16 }}>
+        <input 
+          className="search-input" 
+          type="text" 
+          placeholder="Search history by name, ID, or company..." 
+          value={search} 
+          onChange={(e) => setSearch(e.target.value)}
+          style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid var(--border)' }}
+        />
+      </div>
       <div className="dashboard-card">
-        <p className="eyebrow" style={{ marginBottom: 12 }}>Completion Approvals ({approvals.length})</p>
-        {approvals.length === 0 ? <p className="muted">No approvals yet.</p> : (
-          <div className="users-table">{approvals.map((r) => (
+        <p className="eyebrow" style={{ marginBottom: 12 }}>Completion Approvals ({filteredApprovals.length})</p>
+        {filteredApprovals.length === 0 ? <p className="muted">No approvals yet.</p> : (
+          <div className="users-table">{filteredApprovals.map((r) => (
             <div key={r.id} className="users-row">
               <div><strong>{r.payload.student_id}</strong><p className="muted" style={{ margin:0, fontSize:'0.8rem' }}>{r.payload.approved ? '✓ Approved' : '✕ Not approved'} · {r.payload.approval_date}</p></div>
               {r.blockchain?.tx_hash && <a href={r.blockchain.explorer_url} target="_blank" rel="noreferrer" style={{ fontSize:'0.72rem', fontFamily:'monospace', color:'var(--accent)' }}>{r.blockchain.tx_hash.slice(0,18)}…</a>}
@@ -253,9 +300,9 @@ function HistoryTab() {
         )}
       </div>
       <div className="dashboard-card">
-        <p className="eyebrow" style={{ marginBottom: 12 }}>Issued Certificates ({certs.length})</p>
-        {certs.length === 0 ? <p className="muted">No certificates issued yet.</p> : (
-          <div className="users-table">{certs.map((c) => (
+        <p className="eyebrow" style={{ marginBottom: 12 }}>Issued Certificates ({filteredCerts.length})</p>
+        {filteredCerts.length === 0 ? <p className="muted">No certificates issued yet.</p> : (
+          <div className="users-table">{filteredCerts.map((c) => (
             <div key={c.id} className="users-row">
               <div><strong>{c.payload.recipient_name}</strong><p className="muted" style={{ margin:0, fontSize:'0.8rem' }}>{c.payload.internship_title} · {c.payload.company_name}</p></div>
               <span className="role-chip">{c.payload.recipient_role_id}</span>
@@ -276,7 +323,7 @@ function CompletionPanel() {
   return (
     <div className="dashboard-stack">
       <div className="dashboard-card">
-        <p className="eyebrow">Employer</p>
+        <p className="eyebrow">Supervisor</p>
         <h2>Completion & Certificates</h2>
         <p className="muted">Approve internship completion, issue blockchain-verified certificates, and view history — all in one place.</p>
         <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
@@ -292,10 +339,10 @@ function CompletionPanel() {
   )
 }
 
-export default function EmployerCompletionPage() {
+export default function SupervisorCompletionPage() {
   return (
-    <ProtectedRoute allowedRoles={['employer']}>
-      <DashboardShell links={EMPLOYER_LINKS}>
+    <ProtectedRoute allowedRoles={['supervisor']}>
+      <DashboardShell links={SUPERVISOR_LINKS}>
         <div className="page-shell dashboard-shell">
           <CompletionPanel />
         </div>

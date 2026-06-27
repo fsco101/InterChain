@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext'
 const roleHome = {
   student: '/student/dashboard',
   instructor: '/instructor/dashboard',
-  employer: '/employer/dashboard',
+  supervisor: '/supervisor/dashboard',
   admin: '/admin/dashboard',
 }
 

@@ -32,7 +32,7 @@ function StatCard({ label, value, sub, sparkData, color }) {
 const ROLE_COLORS = {
   admin: '#ef4444',
   instructor: '#38bdf8',
-  employer: '#a78bfa',
+  supervisor: '#a78bfa',
   student: '#22c55e'
 }
 

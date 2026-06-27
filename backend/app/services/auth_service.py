@@ -23,7 +23,7 @@ async def _handle_avatar(avatar_file: UploadFile | None, old_public_id: str | No
 
 
 def _generate_role_id(role: str) -> str:
-    prefix = {"student": "STU", "instructor": "INS", "employer": "EMP", "admin": "ADM"}.get(role, "USR")
+    prefix = {"student": "STU", "instructor": "INS", "supervisor": "SUP", "employer": "SUP", "admin": "ADM"}.get(role, "USR")
     suffix = ''.join(random.choices(string.digits, k=5))
     return f"{prefix}-{suffix}"
 
@@ -33,15 +33,23 @@ def _generate_internship_id() -> str:
     return f"INT-{suffix}"
 
 
+def _normalize_role(role: str) -> str:
+    """Normalize legacy 'employer' role to 'supervisor'."""
+    return "supervisor" if role == "employer" else role
+
+
 def serialize_user(document: dict) -> dict:
     return {
         "id": str(document["_id"]),
         "full_name": document["full_name"],
         "email": document["email"],
-        "role": document["role"],
+        "role": _normalize_role(document["role"]),
         "role_id": document.get("role_id"),
         "internship_id": document.get("internship_id"),
+        "supervisor_id": document.get("supervisor_id"),
         "institution": document.get("institution"),
+        "company": document.get("company"),
+        "contact_number": document.get("contact_number"),
         "avatar_url": document.get("avatar_url"),
         "ojt_position": document.get("ojt_position"),
         "created_at": document.get("created_at"),
@@ -92,7 +100,10 @@ async def create_user(user_data: UserCreate, avatar_file: UploadFile | None = No
         "role": role_value,
         "role_id": _generate_role_id(role_value),
         "internship_id": _generate_internship_id() if role_value == "student" else None,
+        "supervisor_id": None,
         "institution": user_data.institution.strip() if user_data.institution else None,
+        "company": user_data.company.strip() if user_data.company else None,
+        "contact_number": user_data.contact_number.strip() if user_data.contact_number else None,
         "ojt_position": user_data.ojt_position.strip() if user_data.ojt_position else None,
         "avatar_url": avatar_url,
         "avatar_public_id": avatar_public_id,
@@ -146,6 +157,10 @@ async def update_user(user_id: str, updates: UserUpdate | AdminUserUpdate, avata
     ojt_position = getattr(updates, "ojt_position", None)
     if ojt_position is not None:
         update_fields["ojt_position"] = ojt_position.strip() or None
+
+    contact_number = getattr(updates, "contact_number", None)
+    if contact_number is not None:
+        update_fields["contact_number"] = contact_number.strip() or None
 
     await database.users.update_one({"_id": object_id}, {"$set": update_fields})
     return await database.users.find_one({"_id": object_id})

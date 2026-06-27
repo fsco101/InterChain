@@ -10,10 +10,15 @@ import { STUDENT_LINKS } from '../../utils/links'
 function AttendanceForm({ onSuccess }) {
   const { user } = useAuth()
   const [submitting, setSubmitting] = useState(false)
+  const [currentTime] = useState(() => {
+    const d = new Date()
+    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+  })
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    const fd = new FormData(e.currentTarget)
+    const formElement = e.currentTarget
+    const fd = new FormData(formElement)
 
     if (!fd.get('photo') || !fd.get('photo').size) {
       showError('Photo required', 'Please upload a photo as attendance proof.')
@@ -39,7 +44,7 @@ function AttendanceForm({ onSuccess }) {
     try {
       await createStudentAttendance(fd)
       showSuccess('Attendance logged', 'Your attendance with photo proof has been saved.')
-      e.currentTarget.reset()
+      formElement.reset()
       onSuccess?.()
     } catch (err) {
       showError('Failed', extractError(err))
@@ -61,7 +66,7 @@ function AttendanceForm({ onSuccess }) {
       <div className="grid-two" style={{ gap: 12 }}>
         <label>
           Time In
-          <input name="time_in" type="time" required />
+          <input name="time_in" type="time" value={currentTime} readOnly required />
         </label>
         <label>
           Time Out

@@ -74,13 +74,11 @@ export function validateInstructorEvaluation(values) {
   )
 }
 
-export function validateEmployerApproval(values) {
-  return (
-    validateMinLength(values.internship_id, 'Internship ID', 3) ||
-    validateMinLength(values.student_id, 'Student ID', 5) ||
-    validateDate(values.approval_date, 'Approval date') ||
-    ''
-  )
+export function validateSupervisorApproval(data) {
+  if (!data.internship_id) return 'Internship ID is required'
+  if (!data.student_id) return 'Student ID is required'
+  if (!data.approval_date) return 'Approval date is required'
+  return ''
 }
 
 export function validateProfile(values) {

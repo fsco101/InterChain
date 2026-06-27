@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 class UserRole(str, Enum):
     student = "student"
     instructor = "instructor"
-    employer = "employer"
+    supervisor = "supervisor"
     admin = "admin"
 
 
@@ -17,7 +17,9 @@ class UserBase(BaseModel):
     role: UserRole
     avatar_url: str | None = None
     institution: str | None = None
+    company: str | None = None
     ojt_position: str | None = None
+    contact_number: str | None = None
 
 
 class UserCreate(UserBase):
@@ -29,6 +31,7 @@ class UserUpdate(BaseModel):
     password: str | None = Field(default=None, min_length=8, max_length=128)
     avatar_url: str | None = None
     ojt_position: str | None = None
+    contact_number: str | None = None
 
 class AdminUserUpdate(UserUpdate):
     role: UserRole | None = None
@@ -43,6 +46,7 @@ class UserRead(UserBase):
     id: str
     role_id: str | None = None
     internship_id: str | None = None
+    supervisor_id: str | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
 

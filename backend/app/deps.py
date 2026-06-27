@@ -36,8 +36,13 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
 
 
 def require_roles(*allowed_roles: str) -> Callable:
+    # Expand allowed roles: if "supervisor" is allowed, also accept legacy "employer"
+    expanded = set(allowed_roles)
+    if "supervisor" in expanded:
+        expanded.add("employer")
+
     async def role_dependency(current_user: dict = Depends(get_current_user)) -> dict:
-        if current_user["role"] not in allowed_roles:
+        if current_user["role"] not in expanded:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="You do not have permission to access this resource",

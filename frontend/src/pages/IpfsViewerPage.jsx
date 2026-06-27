@@ -21,10 +21,10 @@ const ROLE_LINKS = {
     { to: '/notifications', label: 'Notifications' },
     { to: '/profile', label: 'Profile' },
   ],
-  employer: [
-    { to: '/employer/dashboard', label: 'Overview', end: true },
-    { to: '/employer/approvals', label: 'Approvals' },
-    { to: '/employer/certificates', label: 'Certificates' },
+  supervisor: [
+    { to: '/supervisor/dashboard', label: 'Overview', end: true },
+    { to: '/supervisor/completion', label: 'Approvals' },
+    { to: '/supervisor/completion', label: 'Certificates' },
     { to: '/ipfs-records', label: 'IPFS Records' },
     { to: '/notifications', label: 'Notifications' },
     { to: '/profile', label: 'Profile' },
@@ -297,7 +297,7 @@ export default function IpfsViewerPage() {
   const links = ROLE_LINKS[user?.role] || ROLE_LINKS.student
 
   return (
-    <ProtectedRoute allowedRoles={['student', 'instructor', 'employer', 'admin']}>
+    <ProtectedRoute allowedRoles={['student', 'instructor', 'supervisor', 'admin']}>
       <DashboardShell links={links}>
         <div className="page-shell dashboard-shell">
           <IpfsViewer />

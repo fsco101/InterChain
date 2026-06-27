@@ -42,7 +42,8 @@ export default function StudentActions() {
 
   const submitActivity = async (event) => {
     event.preventDefault()
-    const values = toFormValues(new FormData(event.currentTarget))
+    const formElement = event.currentTarget
+    const values = toFormValues(new FormData(formElement))
     const validationError = validateStudentActivity(values)
 
     if (validationError) {
@@ -62,7 +63,7 @@ export default function StudentActions() {
         hours_spent: Number(values.hours_spent),
       })
       showSuccess('Activity logged', 'Your internship activity has been saved.')
-      event.currentTarget.reset()
+      formElement.reset()
       setActivityReset((k) => k + 1)
       await loadRecords()
     } catch (error) {
@@ -72,7 +73,8 @@ export default function StudentActions() {
 
   const submitReport = async (event) => {
     event.preventDefault()
-    const values = toFormValues(new FormData(event.currentTarget))
+    const formElement = event.currentTarget
+    const values = toFormValues(new FormData(formElement))
     const validationError = validateStudentReport(values)
 
     if (validationError) {
@@ -90,7 +92,7 @@ export default function StudentActions() {
         summary: values.summary,
       })
       showSuccess('Report submitted', 'Your internship report has been saved.')
-      event.currentTarget.reset()
+      formElement.reset()
       setReportReset((k) => k + 1)
       await loadRecords()
     } catch (error) {

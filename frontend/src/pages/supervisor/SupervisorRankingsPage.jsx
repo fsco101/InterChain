@@ -3,9 +3,9 @@ import { Link } from 'react-router-dom'
 import ProtectedRoute from '../../components/ProtectedRoute'
 import DashboardShell from '../../components/DashboardShell'
 import AvatarBadge from '../../components/AvatarBadge'
-import { fetchEmployerRankings } from '../../api/records'
+import { fetchSupervisorRankings } from '../../api/records'
 import { showError } from '../../utils/alerts'
-import { EMPLOYER_LINKS } from '../../utils/links'
+import { SUPERVISOR_LINKS } from '../../utils/links'
 
 function RankTable({ title, rows }) {
   if (!rows || rows.length === 0) return (
@@ -47,22 +47,38 @@ function RankTable({ title, rows }) {
   )
 }
 
-function EmployerRankingsPanel() {
+function SupervisorRankingsPanel() {
   const [data, setData] = useState({ overall: [], by_school: {}, by_position: {} })
   const [view, setView] = useState('overall')
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
 
   useEffect(() => {
-    fetchEmployerRankings()
+    fetchSupervisorRankings(startDate, endDate)
       .then(({ data }) => setData(data))
       .catch(() => showError('Failed to load rankings'))
-  }, [])
+  }, [startDate, endDate])
 
   return (
     <div className="dashboard-stack">
       <div className="dashboard-card">
-        <p className="eyebrow">Employer</p>
+        <p className="eyebrow">Supervisor</p>
         <h2>Student Rankings</h2>
-        <p className="muted">View top-performing students based on your evaluations.</p>
+        <p className="muted">View top-performing students based on your evaluations. Filter by date range to see performance in a specific period.</p>
+        
+        <div style={{ display: 'flex', gap: 16, marginTop: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <label style={{ display: 'flex', flexDirection: 'column', fontSize: '0.8rem', color: 'var(--muted)' }}>
+              Start Date
+              <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-soft)', color: 'var(--text)' }} />
+            </label>
+            <label style={{ display: 'flex', flexDirection: 'column', fontSize: '0.8rem', color: 'var(--muted)' }}>
+              End Date
+              <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-soft)', color: 'var(--text)' }} />
+            </label>
+          </div>
+        </div>
+
         <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
           {[['overall', 'Overall'], ['school', 'By School'], ['position', 'By Position']].map(([k, l]) => (
             <button key={k} className={view === k ? 'primary-button' : 'secondary-button'} onClick={() => setView(k)}>{l}</button>
@@ -87,12 +103,12 @@ function EmployerRankingsPanel() {
   )
 }
 
-export default function EmployerRankingsPage() {
+export default function SupervisorRankingsPage() {
   return (
-    <ProtectedRoute allowedRoles={['employer']}>
-      <DashboardShell links={EMPLOYER_LINKS}>
+    <ProtectedRoute allowedRoles={['supervisor']}>
+      <DashboardShell links={SUPERVISOR_LINKS}>
         <div className="page-shell dashboard-shell">
-          <EmployerRankingsPanel />
+          <SupervisorRankingsPanel />
         </div>
       </DashboardShell>
     </ProtectedRoute>

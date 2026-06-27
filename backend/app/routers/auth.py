@@ -17,9 +17,10 @@ async def signup(
     password: str = Form(...),
     role: str = Form(...),
     institution: str | None = Form(None),
+    company: str | None = Form(None),
     avatar_file: UploadFile | None = File(None),
 ) -> AuthResponse:
-    payload = UserCreate(full_name=full_name, email=email, password=password, role=role, institution=institution)
+    payload = UserCreate(full_name=full_name, email=email, password=password, role=role, institution=institution, company=company)
     existing_user = await get_user_by_email(payload.email)
     if existing_user is not None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
@@ -51,11 +52,12 @@ async def update_me(
     current_user: dict = Depends(get_current_user),
     full_name: str = Form(...),
     email: str = Form(...),
+    contact_number: str | None = Form(None),
     password: str | None = Form(None),
     avatar_file: UploadFile | None = File(None),
 ):
     password = password.strip() if isinstance(password, str) and password.strip() else None
-    payload = UserUpdate(full_name=full_name, email=email, password=password)
+    payload = UserUpdate(full_name=full_name, email=email, contact_number=contact_number, password=password)
     updated_user = await update_user(current_user["id"], payload, avatar_file=avatar_file)
     if updated_user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
@@ -65,7 +67,7 @@ async def update_me(
 @router.get("/profile/{user_id}")
 async def get_user_profile(
     user_id: str,
-    current_user: dict = Depends(require_roles("student", "instructor", "employer", "admin")),
+    current_user: dict = Depends(require_roles("student", "instructor", "supervisor", "admin")),
 ):
     """Get a user's public profile with attendance summary, rankings, and OJT position.
     All authenticated roles can view any user's profile."""
@@ -104,7 +106,20 @@ async def get_user_profile(
             "total_days": total_days,
         }
 
-        # Rankings from employer evaluations
+        # Activity summary
+        cursor = db.activity_logs.find({"user_id": sid})
+        activity_hours = 0.0
+        activity_days = 0
+        async for doc in cursor:
+            activity_hours += doc["payload"].get("hours_spent", 0)
+            activity_days += 1
+        
+        profile["activity_summary"] = {
+            "total_hours": round(activity_hours, 2),
+            "total_days": activity_days,
+        }
+
+        # Rankings from supervisor evaluations
         role_id = profile.get("role_id")
         if role_id:
             cursor = db.employer_evaluations.find({"payload.student_id": role_id})
@@ -120,10 +135,10 @@ async def get_user_profile(
         else:
             profile["evaluation_summary"] = None
 
-        # Determine Instructor and Employer
+        # Determine Instructor and Supervisor
         instructor_doc = await db.instructor_rosters.find_one({"students.role_id": role_id}) if role_id else None
         instructor_info = None
-        employer_info = None
+        supervisor_info = None
 
         if instructor_doc:
             from bson import ObjectId
@@ -141,29 +156,42 @@ async def get_user_profile(
                     "avatar_url": instructor_user.get("avatar_url")
                 }
 
-                employer_doc = await db.employer_rosters.find_one({"instructors.user_id": str(instructor_user["_id"])})
-                if employer_doc:
-                    emp_id = employer_doc["employer_id"]
-                    if ObjectId.is_valid(emp_id):
-                        employer_user = await db.users.find_one({"_id": ObjectId(emp_id)})
+        # Check explicit supervisor link first
+        explicit_sup_id = profile.get("supervisor_id")
+        if explicit_sup_id:
+            from bson import ObjectId
+            if ObjectId.is_valid(explicit_sup_id):
+                supervisor_user = await db.users.find_one({"_id": ObjectId(explicit_sup_id)})
+            else:
+                supervisor_user = await db.users.find_one({"_id": explicit_sup_id})
+        else:
+            # Fallback to instructor's supervisor roster
+            supervisor_user = None
+            if instructor_info:
+                supervisor_doc = await db.employer_rosters.find_one({"instructors.user_id": instructor_info["id"]})
+                if supervisor_doc:
+                    sup_id = supervisor_doc["employer_id"]
+                    if ObjectId.is_valid(sup_id):
+                        supervisor_user = await db.users.find_one({"_id": ObjectId(sup_id)})
                     else:
-                        employer_user = await db.users.find_one({"_id": emp_id})
-                    
-                    if employer_user:
-                        employer_info = {
-                            "id": str(employer_user["_id"]),
-                            "full_name": employer_user.get("full_name"),
-                            "role_id": employer_user.get("role_id"),
-                            "avatar_url": employer_user.get("avatar_url")
-                        }
+                        supervisor_user = await db.users.find_one({"_id": sup_id})
+        
+        if supervisor_user:
+            supervisor_info = {
+                "id": str(supervisor_user["_id"]),
+                "full_name": supervisor_user.get("full_name"),
+                "role_id": supervisor_user.get("role_id"),
+                "avatar_url": supervisor_user.get("avatar_url"),
+                "company": supervisor_user.get("company"),
+            }
 
         profile["supervisors"] = {
             "instructor": instructor_info,
-            "employer": employer_info
+            "supervisor": supervisor_info
         }
 
         # Tasks assigned to this student
-        cursor = db.tasks.find({"student_ids": sid, "status": {"$ne": "cancelled"}}).sort("created_at", -1).limit(10)
+        cursor = db.tasks.find({"student_id": sid, "status": {"$ne": "cancelled"}}).sort("created_at", -1).limit(10)
         tasks = []
         async for doc in cursor:
             tasks.append({
@@ -172,6 +200,8 @@ async def get_user_profile(
                 "position": doc["position"],
                 "status": doc.get("status", "pending"),
                 "due_date": doc.get("due_date"),
+                "accumulated_seconds": doc.get("accumulated_seconds", 0),
+                "last_active_start": doc.get("last_active_start")
             })
         profile["tasks"] = tasks
 
@@ -195,15 +225,25 @@ async def get_user_profile(
                     enriched_students.append(s)
 
             cursor = db.employer_rosters.find({"instructors.user_id": user_id})
-            employer_count = len([doc async for doc in cursor])
+            supervisors = []
+            async for doc in cursor:
+                sup_user = await db.users.find_one({"_id": ObjectId(doc["employer_id"]) if ObjectId.is_valid(doc["employer_id"]) else doc["employer_id"]})
+                if sup_user:
+                    supervisors.append({
+                        "user_id": str(sup_user["_id"]),
+                        "full_name": sup_user.get("full_name", "Unknown"),
+                        "company": sup_user.get("company", "Unknown"),
+                        "avatar_url": sup_user.get("avatar_url")
+                    })
             
             profile["instructor_summary"] = {
                 "student_count": len(enriched_students),
-                "employer_count": employer_count,
-                "students": enriched_students
+                "supervisor_count": len(supervisors),
+                "students": enriched_students,
+                "supervisors": supervisors
             }
 
-    elif profile["role"] == "employer":
+    elif profile["role"] == "supervisor":
         user_id = profile.get("id")
         if user_id:
             roster = await db.employer_rosters.find_one({"employer_id": user_id})
@@ -225,11 +265,24 @@ async def get_user_profile(
             task_count = await db.tasks.count_documents({"employer_id": user_id})
             pos_count = await db.positions.count_documents({"employer_id": user_id})
             
-            profile["employer_summary"] = {
+            # Linked Students
+            cursor = db.users.find({"supervisor_id": user_id, "role": "student"})
+            linked_students = []
+            async for doc in cursor:
+                linked_students.append({
+                    "user_id": str(doc["_id"]),
+                    "full_name": doc.get("full_name", "Unknown"),
+                    "role_id": doc.get("role_id"),
+                    "avatar_url": doc.get("avatar_url")
+                })
+            
+            profile["supervisor_summary"] = {
                 "instructor_count": len(enriched_instructors),
                 "task_count": task_count,
                 "position_count": pos_count,
-                "instructors": enriched_instructors
+                "student_count": len(linked_students),
+                "instructors": enriched_instructors,
+                "students": linked_students
             }
 
     return profile

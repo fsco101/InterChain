@@ -7,6 +7,7 @@ import PasswordField from '../components/PasswordField'
 import { useAuth } from '../context/AuthContext'
 import { showError, showSuccess, extractError } from '../utils/alerts'
 import { validateProfile } from '../utils/validation'
+import { UserProfileContent } from './UserProfilePage'
 
 const buildLinks = (role) => {
   const links = [
@@ -23,7 +24,7 @@ const buildLinks = (role) => {
 
 function ProfileEditor() {
   const { user, updateProfile } = useAuth()
-  const [form, setForm] = useState({ full_name: '', email: '', password: '', confirm_password: '' })
+  const [form, setForm] = useState({ full_name: '', email: '', contact_number: '', password: '', confirm_password: '' })
   const [avatarFile, setAvatarFile] = useState(null)
   const [saving, setSaving] = useState(false)
 
@@ -32,7 +33,7 @@ function ProfileEditor() {
       return
     }
 
-    setForm({ full_name: user.full_name || '', email: user.email || '', password: '', confirm_password: '' })
+    setForm({ full_name: user.full_name || '', email: user.email || '', contact_number: user.contact_number || '', password: '', confirm_password: '' })
   }, [user])
 
   const handleChange = (event) => {
@@ -52,6 +53,7 @@ function ProfileEditor() {
       const multipart = new FormData()
       multipart.append('full_name', form.full_name.trim())
       multipart.append('email', form.email.trim())
+      if (form.contact_number?.trim()) multipart.append('contact_number', form.contact_number.trim())
       if (form.password.trim()) multipart.append('password', form.password)
       if (avatarFile) multipart.append('avatar_file', avatarFile)
       await updateProfile(multipart)
@@ -106,6 +108,11 @@ function ProfileEditor() {
         </label>
 
         <label>
+          Contact Number
+          <input name="contact_number" value={form.contact_number} onChange={handleChange} type="tel" placeholder="+63 912 345 6789" />
+        </label>
+
+        <label>
           Avatar upload
           <input type="file" accept="image/*" onChange={(event) => setAvatarFile(event.target.files?.[0] || null)} />
         </label>
@@ -128,7 +135,8 @@ export default function ProfilePage() {
   return (
     <ProtectedRoute>
       <DashboardShell links={buildLinks(user?.role || 'student')}>
-        <div className="page-shell dashboard-shell">
+        <div className="page-shell dashboard-shell" style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+          <UserProfileContent providedUserId={user?.id} hideShell={true} />
           <ProfileEditor />
         </div>
       </DashboardShell>

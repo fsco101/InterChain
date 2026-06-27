@@ -12,7 +12,7 @@ from app.schemas.records import (
     StudentReportCreate,
 )
 from app.services.records_service import create_record, list_records, list_all_records, delete_record, delete_records_bulk
-from app.services.cloudinary_service import upload_attendance_photo
+from app.services.cloudinary_service import upload_attendance_photo, upload_task_photo
 from app.services.blockchain_service import build_blockchain_metadata_async
 from app.routers.notifications import push_notification
 from datetime import datetime, timezone
@@ -26,7 +26,7 @@ router = APIRouter(prefix="/records", tags=["records"])
 
 
 @router.get("/internships/search")
-async def search_internships(q: str = "", current_user: dict = Depends(require_roles("student", "instructor", "employer"))):
+async def search_internships(q: str = "", current_user: dict = Depends(require_roles("student", "instructor", "supervisor"))):
     db = get_database()
     seen = set()
     results = []
@@ -190,6 +190,65 @@ async def bulk_delete_student_report(body: BulkDeleteBody, current_user: dict = 
     return {"deleted": count}
 
 
+@router.delete("/admin/bulk")
+async def admin_bulk_delete_records(body: BulkDeleteBody, current_user: dict = Depends(require_roles("admin"))):
+    deleted_count = await delete_records_bulk(body.ids)
+    return {"ok": True, "deleted": deleted_count}
+
+
+@router.patch("/student/tasks/{task_id}/done")
+async def student_mark_task_done(
+    task_id: str, 
+    file: UploadFile = File(...),
+    current_user: dict = Depends(require_roles("student"))
+):
+    db = get_database()
+    from app.routers.supervisor import _oid
+    oid = _oid(task_id)
+    if not oid:
+        raise HTTPException(status_code=400, detail="Invalid task ID")
+
+    task = await db.tasks.find_one({"_id": oid, "student_id": current_user["id"]})
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found or not assigned to you")
+    
+    if task.get("status") != "pending":
+        raise HTTPException(status_code=400, detail=f"Cannot mark task as done (current status: {task.get('status')})")
+
+    # Upload photo
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="File must be an image")
+    
+    file_bytes = await file.read()
+    try:
+        photo_res = await upload_task_photo(file_bytes)
+        attachment_url = photo_res["url"]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to upload photo: {str(e)}")
+
+    update_data = {
+        "status": "done",
+        "attachment_url": attachment_url
+    }
+    last_start = task.get("last_active_start")
+    if last_start:
+        dt_start = datetime.fromisoformat(last_start)
+        elapsed = (datetime.now(timezone.utc) - dt_start).total_seconds()
+        update_data["accumulated_seconds"] = task.get("accumulated_seconds", 0) + int(elapsed)
+        update_data["last_active_start"] = None
+
+    await db.tasks.update_one({"_id": oid}, {"$set": update_data})
+    
+    # Optionally notify supervisor
+    if task.get("employer_id"):
+        await push_notification(
+            db, task["employer_id"], "Task Marked as Done",
+            f"{current_user['full_name']} marked task '{task.get('title')}' as done and attached a photo.", "success"
+        )
+
+    return {"ok": True, "message": "Task marked as done", "attachment_url": attachment_url}
+
+
 # ── Instructor ─────────────────────────────────────────────────────────────────
 
 @router.post("/instructor/attendance")
@@ -246,61 +305,61 @@ async def bulk_delete_instructor_evaluation(body: BulkDeleteBody, current_user: 
     return {"deleted": count}
 
 
-# ── Employer ───────────────────────────────────────────────────────────────────
+# ── Supervisor ───────────────────────────────────────────────────────────────
 
-@router.post("/employer/approval")
-async def approve_completion(payload: CompletionApprovalCreate, current_user: dict = Depends(require_roles("employer"))):
-    record = await create_record("completion_approvals", "completion_approval", "employer", current_user, payload.model_dump(mode="json"))
+@router.post("/supervisor/approval")
+async def approve_completion(payload: CompletionApprovalCreate, current_user: dict = Depends(require_roles("supervisor"))):
+    record = await create_record("completion_approvals", "completion_approval", "supervisor", current_user, payload.model_dump(mode="json"))
     db = get_database()
     await push_notification(db, current_user["id"], "Approval saved", f"Student {payload.student_id} {'approved' if payload.approved else 'not approved'} on {payload.approval_date}.", "success")
     return record
 
 
-@router.post("/employer/evaluation")
-async def submit_employer_evaluation(payload: EmployerEvaluationCreate, current_user: dict = Depends(require_roles("employer"))):
-    record = await create_record("employer_evaluations", "employer_evaluation", "employer", current_user, payload.model_dump(mode="json"))
+@router.post("/supervisor/evaluation")
+async def submit_supervisor_evaluation(payload: EmployerEvaluationCreate, current_user: dict = Depends(require_roles("supervisor"))):
+    record = await create_record("employer_evaluations", "supervisor_evaluation", "supervisor", current_user, payload.model_dump(mode="json"))
     db = get_database()
     await push_notification(db, current_user["id"], "Evaluation submitted", f"Score {payload.score}/10 saved for student {payload.student_id}.", "success")
     return record
 
 
-@router.get("/employer/evaluations")
-async def get_employer_evaluations(current_user: dict = Depends(require_roles("employer"))):
+@router.get("/supervisor/evaluations")
+async def get_supervisor_evaluations(current_user: dict = Depends(require_roles("supervisor"))):
     evaluations = await list_records("employer_evaluations", current_user["id"])
     return {"evaluations": evaluations}
 
 
-@router.get("/employer/evaluations/history")
-async def get_employer_evaluations_history(current_user: dict = Depends(require_roles("employer"))):
+@router.get("/supervisor/evaluations/history")
+async def get_supervisor_evaluations_history(current_user: dict = Depends(require_roles("supervisor"))):
     evaluations = await list_all_records("employer_evaluations", current_user["id"])
     return {"evaluations": evaluations}
 
 
-@router.delete("/employer/evaluation/{record_id}")
-async def delete_employer_evaluation(record_id: str, current_user: dict = Depends(require_roles("employer"))):
+@router.delete("/supervisor/evaluation/{record_id}")
+async def delete_supervisor_evaluation(record_id: str, current_user: dict = Depends(require_roles("supervisor"))):
     ok = await delete_record("employer_evaluations", record_id, current_user["id"])
     return {"deleted": ok}
 
 
-@router.get("/employer")
-async def get_employer_records(current_user: dict = Depends(require_roles("employer"))):
+@router.get("/supervisor")
+async def get_supervisor_records(current_user: dict = Depends(require_roles("supervisor"))):
     approvals = await list_records("completion_approvals", current_user["id"])
     return {"approvals": approvals}
 
 
-@router.get("/employer/history")
-async def get_employer_history(current_user: dict = Depends(require_roles("employer"))):
+@router.get("/supervisor/history")
+async def get_supervisor_history(current_user: dict = Depends(require_roles("supervisor"))):
     approvals = await list_all_records("completion_approvals", current_user["id"])
     return {"approvals": approvals}
 
 
-@router.delete("/employer/approval/{record_id}")
-async def delete_employer_approval(record_id: str, current_user: dict = Depends(require_roles("employer"))):
+@router.delete("/supervisor/approval/{record_id}")
+async def delete_supervisor_approval(record_id: str, current_user: dict = Depends(require_roles("supervisor"))):
     ok = await delete_record("completion_approvals", record_id, current_user["id"])
     return {"deleted": ok}
 
 
-@router.post("/employer/approval/bulk-delete")
-async def bulk_delete_employer_approval(body: BulkDeleteBody, current_user: dict = Depends(require_roles("employer"))):
+@router.post("/supervisor/approval/bulk-delete")
+async def bulk_delete_supervisor_approval(body: BulkDeleteBody, current_user: dict = Depends(require_roles("supervisor"))):
     count = await delete_records_bulk("completion_approvals", body.ids, current_user["id"])
     return {"deleted": count}

@@ -41,7 +41,7 @@ def _summarize(payload: dict) -> str:
 
 @router.get("/records")
 async def list_ipfs_records(
-    current_user: dict = Depends(require_roles("student", "instructor", "employer", "admin")),
+    current_user: dict = Depends(require_roles("student", "instructor", "supervisor", "admin")),
 ):
     db = get_database()
     results = []

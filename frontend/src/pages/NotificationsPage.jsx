@@ -135,7 +135,7 @@ export default function NotificationsPage() {
   const { user } = useAuth()
   const links = ROLE_LINKS[user?.role] || []
   return (
-    <ProtectedRoute allowedRoles={['student', 'instructor', 'employer', 'admin']}>
+    <ProtectedRoute allowedRoles={['student', 'instructor', 'supervisor', 'admin']}>
       <DashboardShell links={links}>
         <div className="page-shell dashboard-shell">
           <NotificationsPanel />

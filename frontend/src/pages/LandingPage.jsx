@@ -9,7 +9,7 @@ export default function LandingPage() {
   const roleLinks = [
     { label: 'Student', path: '/student/dashboard', description: 'Log activities and submit internship reports.' },
     { label: 'Instructor', path: '/instructor/dashboard', description: 'Validate progress and monitor performance.' },
-    { label: 'Employer', path: '/employer/dashboard', description: 'Review attendance and approve completion.' },
+    { label: 'Supervisor', path: '/supervisor/dashboard', description: 'Review attendance and approve completion.' },
     { label: 'Admin', path: '/admin/dashboard', description: 'Review all records and monitor blockchain activity.' },
   ]
 
@@ -18,7 +18,7 @@ export default function LandingPage() {
       <section className="hero-card">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
           <p className="eyebrow">InternChain</p>
-          <h1>Blockchain-backed internship verification for students, instructors, and employers.</h1>
+          <h1>Blockchain-backed internship verification for students, instructors, and supervisors.</h1>
           <p className="hero-copy">
             Capture internship activity, attendance, and performance evidence in one flow with role-based access and MongoDB persistence.
           </p>

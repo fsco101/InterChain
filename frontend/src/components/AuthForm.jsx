@@ -14,6 +14,8 @@ function validateAuth(formData, isSignup) {
   const confirm_password = formData.get('confirm_password') || ''
   const role = formData.get('role') || ''
   const institution = formData.get('institution')?.trim() || ''
+  const company = formData.get('company')?.trim() || ''
+  const contact_number = formData.get('contact_number')?.trim() || ''
   if (isSignup && full_name.length < 2) return 'Full name must be at least 2 characters'
   if (email.length < 5 || !email.includes('@')) return 'Please enter a valid email address'
   if (isSignup && password.length < 8) return 'Password must be at least 8 characters'
@@ -21,6 +23,8 @@ function validateAuth(formData, isSignup) {
   if (isSignup && password !== confirm_password) return 'Passwords do not match'
   if (isSignup && (role === 'student' || role === 'instructor') && !institution)
     return 'Please select your school'
+  if (isSignup && role === 'supervisor' && !company)
+    return 'Please enter your company name'
   return ''
 }
 
@@ -74,6 +78,13 @@ export default function AuthForm({ mode }) {
           <input name="email" type="email" placeholder="name@school.edu" />
         </label>
 
+        {isSignup && (
+          <label>
+            Contact Number
+            <input name="contact_number" type="tel" placeholder="+63 912 345 6789" />
+          </label>
+        )}
+
         <PasswordField label="Password" name="password" placeholder="At least 8 characters" autoComplete={isSignup ? 'new-password' : 'current-password'} />
 
         {isSignup && (
@@ -93,7 +104,7 @@ export default function AuthForm({ mode }) {
             <select name="role" value={role} onChange={(e) => setRole(e.target.value)}>
               <option value="student">Student</option>
               <option value="instructor">Instructor</option>
-              <option value="employer">Employer</option>
+              <option value="supervisor">Supervisor</option>
             </select>
           </label>
         )}
@@ -121,6 +132,10 @@ function buildSignupPayload(formData, avatarFile) {
   payload.append('role', formData.get('role'))
   const institution = formData.get('institution')
   if (institution) payload.append('institution', institution)
+  const company = formData.get('company')
+  if (company) payload.append('company', company)
+  const contact_number = formData.get('contact_number')
+  if (contact_number) payload.append('contact_number', contact_number)
   if (avatarFile) payload.append('avatar_file', avatarFile)
   return payload
 }

@@ -34,7 +34,7 @@ def _oid(val: str):
 
 
 @router.get("")
-async def list_notifications(current_user: dict = Depends(require_roles("student", "instructor", "employer", "admin"))):
+async def list_notifications(current_user: dict = Depends(require_roles("student", "instructor", "supervisor", "admin"))):
     db = get_database()
     cursor = db.notifications.find({"user_id": current_user["id"]}).sort("created_at", -1).limit(100)
     items = [_serialize(d) async for d in cursor]
@@ -43,7 +43,7 @@ async def list_notifications(current_user: dict = Depends(require_roles("student
 
 
 @router.patch("/{notif_id}/read")
-async def mark_read(notif_id: str, current_user: dict = Depends(require_roles("student", "instructor", "employer", "admin"))):
+async def mark_read(notif_id: str, current_user: dict = Depends(require_roles("student", "instructor", "supervisor", "admin"))):
     db = get_database()
     oid = _oid(notif_id)
     if oid:
@@ -52,14 +52,14 @@ async def mark_read(notif_id: str, current_user: dict = Depends(require_roles("s
 
 
 @router.patch("/read-all")
-async def mark_all_read(current_user: dict = Depends(require_roles("student", "instructor", "employer", "admin"))):
+async def mark_all_read(current_user: dict = Depends(require_roles("student", "instructor", "supervisor", "admin"))):
     db = get_database()
     await db.notifications.update_many({"user_id": current_user["id"], "read": False}, {"$set": {"read": True}})
     return {"ok": True}
 
 
 @router.delete("/{notif_id}")
-async def delete_notification(notif_id: str, current_user: dict = Depends(require_roles("student", "instructor", "employer", "admin"))):
+async def delete_notification(notif_id: str, current_user: dict = Depends(require_roles("student", "instructor", "supervisor", "admin"))):
     db = get_database()
     oid = _oid(notif_id)
     if oid:
@@ -68,7 +68,7 @@ async def delete_notification(notif_id: str, current_user: dict = Depends(requir
 
 
 @router.post("/bulk-delete")
-async def bulk_delete(body: BulkBody, current_user: dict = Depends(require_roles("student", "instructor", "employer", "admin"))):
+async def bulk_delete(body: BulkBody, current_user: dict = Depends(require_roles("student", "instructor", "supervisor", "admin"))):
     db = get_database()
     oids = [o for o in (_oid(i) for i in body.ids) if o]
     if oids:

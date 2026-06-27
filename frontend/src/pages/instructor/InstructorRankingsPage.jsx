@@ -48,23 +48,39 @@ function RankTable({ title, rows }) {
 }
 
 function InstructorRankingsPanel() {
-  const [data, setData] = useState({ overall: [], by_school: {}, by_position: {} })
+  const [data, setData] = useState({ overall: [], by_position: {} })
   const [view, setView] = useState('overall')
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
 
   useEffect(() => {
-    fetchInstructorRankings()
+    fetchInstructorRankings(startDate, endDate)
       .then(({ data }) => setData(data))
       .catch(() => showError('Failed to load rankings'))
-  }, [])
+  }, [startDate, endDate])
 
   return (
     <div className="dashboard-stack">
       <div className="dashboard-card">
         <p className="eyebrow">Instructor</p>
         <h2>Student Rankings</h2>
-        <p className="muted">View how your students rank based on employer evaluations. This is a read-only view.</p>
+        <p className="muted">View how your students rank based on supervisor evaluations. Filter by date range to see performance in a specific period.</p>
+        
+        <div style={{ display: 'flex', gap: 16, marginTop: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <label style={{ display: 'flex', flexDirection: 'column', fontSize: '0.8rem', color: 'var(--muted)' }}>
+              Start Date
+              <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-soft)', color: 'var(--text)' }} />
+            </label>
+            <label style={{ display: 'flex', flexDirection: 'column', fontSize: '0.8rem', color: 'var(--muted)' }}>
+              End Date
+              <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-soft)', color: 'var(--text)' }} />
+            </label>
+          </div>
+        </div>
+
         <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
-          {[['overall', 'Overall'], ['school', 'By School'], ['position', 'By Position']].map(([k, l]) => (
+          {[['overall', 'Overall'], ['position', 'By Position']].map(([k, l]) => (
             <button key={k} className={view === k ? 'primary-button' : 'secondary-button'} onClick={() => setView(k)}>{l}</button>
           ))}
         </div>
@@ -72,14 +88,8 @@ function InstructorRankingsPanel() {
 
       {view === 'overall' && <RankTable title="Overall Rankings" rows={data.overall} />}
 
-      {view === 'school' && (
-        Object.keys(data.by_school).length === 0
-          ? <div className="dashboard-card"><p className="muted">No school-based ranking data yet.</p></div>
-          : Object.entries(data.by_school).map(([school, rows]) => <RankTable key={school} title={`🏫 ${school}`} rows={rows} />)
-      )}
-
       {view === 'position' && (
-        Object.keys(data.by_position).length === 0
+        !data.by_position || Object.keys(data.by_position).length === 0
           ? <div className="dashboard-card"><p className="muted">No position-based ranking data yet.</p></div>
           : Object.entries(data.by_position).map(([pos, rows]) => <RankTable key={pos} title={`💼 ${pos}`} rows={rows} />)
       )}

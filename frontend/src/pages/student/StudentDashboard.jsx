@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import ProtectedRoute from '../../components/ProtectedRoute'
 import DashboardShell from '../../components/DashboardShell'
 import Sparkline from '../../components/Sparkline'
-import { fetchStudentRecords } from '../../api/records'
+import { fetchStudentRecords, fetchUserProfile } from '../../api/records'
 import { useAuth } from '../../context/AuthContext'
 import { STUDENT_LINKS } from '../../utils/links'
 
@@ -25,16 +25,19 @@ function StatCard({ label, value, sub, sparkData, color }) {
 function StudentDashboardContent() {
   const { user } = useAuth()
   const [records, setRecords] = useState({ activity_logs: [], reports: [] })
+  const [profile, setProfile] = useState(null)
 
   useEffect(() => {
     fetchStudentRecords().then(({ data }) => setRecords(data)).catch(() => {})
-  }, [])
+    if (user?.id) {
+      fetchUserProfile(user.id).then(({ data }) => setProfile(data)).catch(() => {})
+    }
+  }, [user])
 
   const activities = records.activity_logs || []
   const reports = records.reports || []
-  const totalHours = activities.reduce((s, r) => s + (r.payload.hours_spent || 0), 0)
 
-  // last 7 activity hours as sparkline data
+  // sparkline data
   const hoursData = activities.slice(0, 7).reverse().map((r) => r.payload.hours_spent || 0)
   const reportsData = reports.slice(0, 7).reverse().map((_, i) => i + 1)
 
@@ -44,6 +47,8 @@ function StudentDashboardContent() {
   ]
 
   const recent = activities.slice(0, 5)
+  const tasks = profile?.tasks || []
+  const completedTasks = tasks.filter(t => t.status === 'done' || t.status === 'completed')
 
   return (
     <DashboardShell links={STUDENT_LINKS}>
@@ -64,9 +69,25 @@ function StudentDashboardContent() {
         </div>
 
         <div className="stat-grid">
-          <StatCard label="Total Activities" value={activities.length} sub="logged entries" sparkData={hoursData} color="#38bdf8" />
-          <StatCard label="Hours Logged" value={totalHours.toFixed(1)} sub="cumulative hours" sparkData={hoursData} color="#22c55e" />
-          <StatCard label="Reports Submitted" value={reports.length} sub="internship reports" sparkData={reportsData} color="#a78bfa" />
+          <StatCard 
+            label="Attendance Hours" 
+            value={profile?.attendance_summary?.total_hours || '0.0'} 
+            sub="total logged" 
+            color="#38bdf8" 
+          />
+          <StatCard 
+            label="Activity Hours" 
+            value={profile?.activity_summary?.total_hours || '0.0'} 
+            sub="cumulative hours" 
+            sparkData={hoursData} 
+            color="#a78bfa" 
+          />
+          <StatCard 
+            label="Validated Hours" 
+            value={profile?.attendance_summary?.validated_hours || '0.0'} 
+            sub="approved by supervisor" 
+            color="#22c55e" 
+          />
         </div>
 
         <div className="grid-two" style={{ marginTop: 18 }}>
@@ -80,6 +101,20 @@ function StudentDashboardContent() {
                 </Link>
               ))}
             </div>
+
+            <p className="eyebrow" style={{ marginTop: 24, marginBottom: 10 }}>Completed Tasks</p>
+            {completedTasks.length === 0 ? (
+              <p className="muted">No completed tasks.</p>
+            ) : (
+              <div className="stack-list">
+                {completedTasks.map((t) => (
+                  <div key={t.id} className="recent-row" style={{ borderLeft: '3px solid #22c55e', paddingLeft: 10 }}>
+                    <span className="recent-title">{t.title}</span>
+                    <span className="recent-meta" style={{ color: '#22c55e' }}>✓ {t.status}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="dashboard-card">

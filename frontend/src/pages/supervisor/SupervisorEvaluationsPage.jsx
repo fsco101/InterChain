@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import ProtectedRoute from '../../components/ProtectedRoute'
 import DashboardShell from '../../components/DashboardShell'
-import { createEmployerEvaluation, fetchEmployerEvaluations } from '../../api/records'
+import { createSupervisorEvaluation, fetchSupervisorEvaluations } from '../../api/records'
 import { confirmAction, showError, showSuccess, extractError } from '../../utils/alerts'
 import { UserSearchField, InternshipSearchField } from '../../components/SearchFields'
-import { EMPLOYER_LINKS } from '../../utils/links'
+import { SUPERVISOR_LINKS } from '../../utils/links'
 
 function RecordList({ title, records }) {
   return (
@@ -25,14 +25,14 @@ function RecordList({ title, records }) {
   )
 }
 
-function EmployerEvaluationsPanel() {
+function SupervisorEvaluationsPanel() {
   const [evaluations, setEvaluations] = useState([])
   const [selectedStudent, setSelectedStudent] = useState(null)
   const formRef = useRef(null)
 
   const load = async () => {
     try {
-      const { data } = await fetchEmployerEvaluations()
+      const { data } = await fetchSupervisorEvaluations()
       setEvaluations(data.evaluations || [])
     } catch { /* silent */ }
   }
@@ -50,7 +50,7 @@ function EmployerEvaluationsPanel() {
     if (!ok) return
 
     try {
-      await createEmployerEvaluation({
+      await createSupervisorEvaluation({
         internship_id: values.internship_id || 'N/A',
         student_id: values.student_id,
         score: Number(values.score),
@@ -68,7 +68,7 @@ function EmployerEvaluationsPanel() {
   return (
     <div className="dashboard-stack">
       <div className="dashboard-card">
-        <p className="eyebrow">Employer</p>
+        <p className="eyebrow">Supervisor</p>
         <h2>Student Evaluations</h2>
         <p className="muted">Evaluate student performance with a score (1–10) and feedback.</p>
       </div>
@@ -76,11 +76,11 @@ function EmployerEvaluationsPanel() {
       <div className="grid-two">
         <form className="dashboard-card form-card" onSubmit={handleSubmit} ref={formRef}>
           <h3>New Evaluation</h3>
-          <InternshipSearchField name="internship_id" callerRole="employer" />
+          <InternshipSearchField name="internship_id" callerRole="supervisor" />
           <UserSearchField
             label="Student *"
             role="student"
-            callerRole="employer"
+            callerRole="supervisor"
             name="student_id"
             placeholder="Search student by name or ID…"
             onChange={setSelectedStudent}
@@ -102,12 +102,12 @@ function EmployerEvaluationsPanel() {
   )
 }
 
-export default function EmployerEvaluationsPage() {
+export default function SupervisorEvaluationsPage() {
   return (
-    <ProtectedRoute allowedRoles={['employer']}>
-      <DashboardShell links={EMPLOYER_LINKS}>
+    <ProtectedRoute allowedRoles={['supervisor']}>
+      <DashboardShell links={SUPERVISOR_LINKS}>
         <div className="page-shell dashboard-shell">
-          <EmployerEvaluationsPanel />
+          <SupervisorEvaluationsPanel />
         </div>
       </DashboardShell>
     </ProtectedRoute>

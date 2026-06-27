@@ -94,3 +94,21 @@ export async function confirmAction({ title, text, confirmButtonText = 'Confirm'
   })
   return result.isConfirmed
 }
+
+export function showLoading(title = 'Processing...') {
+  Swal.fire({
+    title,
+    text: 'Please wait',
+    allowOutsideClick: false,
+    showConfirmButton: false,
+    background: '#0f172a',
+    color: '#e2e8f0',
+    didOpen: () => {
+      Swal.showLoading()
+    }
+  })
+}
+
+export function closeAlert() {
+  Swal.close()
+}
