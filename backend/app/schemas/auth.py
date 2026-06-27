@@ -20,8 +20,8 @@ class UserBase(BaseModel):
     company: str | None = None
     ojt_position: str | None = None
     contact_number: str | None = None
-
-
+    is_verified: bool = False
+    social_links: dict | None = None
 class UserCreate(UserBase):
     password: str = Field(min_length=8, max_length=128)
 
@@ -32,6 +32,7 @@ class UserUpdate(BaseModel):
     avatar_url: str | None = None
     ojt_position: str | None = None
     contact_number: str | None = None
+    social_links: dict | None = None
 
 class AdminUserUpdate(UserUpdate):
     role: UserRole | None = None
@@ -52,6 +53,23 @@ class UserRead(UserBase):
 
 
 class AuthResponse(BaseModel):
-    access_token: str
+    access_token: str | None = None
     token_type: str = "bearer"
-    user: UserRead
+    user: UserRead | None = None
+    requires_verification: bool = False
+    message: str | None = None
+
+class VerifyEmailRequest(BaseModel):
+    email: str = Field(min_length=5, max_length=255)
+    code: str = Field(min_length=6, max_length=6)
+
+class ResendVerificationRequest(BaseModel):
+    email: str = Field(min_length=5, max_length=255)
+
+class ForgotPasswordRequest(BaseModel):
+    email: str = Field(min_length=5, max_length=255)
+
+class ResetPasswordRequest(BaseModel):
+    email: str = Field(min_length=5, max_length=255)
+    code: str = Field(min_length=6, max_length=6)
+    new_password: str = Field(min_length=8, max_length=128)

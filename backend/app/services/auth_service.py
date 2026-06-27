@@ -53,6 +53,8 @@ def serialize_user(document: dict) -> dict:
         "contact_number": document.get("contact_number"),
         "avatar_url": document.get("avatar_url"),
         "ojt_position": document.get("ojt_position"),
+        "is_verified": document.get("is_verified", False),
+        "social_links": document.get("social_links", {}),
         "created_at": document.get("created_at"),
         "updated_at": document.get("updated_at"),
     }
@@ -109,6 +111,8 @@ async def create_user(user_data: UserCreate, avatar_file: UploadFile | None = No
         "avatar_url": avatar_url,
         "avatar_public_id": avatar_public_id,
         "password_hash": hash_password(user_data.password),
+        "is_verified": False,
+        "social_links": {},
         "created_at": now,
         "updated_at": now,
     }
@@ -163,6 +167,10 @@ async def update_user(user_id: str, updates: UserUpdate | AdminUserUpdate, avata
     if contact_number is not None:
         update_fields["contact_number"] = contact_number.strip() or None
 
+    social_links = getattr(updates, "social_links", None)
+    if social_links is not None:
+        update_fields["social_links"] = social_links
+
     await database.users.update_one({"_id": object_id}, {"$set": update_fields})
     return await database.users.find_one({"_id": object_id})
 
@@ -188,3 +196,33 @@ async def authenticate_user(email: str, password: str) -> dict | None:
     if not verify_password(password, user["password_hash"]):
         return None
     return user
+
+
+async def store_verification_code(email: str, code: str, code_type: str) -> None:
+    db = get_database()
+    await db.verification_codes.delete_many({"email": email, "type": code_type})
+    await db.verification_codes.insert_one({
+        "email": email,
+        "code": code,
+        "type": code_type,
+        "created_at": get_pht_now()
+    })
+
+async def verify_and_delete_code(email: str, code: str, code_type: str) -> bool:
+    db = get_database()
+    record = await db.verification_codes.find_one({"email": email, "code": code, "type": code_type})
+    if record:
+        await db.verification_codes.delete_many({"email": email, "type": code_type})
+        return True
+    return False
+
+async def set_user_verified(email: str) -> None:
+    db = get_database()
+    await db.users.update_one({"email": email}, {"$set": {"is_verified": True}})
+
+async def update_user_password(email: str, new_password: str) -> None:
+    db = get_database()
+    await db.users.update_one(
+        {"email": email},
+        {"$set": {"password_hash": hash_password(new_password), "updated_at": get_pht_now()}}
+    )

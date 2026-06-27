@@ -9,22 +9,11 @@ import { showError, showSuccess, extractError } from '../utils/alerts'
 import { validateProfile } from '../utils/validation'
 import { UserProfileContent } from './UserProfilePage'
 
-const buildLinks = (role) => {
-  const links = [
-    { to: `/${role}/dashboard`, label: 'Overview', description: 'Dashboard summary', end: true },
-    { to: '/profile', label: 'Profile', description: 'Update your account' },
-  ]
-
-  if (role === 'admin') {
-    links.splice(1, 0, { to: '/admin/users', label: 'Users', description: 'Manage user accounts' })
-  }
-
-  return links
-}
+import { ROLE_LINKS } from '../utils/links'
 
 function ProfileEditor() {
   const { user, updateProfile } = useAuth()
-  const [form, setForm] = useState({ full_name: '', email: '', contact_number: '', password: '', confirm_password: '' })
+  const [form, setForm] = useState({ full_name: '', email: '', contact_number: '', password: '', confirm_password: '', social_links: { github: '', linkedin: '', website: '', facebook: '', instagram: '', twitter: '' } })
   const [avatarFile, setAvatarFile] = useState(null)
   const [saving, setSaving] = useState(false)
 
@@ -33,12 +22,17 @@ function ProfileEditor() {
       return
     }
 
-    setForm({ full_name: user.full_name || '', email: user.email || '', contact_number: user.contact_number || '', password: '', confirm_password: '' })
+    setForm({ full_name: user.full_name || '', email: user.email || '', contact_number: user.contact_number || '', password: '', confirm_password: '', social_links: user.social_links || { github: '', linkedin: '', website: '', facebook: '', instagram: '', twitter: '' } })
   }, [user])
 
   const handleChange = (event) => {
     const { name, value } = event.target
-    setForm((current) => ({ ...current, [name]: value }))
+    if (name.startsWith('social_links.')) {
+      const key = name.split('.')[1]
+      setForm((current) => ({ ...current, social_links: { ...current.social_links, [key]: value } }))
+    } else {
+      setForm((current) => ({ ...current, [name]: value }))
+    }
   }
 
   const handleSubmit = async (event) => {
@@ -56,6 +50,7 @@ function ProfileEditor() {
       if (form.contact_number?.trim()) multipart.append('contact_number', form.contact_number.trim())
       if (form.password.trim()) multipart.append('password', form.password)
       if (avatarFile) multipart.append('avatar_file', avatarFile)
+      multipart.append('social_links', JSON.stringify(form.social_links))
       await updateProfile(multipart)
       showSuccess('Profile updated', 'Your changes have been saved.')
       setForm((current) => ({ ...current, password: '', confirm_password: '' }))
@@ -104,7 +99,7 @@ function ProfileEditor() {
 
         <label>
           Email
-          <input name="email" value={form.email} onChange={handleChange} type="email" />
+          <input name="email" value={form.email} onChange={handleChange} type="email" disabled style={{ opacity: 0.6, cursor: 'not-allowed' }} />
         </label>
 
         <label>
@@ -116,6 +111,34 @@ function ProfileEditor() {
           Avatar upload
           <input type="file" accept="image/*" onChange={(event) => setAvatarFile(event.target.files?.[0] || null)} />
         </label>
+
+        <p className="eyebrow" style={{ marginTop: 16 }}>Social Links</p>
+        <label>
+          GitHub
+          <input name="social_links.github" value={form.social_links.github} onChange={handleChange} type="url" placeholder="https://github.com/username" />
+        </label>
+        <label>
+          LinkedIn
+          <input name="social_links.linkedin" value={form.social_links.linkedin} onChange={handleChange} type="url" placeholder="https://linkedin.com/in/username" />
+        </label>
+        <label>
+          Website
+          <input name="social_links.website" value={form.social_links.website || ''} onChange={handleChange} type="url" placeholder="https://yourportfolio.com" />
+        </label>
+        <label>
+          Facebook
+          <input name="social_links.facebook" value={form.social_links.facebook || ''} onChange={handleChange} type="url" placeholder="https://facebook.com/username" />
+        </label>
+        <label>
+          Instagram
+          <input name="social_links.instagram" value={form.social_links.instagram || ''} onChange={handleChange} type="url" placeholder="https://instagram.com/username" />
+        </label>
+        <label>
+          Twitter / X
+          <input name="social_links.twitter" value={form.social_links.twitter || ''} onChange={handleChange} type="url" placeholder="https://twitter.com/username" />
+        </label>
+
+        <p className="eyebrow" style={{ marginTop: 16 }}>Security</p>
 
         <PasswordField label="New password" name="password" value={form.password} onChange={handleChange} placeholder="Leave blank to keep current password" autoComplete="new-password" />
 
@@ -134,7 +157,7 @@ export default function ProfilePage() {
 
   return (
     <ProtectedRoute>
-      <DashboardShell links={buildLinks(user?.role || 'student')}>
+      <DashboardShell links={ROLE_LINKS[user?.role || 'student']}>
         <div className="page-shell dashboard-shell" style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
           <UserProfileContent providedUserId={user?.id} hideShell={true} />
           <ProfileEditor />

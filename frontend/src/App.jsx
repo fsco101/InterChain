@@ -6,6 +6,8 @@ import SignupPage from './pages/auth/SignupPage'
 import ProfilePage from './pages/ProfilePage'
 import UserProfilePage from './pages/UserProfilePage'
 import { useAuth } from './context/AuthContext'
+import Header from './components/Header'
+import Footer from './components/Footer'
 
 import StudentDashboard from './pages/student/StudentDashboard'
 import StudentActivitiesPage from './pages/student/StudentActivitiesPage'
@@ -43,9 +45,12 @@ function RoleRedirect() {
 
 export default function App() {
   return (
-    <Routes>
-      <Route path="/" element={<LandingPage />} />
-      <Route path="/login" element={<LoginPage />} />
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
+      <Header />
+      <div id="main-scroll-container" style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
       <Route path="/profile" element={<ProfilePage />} />
       <Route path="/profile/:userId" element={<UserProfilePage />} />
@@ -90,7 +95,10 @@ export default function App() {
       {/* IPFS Records Viewer */}
       <Route path="/ipfs-records" element={<IpfsViewerPage />} />
 
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </div>
+      <Footer />
+    </div>
   )
 }

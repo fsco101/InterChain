@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { FaGithub, FaLinkedin, FaFacebook, FaInstagram, FaTwitter, FaGlobe } from 'react-icons/fa'
 import { useParams, Link } from 'react-router-dom'
 import DashboardShell from '../components/DashboardShell'
 import AvatarBadge from '../components/AvatarBadge'
@@ -92,6 +93,43 @@ export function UserProfileContent({ providedUserId, hideShell = false }) {
                     {profile.contact_number && <span>{profile.contact_number}</span>}
                     {profile.ojt_position && <span style={{ color: 'var(--accent)', fontWeight: 600 }}>{profile.ojt_position}</span>}
                   </p>
+                  {profile.social_links && (Object.values(profile.social_links).some(link => link)) && (
+                    <div style={{ marginTop: 16 }}>
+                      <p className="eyebrow" style={{ margin: 0, fontSize: '0.7rem' }}>Social Links</p>
+                      <div style={{ display: 'flex', gap: 14, marginTop: 8, alignItems: 'center' }}>
+                      {profile.social_links.github && (
+                        <a href={profile.social_links.github} target="_blank" rel="noreferrer" style={{ fontSize: '1.2rem', color: '#e2e8f0', display: 'flex', alignItems: 'center' }} title="GitHub">
+                          <FaGithub />
+                        </a>
+                      )}
+                      {profile.social_links.linkedin && (
+                        <a href={profile.social_links.linkedin} target="_blank" rel="noreferrer" style={{ fontSize: '1.2rem', color: '#38bdf8', display: 'flex', alignItems: 'center' }} title="LinkedIn">
+                          <FaLinkedin />
+                        </a>
+                      )}
+                      {profile.social_links.facebook && (
+                        <a href={profile.social_links.facebook} target="_blank" rel="noreferrer" style={{ fontSize: '1.2rem', color: '#1877F2', display: 'flex', alignItems: 'center' }} title="Facebook">
+                          <FaFacebook />
+                        </a>
+                      )}
+                      {profile.social_links.instagram && (
+                        <a href={profile.social_links.instagram} target="_blank" rel="noreferrer" style={{ fontSize: '1.2rem', color: '#E4405F', display: 'flex', alignItems: 'center' }} title="Instagram">
+                          <FaInstagram />
+                        </a>
+                      )}
+                      {profile.social_links.twitter && (
+                        <a href={profile.social_links.twitter} target="_blank" rel="noreferrer" style={{ fontSize: '1.2rem', color: '#1DA1F2', display: 'flex', alignItems: 'center' }} title="Twitter / X">
+                          <FaTwitter />
+                        </a>
+                      )}
+                      {profile.social_links.website && (
+                        <a href={profile.social_links.website} target="_blank" rel="noreferrer" style={{ fontSize: '1.2rem', color: '#a78bfa', display: 'flex', alignItems: 'center' }} title="Website">
+                          <FaGlobe />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                  )}
                 </div>
               </div>
 

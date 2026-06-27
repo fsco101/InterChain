@@ -47,3 +47,53 @@ async def send_certificate_email(
         password=settings.smtp_pass,
         start_tls=True,
     )
+
+async def send_verification_email(to_email: str, code: str) -> None:
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = "Verify Your Account - InterChain"
+    msg["From"] = settings.smtp_from or settings.smtp_user
+    msg["To"] = to_email
+
+    html_body = f"""
+    <html><body style="font-family:sans-serif;background:#0f172a;color:#e2e8f0;padding:24px;">
+      <p>Hello,</p>
+      <p>Please use the following 6-digit code to verify your InterChain account:</p>
+      <h2 style="color:#38bdf8;">{code}</h2>
+      <p>This code will expire shortly.</p>
+    </body></html>
+    """
+    msg.attach(MIMEText(html_body, "html"))
+
+    await aiosmtplib.send(
+        msg,
+        hostname=settings.smtp_host,
+        port=settings.smtp_port,
+        username=settings.smtp_user,
+        password=settings.smtp_pass,
+        start_tls=True,
+    )
+
+async def send_password_reset_email(to_email: str, code: str) -> None:
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = "Password Reset Request - InterChain"
+    msg["From"] = settings.smtp_from or settings.smtp_user
+    msg["To"] = to_email
+
+    html_body = f"""
+    <html><body style="font-family:sans-serif;background:#0f172a;color:#e2e8f0;padding:24px;">
+      <p>Hello,</p>
+      <p>We received a request to reset your password. Use the code below to proceed:</p>
+      <h2 style="color:#f43f5e;">{code}</h2>
+      <p>If you did not request a password reset, please ignore this email.</p>
+    </body></html>
+    """
+    msg.attach(MIMEText(html_body, "html"))
+
+    await aiosmtplib.send(
+        msg,
+        hostname=settings.smtp_host,
+        port=settings.smtp_port,
+        username=settings.smtp_user,
+        password=settings.smtp_pass,
+        start_tls=True,
+    )

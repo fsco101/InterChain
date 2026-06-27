@@ -1,6 +1,9 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 
-import { loginRequest, meRequest, signupRequest, updateProfileRequest } from '../api/auth'
+import { 
+  loginRequest, meRequest, signupRequest, updateProfileRequest,
+  verifyEmailRequest, resendVerificationRequest, forgotPasswordRequest, resetPasswordRequest
+} from '../api/auth'
 
 const AuthContext = createContext(null)
 
@@ -48,7 +51,30 @@ export function AuthProvider({ children }) {
 
   const signup = async (payload) => {
     const { data } = await signupRequest(payload)
+    if (!data.requires_verification) {
+      persistSession(data.access_token, data.user)
+    }
+    return data
+  }
+
+  const verifyEmail = async (payload) => {
+    const { data } = await verifyEmailRequest(payload)
     persistSession(data.access_token, data.user)
+    return data
+  }
+
+  const resendVerification = async (payload) => {
+    const { data } = await resendVerificationRequest(payload)
+    return data
+  }
+
+  const forgotPassword = async (payload) => {
+    const { data } = await forgotPasswordRequest(payload)
+    return data
+  }
+
+  const resetPassword = async (payload) => {
+    const { data } = await resetPasswordRequest(payload)
     return data
   }
 
@@ -67,7 +93,11 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, signup, updateProfile, logout }}>
+    <AuthContext.Provider value={{ 
+      user, token, loading, 
+      login, signup, updateProfile, logout,
+      verifyEmail, resendVerification, forgotPassword, resetPassword
+    }}>
       {children}
     </AuthContext.Provider>
   )

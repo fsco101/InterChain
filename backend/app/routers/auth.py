@@ -1,10 +1,20 @@
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 
 from app.deps import get_current_user, require_roles
-from app.schemas.auth import AuthResponse, UserCreate, UserLogin, UserRead, UserUpdate
-from app.services.auth_service import authenticate_user, create_user, get_user_by_email, get_user_by_id, serialize_user, update_user
+from app.schemas.auth import (
+    AuthResponse, UserCreate, UserLogin, UserRead, UserUpdate,
+    VerifyEmailRequest, ResendVerificationRequest, ForgotPasswordRequest, ResetPasswordRequest
+)
+from app.services.auth_service import (
+    authenticate_user, create_user, get_user_by_email, get_user_by_id, 
+    serialize_user, update_user, store_verification_code, verify_and_delete_code,
+    set_user_verified, update_user_password
+)
+from app.services.email_service import send_verification_email, send_password_reset_email
 from app.utils.security import create_access_token
 from app.db.mongodb import get_database
+import random
+import string
 
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -27,8 +37,21 @@ async def signup(
 
     created_user = await create_user(payload, avatar_file=avatar_file)
     user_data = serialize_user(created_user)
-    token = create_access_token({"sub": user_data["id"], "role": user_data["role"]})
-    return AuthResponse(access_token=token, user=user_data)
+    
+    code = ''.join(random.choices(string.digits, k=6))
+    await store_verification_code(user_data["email"], code, "registration")
+    try:
+        await send_verification_email(user_data["email"], code)
+    except Exception as e:
+        print(f"Error sending verification email: {e}")
+        # Ignore email sending error during development or let it fail? We should probably just print it.
+
+    return AuthResponse(
+        access_token="", 
+        user=user_data, 
+        requires_verification=True,
+        message="Verification code sent to your email."
+    )
 
 
 @router.post("/login", response_model=AuthResponse)
@@ -36,10 +59,84 @@ async def login(payload: UserLogin) -> AuthResponse:
     user = await authenticate_user(payload.email, payload.password)
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
+    
+    if not user.get("is_verified"):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="not_verified")
 
     user_data = serialize_user(user)
     token = create_access_token({"sub": user_data["id"], "role": user_data["role"]})
     return AuthResponse(access_token=token, user=user_data)
+
+
+@router.post("/verify-email", response_model=AuthResponse)
+async def verify_email(payload: VerifyEmailRequest) -> AuthResponse:
+    user = await get_user_by_email(payload.email)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    
+    if user.get("is_verified"):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User is already verified")
+
+    is_valid = await verify_and_delete_code(payload.email, payload.code, "registration")
+    if not is_valid:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired verification code")
+    
+    await set_user_verified(payload.email)
+    user["is_verified"] = True
+    
+    user_data = serialize_user(user)
+    token = create_access_token({"sub": user_data["id"], "role": user_data["role"]})
+    return AuthResponse(access_token=token, user=user_data)
+
+
+@router.post("/resend-verification")
+async def resend_verification(payload: ResendVerificationRequest):
+    user = await get_user_by_email(payload.email)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    
+    if user.get("is_verified"):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User is already verified")
+        
+    code = ''.join(random.choices(string.digits, k=6))
+    await store_verification_code(payload.email, code, "registration")
+    try:
+        await send_verification_email(payload.email, code)
+    except Exception as e:
+        print(f"Error sending email: {e}")
+        
+    return {"message": "Verification code resent."}
+
+
+@router.post("/forgot-password")
+async def forgot_password(payload: ForgotPasswordRequest):
+    user = await get_user_by_email(payload.email)
+    if not user:
+        # Avoid user enumeration by returning success anyway
+        return {"message": "If that email is registered, we have sent a reset code."}
+        
+    code = ''.join(random.choices(string.digits, k=6))
+    await store_verification_code(payload.email, code, "password_reset")
+    try:
+        await send_password_reset_email(payload.email, code)
+    except Exception as e:
+        print(f"Error sending email: {e}")
+        
+    return {"message": "If that email is registered, we have sent a reset code."}
+
+
+@router.post("/reset-password")
+async def reset_password(payload: ResetPasswordRequest):
+    user = await get_user_by_email(payload.email)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid request")
+
+    is_valid = await verify_and_delete_code(payload.email, payload.code, "password_reset")
+    if not is_valid:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired reset code")
+        
+    await update_user_password(payload.email, payload.new_password)
+    return {"message": "Password has been successfully reset."}
 
 
 @router.get("/me", response_model=UserRead)
@@ -54,10 +151,18 @@ async def update_me(
     email: str = Form(...),
     contact_number: str | None = Form(None),
     password: str | None = Form(None),
+    social_links: str | None = Form(None),
     avatar_file: UploadFile | None = File(None),
 ):
     password = password.strip() if isinstance(password, str) and password.strip() else None
-    payload = UserUpdate(full_name=full_name, email=email, contact_number=contact_number, password=password)
+    parsed_social_links = None
+    if social_links:
+        import json
+        try:
+            parsed_social_links = json.loads(social_links)
+        except ValueError:
+            pass
+    payload = UserUpdate(full_name=full_name, email=email, contact_number=contact_number, password=password, social_links=parsed_social_links)
     updated_user = await update_user(current_user["id"], payload, avatar_file=avatar_file)
     if updated_user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")

@@ -2,7 +2,6 @@ import { Link, NavLink } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 
 import AvatarBadge from './AvatarBadge'
-import Notifications from './Notifications'
 import { useAuth } from '../context/AuthContext'
 import { useNotifications } from '../context/NotificationContext'
 import { confirmLogout, showSignedOut } from '../utils/alerts'
@@ -178,23 +177,15 @@ export default function DashboardShell({ links = [], children }) {
   return (
     <div className={`dashboard-layout${collapsed ? ' sidebar-collapsed' : ''}`}>
       <aside className={`dashboard-sidebar${collapsed ? ' collapsed' : ''}`}>
-        <div className="sidebar-brand-block">
-          <div className="sidebar-brand-row">
-            {!collapsed && (
-              <Link className="sidebar-brand" to="/">
-                InterChain
-              </Link>
-            )}
-            <button
-              className="sidebar-collapse-button"
-              type="button"
-              onClick={() => setCollapsed((c) => !c)}
-              aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            >
-              {collapsed ? EXPAND_ICON : COLLAPSE_ICON}
-            </button>
-          </div>
-          {!collapsed && <p className="muted sidebar-brand-copy">Blockchain-backed internship management</p>}
+        <div className="sidebar-brand-block" style={{ justifyContent: 'flex-end', display: 'flex', padding: '12px' }}>
+          <button
+            className="sidebar-collapse-button"
+            type="button"
+            onClick={() => setCollapsed((c) => !c)}
+            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {collapsed ? EXPAND_ICON : COLLAPSE_ICON}
+          </button>
         </div>
 
         <div className="sidebar-user-card">
@@ -286,9 +277,6 @@ export default function DashboardShell({ links = [], children }) {
       </aside>
 
       <main className="dashboard-main">
-        <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '0 4px 4px' }}>
-          <Notifications />
-        </div>
         {children}
       </main>
     </div>
