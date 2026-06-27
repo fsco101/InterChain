@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
+import { useSessionStorage } from '../../hooks/useSessionStorage'
 import html2canvas from 'html2canvas'
 import jsPDF from 'jspdf'
 import ProtectedRoute from '../../components/ProtectedRoute'
 import DashboardShell from '../../components/DashboardShell'
-import { createSupervisorApproval, fetchSupervisorRecords, fetchSupervisorHistory, issueCertificate, fetchCertificates, fetchStudentHours } from '../../api/records'
+import { createSupervisorApproval, fetchSupervisorRecords, fetchSupervisorHistory, issueCertificate, fetchCertificates, fetchStudentHours, fetchSupervisorInternHours } from '../../api/records'
 import { showError, showSuccess, extractError, confirmAction, showLoading, closeAlert } from '../../utils/alerts'
 import { useAuth } from '../../context/AuthContext'
 import { UserSearchField, InternshipSearchField } from '../../components/SearchFields'
+import AvatarBadge from '../../components/AvatarBadge'
 import { SUPERVISOR_LINKS } from '../../utils/links'
 import { validateSupervisorApproval } from '../../utils/validation'
 
@@ -57,10 +59,20 @@ function CertLayout({ form, logoSrc, id }) {
 function ApprovalTab({ onApprovalSaved }) {
   const [approvals, setApprovals] = useState([])
   const [selectedStudent, setSelectedStudent] = useState(null)
+  const [completedInterns, setCompletedInterns] = useState([])
   const formRef = useRef(null)
 
   const load = async () => {
-    try { const { data } = await fetchSupervisorRecords(); setApprovals(data.approvals || []) } catch { /* silent */ }
+    try { 
+      const { data } = await fetchSupervisorRecords()
+      setApprovals(data.approvals || []) 
+    } catch { /* silent */ }
+    
+    try {
+      const { data: internData } = await fetchSupervisorInternHours()
+      const completed = (internData.students || []).filter(s => s.remaining_hours <= 0 && s.required_hours > 0)
+      setCompletedInterns(completed)
+    } catch { /* silent */ }
   }
   useEffect(() => { load() }, [])
 
@@ -88,7 +100,51 @@ function ApprovalTab({ onApprovalSaved }) {
 
   return (
     <div className="dashboard-stack">
-      <form className="dashboard-card form-card single-form" onSubmit={submit} ref={formRef}>
+      {completedInterns.length > 0 && (
+        <div className="dashboard-card">
+          <p className="eyebrow" style={{ color: '#22c55e' }}>Available for Approval</p>
+          <h3 style={{ margin: '0 0 16px' }}>Interns Completed OJT Hours</h3>
+          <div className="users-table">
+            <div className="users-row" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1.5fr 1.5fr', gap: 16, fontWeight: 600, borderBottom: '1px solid var(--border)', paddingBottom: 12 }}>
+              <div>Intern Details</div>
+              <div>School</div>
+              <div>Instructor</div>
+              <div>Contact</div>
+            </div>
+            {completedInterns.map(s => (
+              <div key={s.user_id} className="users-row" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1.5fr 1.5fr', gap: 16, alignItems: 'center', padding: '12px 0' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <AvatarBadge name={s.full_name} avatarUrl={s.avatar_url} size={40} />
+                  <div style={{ overflow: 'hidden' }}>
+                    <strong style={{ display: 'block', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{s.full_name}</strong>
+                    <div className="muted" style={{ fontSize: '0.75rem', fontFamily: 'monospace' }}>
+                      {s.role_id} • {s.internship_id || 'No ID'}
+                    </div>
+                  </div>
+                </div>
+                <div className="muted" style={{ fontSize: '0.85rem', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+                  {s.institution || '—'}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
+                  {s.instructor_id ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.05)', padding: '4px 8px', borderRadius: 20 }}>
+                      <AvatarBadge name={s.instructor_name} avatarUrl={s.instructor_avatar} size={24} />
+                      <span style={{ fontSize: '0.8rem', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{s.instructor_name}</span>
+                    </div>
+                  ) : (
+                    <span className="muted" style={{ fontSize: '0.85rem', fontStyle: 'italic' }}>{s.instructor_name}</span>
+                  )}
+                </div>
+                <div className="muted" style={{ fontSize: '0.85rem' }}>
+                  {s.phone || '—'}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <form className="dashboard-card form-card single-form" style={{ zIndex: 10 }} onSubmit={submit} ref={formRef}>
         <h3>Completion Approval</h3>
         <InternshipSearchField name="internship_id" callerRole="supervisor" />
         <UserSearchField label="Student" role="student" callerRole="supervisor" name="student_id" placeholder="Search student by name or ID…" onChange={setSelectedStudent} />
@@ -198,7 +254,7 @@ function CertificateTab() {
           </div>
         </div>
 
-        <div className="dashboard-card form-card" style={{ width: '100%' }}>
+        <div className="dashboard-card form-card" style={{ width: '100%', zIndex: 9 }}>
           <h3 style={{ marginBottom: 20 }}>Certificate Details</h3>
           
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
@@ -253,7 +309,7 @@ function CertificateTab() {
 function HistoryTab() {
   const [approvals, setApprovals] = useState([])
   const [certs, setCerts] = useState([])
-  const [search, setSearch] = useState('')
+  const [search, setSearch] = useSessionStorage('sup-comp-search', '')
 
   useEffect(() => {
     fetchSupervisorHistory().then(({ data }) => setApprovals(data.approvals || [])).catch(() => {})
@@ -306,7 +362,7 @@ function HistoryTab() {
             <div key={c.id} className="users-row">
               <div><strong>{c.payload.recipient_name}</strong><p className="muted" style={{ margin:0, fontSize:'0.8rem' }}>{c.payload.internship_title} · {c.payload.company_name}</p></div>
               <span className="role-chip">{c.payload.recipient_role_id}</span>
-              <span className="muted" style={{ fontSize:'0.75rem' }}>{new Date(c.created_at).toLocaleDateString()}</span>
+              <span className="muted" style={{ fontSize:'0.75rem' }}>{new Date(c.created_at).toLocaleDateString('en-PH', { timeZone: 'Asia/Manila' })}</span>
               {c.blockchain?.tx_hash && <a href={c.blockchain.explorer_url} target="_blank" rel="noreferrer" style={{ fontSize:'0.72rem', fontFamily:'monospace', color:'var(--accent)', maxWidth:140, overflow:'hidden', textOverflow:'ellipsis' }}>{c.blockchain.tx_hash.slice(0,18)}…</a>}
             </div>
           ))}</div>
@@ -318,7 +374,7 @@ function HistoryTab() {
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 function CompletionPanel() {
-  const [tab, setTab] = useState('approval')
+  const [tab, setTab] = useSessionStorage('sup-comp-tab', 'approval')
 
   return (
     <div className="dashboard-stack">

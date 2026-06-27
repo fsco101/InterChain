@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useSessionStorage } from '../../hooks/useSessionStorage'
 import { Link } from 'react-router-dom'
 import AvatarBadge from '../../components/AvatarBadge'
 import ProtectedRoute from '../../components/ProtectedRoute'
@@ -10,8 +11,8 @@ import { SUPERVISOR_LINKS } from '../../utils/links'
 const STATUS_COLORS = { pending: '#f59e0b', in_progress: '#38bdf8', completed: '#22c55e', cancelled: '#94a3b8' }
 
 function PositionManager({ positions, onRefresh }) {
-  const [name, setName] = useState('')
-  const [desc, setDesc] = useState('')
+  const [name, setName] = useSessionStorage('sup-pos-name', '')
+  const [desc, setDesc] = useSessionStorage('sup-pos-desc', '')
   const [adding, setAdding] = useState(false)
 
   const handleAdd = async () => {
@@ -57,12 +58,12 @@ function PositionManager({ positions, onRefresh }) {
 }
 
 function TaskForm({ positions, students, onSuccess }) {
-  const [mode, setMode] = useState('position') // position | individual
-  const [title, setTitle] = useState('')
-  const [desc, setDesc] = useState('')
-  const [position, setPosition] = useState('')
-  const [selectedStudents, setSelectedStudents] = useState([])
-  const [dueDate, setDueDate] = useState('')
+  const [mode, setMode] = useSessionStorage('sup-task-mode', 'position') // position | individual
+  const [title, setTitle] = useSessionStorage('sup-task-title', '')
+  const [desc, setDesc] = useSessionStorage('sup-task-desc', '')
+  const [position, setPosition] = useSessionStorage('sup-task-pos', '')
+  const [selectedStudents, setSelectedStudents] = useSessionStorage('sup-task-students', [])
+  const [dueDate, setDueDate] = useSessionStorage('sup-task-due', '')
   const [creating, setCreating] = useState(false)
 
   const positionStudents = students.filter((s) => s.ojt_position && s.ojt_position.toLowerCase() === position.toLowerCase())

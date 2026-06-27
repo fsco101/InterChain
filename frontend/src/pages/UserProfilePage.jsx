@@ -131,6 +131,25 @@ export function UserProfileContent({ providedUserId, hideShell = false }) {
                           <p className="muted" style={{ margin: 0, fontSize: '0.8rem' }}>Evaluations</p>
                           <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700 }}>{profile.evaluation_summary.eval_count}</p>
                         </div>
+                        {profile.evaluation_summary.recent_feedback && (
+                          <div style={{ gridColumn: '1 / -1', marginTop: 8 }}>
+                            <p className="muted" style={{ margin: 0, fontSize: '0.8rem' }}>Recent Feedback</p>
+                            <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '12px 16px', borderRadius: 12, marginTop: 8, border: '1px solid rgba(255,255,255,0.05)' }}>
+                              <p style={{ margin: 0, fontSize: '0.85rem', fontStyle: 'italic', color: 'var(--text)', lineHeight: 1.5 }}>"{profile.evaluation_summary.recent_feedback}"</p>
+                              {profile.evaluation_summary.recent_supervisor && (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10 }}>
+                                  <Link to={`/profile/${profile.evaluation_summary.recent_supervisor.id}`} style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
+                                    <AvatarBadge name={profile.evaluation_summary.recent_supervisor.full_name} avatarUrl={profile.evaluation_summary.recent_supervisor.avatar_url} size={20} />
+                                    <span style={{ fontSize: '0.75rem', color: 'var(--muted)', fontWeight: 500 }}>
+                                      {profile.evaluation_summary.recent_supervisor.full_name} 
+                                      {profile.evaluation_summary.recent_supervisor.company && ` • ${profile.evaluation_summary.recent_supervisor.company}`}
+                                    </span>
+                                  </Link>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ) : <p className="muted">No evaluations yet.</p>}
                   </div>

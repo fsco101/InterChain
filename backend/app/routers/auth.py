@@ -111,8 +111,9 @@ async def get_user_profile(
         activity_hours = 0.0
         activity_days = 0
         async for doc in cursor:
-            activity_hours += doc["payload"].get("hours_spent", 0)
-            activity_days += 1
+            if doc["payload"].get("validation_status") == "validated":
+                activity_hours += doc["payload"].get("hours_spent", 0)
+                activity_days += 1
         
         profile["activity_summary"] = {
             "total_hours": round(activity_hours, 2),
@@ -122,13 +123,36 @@ async def get_user_profile(
         # Rankings from supervisor evaluations
         role_id = profile.get("role_id")
         if role_id:
-            cursor = db.employer_evaluations.find({"payload.student_id": role_id})
-            scores = [ev["payload"]["score"] async for ev in cursor]
-            if scores:
+            cursor = db.employer_evaluations.find({"payload.student_id": role_id}).sort("created_at", -1)
+            evals = [ev async for ev in cursor]
+            if evals:
+                scores = [ev["payload"]["score"] for ev in evals]
                 avg = round(sum(scores) / len(scores), 2)
+                recent_ev = evals[0]
+                recent_feedback = recent_ev["payload"].get("feedback")
+                recent_supervisor = None
+                
+                sup_id = recent_ev.get("user_id")
+                if sup_id:
+                    from bson import ObjectId
+                    try:
+                        sup_doc = await db.users.find_one({"_id": ObjectId(sup_id)})
+                    except Exception:
+                        sup_doc = await db.users.find_one({"_id": sup_id})
+                        
+                    if sup_doc:
+                        recent_supervisor = {
+                            "id": str(sup_doc["_id"]),
+                            "full_name": sup_doc.get("full_name"),
+                            "avatar_url": sup_doc.get("avatar_url"),
+                            "company": sup_doc.get("company")
+                        }
+
                 profile["evaluation_summary"] = {
                     "avg_score": avg,
                     "eval_count": len(scores),
+                    "recent_feedback": recent_feedback,
+                    "recent_supervisor": recent_supervisor
                 }
             else:
                 profile["evaluation_summary"] = None
@@ -158,23 +182,13 @@ async def get_user_profile(
 
         # Check explicit supervisor link first
         explicit_sup_id = profile.get("supervisor_id")
+        supervisor_user = None
         if explicit_sup_id:
             from bson import ObjectId
             if ObjectId.is_valid(explicit_sup_id):
                 supervisor_user = await db.users.find_one({"_id": ObjectId(explicit_sup_id)})
             else:
                 supervisor_user = await db.users.find_one({"_id": explicit_sup_id})
-        else:
-            # Fallback to instructor's supervisor roster
-            supervisor_user = None
-            if instructor_info:
-                supervisor_doc = await db.employer_rosters.find_one({"instructors.user_id": instructor_info["id"]})
-                if supervisor_doc:
-                    sup_id = supervisor_doc["employer_id"]
-                    if ObjectId.is_valid(sup_id):
-                        supervisor_user = await db.users.find_one({"_id": ObjectId(sup_id)})
-                    else:
-                        supervisor_user = await db.users.find_one({"_id": sup_id})
         
         if supervisor_user:
             supervisor_info = {

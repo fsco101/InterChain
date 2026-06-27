@@ -19,9 +19,14 @@ export const submitEmployerEvaluation = (payload) => api.post('/records/employer
 
 // Task Mark Done
 export const fetchStudentTasks = () => api.get('/student/tasks')
-export const studentMarkTaskDone = (taskId, formData) => api.patch(`/student/tasks/${taskId}/done`, formData, {
+export const studentMarkTaskDone = (taskId, formData) => api.patch(`/records/student/tasks/${taskId}/done`, formData, {
   headers: { 'Content-Type': 'multipart/form-data' }
 })
+export const submitInstructorEvaluation = (payload) => api.post('/instructor/evaluation', payload)
+export const fetchInstructorEvaluations = () => api.get('/instructor/evaluations')
+export const setStudentRequiredHours = (roleId, hours) => api.put(`/instructor/student/${roleId}/required-hours`, { required_hours: parseFloat(hours) })
+
+export const fetchGlobalRankings = (params) => api.get('/records/rankings', { params })
 export const createSupervisorEvaluation = (payload) => api.post('/records/supervisor/evaluation', payload)
 export const fetchSupervisorEvaluations = () => api.get('/records/supervisor/evaluations')
 export const fetchSupervisorEvaluationsHistory = () => api.get('/records/supervisor/evaluations/history')
@@ -46,8 +51,6 @@ export const fetchInstructorStudentCompanies = () => api.get('/instructor/studen
 
 // Instructor read-only
 export const fetchInstructorStudentAttendance = () => api.get('/instructor/student-attendance')
-export const fetchInstructorRankings = () => api.get('/instructor/rankings')
-export const setStudentRequiredHours = (roleId, hours) => api.put(`/instructor/student/${roleId}/required-hours`, { required_hours: parseFloat(hours) })
 
 // Supervisor roster
 export const fetchSupervisorRoster = () => api.get('/supervisor/roster')
@@ -62,6 +65,10 @@ export const fetchSupervisorStudentAttendance = (studentId) => api.get(`/supervi
 export const fetchSupervisorAllAttendance = () => api.get('/supervisor/attendance')
 export const validateStudentAttendance = (recordId, payload) => api.patch(`/supervisor/attendance/${recordId}/validate`, payload)
 
+// Supervisor Activities
+export const fetchSupervisorActivities = () => api.get('/supervisor/activities')
+export const validateStudentActivityLog = (recordId, payload) => api.patch(`/supervisor/activities/${recordId}/validate`, payload)
+
 // Supervisor positions
 export const createPosition = (payload) => api.post('/supervisor/positions', payload)
 export const fetchPositions = () => api.get('/supervisor/positions')
@@ -75,9 +82,6 @@ export const createTask = (payload) => api.post('/supervisor/tasks', payload)
 export const fetchTasks = () => api.get('/supervisor/tasks')
 export const updateTaskStatus = (taskId, status) => api.patch(`/supervisor/tasks/${taskId}`, { status })
 export const deleteTask = (taskId) => api.delete(`/supervisor/tasks/${taskId}`)
-
-// Supervisor rankings
-export const fetchSupervisorRankings = () => api.get('/supervisor/rankings')
 
 // Supervisor student hours
 export const fetchStudentHours = (roleId) => api.get(`/supervisor/student-hours/${roleId}`)
@@ -110,3 +114,14 @@ export const bulkDeleteSupervisorApproval = (ids) => api.post('/records/supervis
 
 // Public profile
 export const fetchUserProfile = (userId) => api.get(`/auth/profile/${userId}`)
+
+// Documents
+export const fetchStudentDocuments = () => api.get('/student/documents')
+export const uploadStudentDocument = (formData) => api.post('/student/documents', formData, {
+  headers: { 'Content-Type': 'multipart/form-data' }
+})
+export const removeStudentDocument = (docType) => api.delete('/student/documents', { params: { document_type: docType } })
+export const fetchSupervisorStudentDocuments = (studentId) => api.get(`/supervisor/students/${studentId}/documents`)
+export const linkSupervisorIntern = (studentId) => api.post(`/supervisor/interns/${studentId}/link`)
+export const fetchInstructorStudentDocuments = (studentId) => api.get(`/instructor/students/${studentId}/documents`)
+export const approveStudentOJT = (studentId) => api.post(`/supervisor/students/${studentId}/ojt-approval`)

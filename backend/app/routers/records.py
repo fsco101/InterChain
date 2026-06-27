@@ -15,6 +15,7 @@ from app.services.records_service import create_record, list_records, list_all_r
 from app.services.cloudinary_service import upload_attendance_photo, upload_task_photo
 from app.services.blockchain_service import build_blockchain_metadata_async
 from app.routers.notifications import push_notification
+from app.utils.timezone import get_pht_now, PHT
 from datetime import datetime, timezone
 
 
@@ -64,7 +65,9 @@ async def search_internships(q: str = "", current_user: dict = Depends(require_r
 
 @router.post("/student/activity")
 async def create_student_activity(payload: StudentActivityCreate, current_user: dict = Depends(require_roles("student"))):
-    record = await create_record("activity_logs", "student_activity", "student", current_user, payload.model_dump(mode="json"))
+    data = payload.model_dump(mode="json")
+    data["validation_status"] = "pending"
+    record = await create_record("activity_logs", "student_activity", "student", current_user, data)
     db = get_database()
     await push_notification(db, current_user["id"], "Activity logged", f"'{payload.title}' saved for {payload.activity_date}.", "success")
     return record
@@ -121,7 +124,7 @@ async def create_student_attendance(
         "user_name": current_user["full_name"],
         "payload": payload,
         "blockchain": blockchain,
-        "created_at": datetime.now(timezone.utc),
+        "created_at": get_pht_now(),
     }
     result = await db.student_attendance.insert_one(document)
     created = await db.student_attendance.find_one({"_id": result.inserted_id})
@@ -233,7 +236,7 @@ async def student_mark_task_done(
     last_start = task.get("last_active_start")
     if last_start:
         dt_start = datetime.fromisoformat(last_start)
-        elapsed = (datetime.now(timezone.utc) - dt_start).total_seconds()
+        elapsed = (get_pht_now() - dt_start).total_seconds()
         update_data["accumulated_seconds"] = task.get("accumulated_seconds", 0) + int(elapsed)
         update_data["last_active_start"] = None
 
@@ -363,3 +366,106 @@ async def delete_supervisor_approval(record_id: str, current_user: dict = Depend
 async def bulk_delete_supervisor_approval(body: BulkDeleteBody, current_user: dict = Depends(require_roles("supervisor"))):
     count = await delete_records_bulk("completion_approvals", body.ids, current_user["id"])
     return {"deleted": count}
+
+
+# ── Global Rankings ──────────────────────────────────────────────────────────
+
+@router.get("/rankings")
+async def get_global_rankings(
+    start_date: str | None = None,
+    end_date: str | None = None,
+    current_user: dict = Depends(require_roles("student", "instructor", "supervisor", "admin"))
+):
+    """Global rankings of all evaluated students."""
+    db = get_database()
+
+    query = {}
+    if start_date or end_date:
+        query["created_at"] = {}
+        if start_date:
+            try:
+                query["created_at"]["$gte"] = datetime.strptime(start_date, "%Y-%m-%d").replace(tzinfo=PHT)
+            except ValueError: pass
+        if end_date:
+            try:
+                query["created_at"]["$lte"] = datetime.strptime(end_date, "%Y-%m-%d").replace(tzinfo=PHT, hour=23, minute=59, second=59)
+            except ValueError: pass
+        if not query["created_at"]:
+            del query["created_at"]
+
+    cursor = db.employer_evaluations.find(query).sort("created_at", -1)
+    evaluations = [ev async for ev in cursor]
+
+    if not evaluations:
+        return {"overall": []}
+
+    student_scores = {}
+    for ev in evaluations:
+        sid = ev["payload"]["student_id"]
+        if sid not in student_scores:
+            student_scores[sid] = {
+                "scores": [],
+                "student_id": sid,
+                "recent_feedback": ev["payload"].get("feedback"),
+                "recent_supervisor_id": ev.get("user_id")
+            }
+        student_scores[sid]["scores"].append(ev["payload"]["score"])
+
+    # Collect unique role_ids to fetch all at once
+    unique_sids = list(student_scores.keys())
+    user_cursor = db.users.find({"role_id": {"$in": unique_sids}})
+    user_map = {u["role_id"]: u async for u in user_cursor}
+
+    # Gather supervisors to get companies and profiles
+    sup_ids = [u["supervisor_id"] for u in user_map.values() if u.get("supervisor_id")]
+    for data in student_scores.values():
+        if data.get("recent_supervisor_id") and data["recent_supervisor_id"] not in sup_ids:
+            sup_ids.append(data["recent_supervisor_id"])
+            
+    from bson import ObjectId
+    valid_sup_ids = []
+    for sid in set(sup_ids):
+        try: valid_sup_ids.append(ObjectId(sid))
+        except: valid_sup_ids.append(sid)
+
+    sup_cursor = db.users.find({"_id": {"$in": valid_sup_ids}})
+    sup_map = {str(u["_id"]): u async for u in sup_cursor}
+
+    for sid, data in student_scores.items():
+        user = user_map.get(sid)
+        if user:
+            data["full_name"] = user.get("full_name", "Unknown")
+            data["institution"] = user.get("institution")
+            data["ojt_position"] = user.get("ojt_position")
+            data["avatar_url"] = user.get("avatar_url")
+            data["user_id"] = str(user["_id"])
+            sup_id = user.get("supervisor_id")
+            sup_user = sup_map.get(str(sup_id)) if sup_id else None
+            data["company"] = sup_user.get("company") if sup_user else None
+        else:
+            data["full_name"] = sid
+            data["institution"] = None
+            data["ojt_position"] = None
+            data["avatar_url"] = None
+            data["user_id"] = None
+            data["company"] = None
+            
+        recent_sup_id = data.pop("recent_supervisor_id", None)
+        recent_sup_user = sup_map.get(str(recent_sup_id)) if recent_sup_id else None
+        if recent_sup_user:
+            data["recent_supervisor"] = {
+                "id": str(recent_sup_user["_id"]),
+                "full_name": recent_sup_user.get("full_name"),
+                "avatar_url": recent_sup_user.get("avatar_url"),
+                "company": recent_sup_user.get("company")
+            }
+        else:
+            data["recent_supervisor"] = None
+
+        data["avg_score"] = round(sum(data["scores"]) / len(data["scores"]), 2)
+        data["eval_count"] = len(data["scores"])
+
+    ranked = sorted(student_scores.values(), key=lambda x: x["avg_score"], reverse=True)
+    overall = [{"rank": i + 1, **{k: v for k, v in r.items() if k != "scores"}} for i, r in enumerate(ranked)]
+
+    return {"overall": overall}

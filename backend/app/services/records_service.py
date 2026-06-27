@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 
 from app.db.mongodb import get_database
+from app.utils.timezone import get_pht_now, PHT
 from app.services.blockchain_service import build_blockchain_metadata_async
 
 
@@ -27,7 +28,7 @@ async def create_record(collection_name: str, record_type: str, role: str, user:
         "user_name": user["full_name"],
         "payload": payload,
         "blockchain": blockchain,
-        "created_at": datetime.now(timezone.utc),
+        "created_at": get_pht_now(),
     }
     result = await database[collection_name].insert_one(document)
     created_record = await database[collection_name].find_one({"_id": result.inserted_id})

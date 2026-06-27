@@ -912,12 +912,16 @@ h1 {
 .rank-header,
 .rank-row {
   display: grid;
-  grid-template-columns: 32px repeat(auto-fit, minmax(80px, 1fr));
+  grid-template-columns: 32px 2fr 1fr 1fr 1fr 80px 60px 1.5fr;
   gap: 10px;
   align-items: center;
   padding: 10px 14px;
   border-radius: 12px;
   font-size: 0.85rem;
+}
+
+.supervisor-rank-header {
+  grid-template-columns: 32px 2fr 1fr 1fr 80px 60px 1.5fr !important;
 }
 
 .rank-header {
@@ -1601,4 +1605,79 @@ h1 {
 .notif-see-all:hover {
   background: rgba(56, 189, 248, 0.1);
   color: #7dd3fc;
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * SWEET ALERT 2 GLOBAL OVERRIDES
+ * ────────────────────────────────────────────────────────────────────────── */
+
+.swal2-popup {
+  border: 1px solid var(--panel-border) !important;
+  background: rgba(15, 23, 42, 0.95) !important;
+  backdrop-filter: blur(24px) !important;
+  box-shadow: var(--shadow) !important;
+  border-radius: 24px !important;
+  color: var(--text) !important;
+  padding: 32px 24px 24px !important;
+}
+
+.swal2-title {
+  color: var(--text) !important;
+  font-size: 1.4rem !important;
+  font-weight: 600 !important;
+  margin-bottom: 8px !important;
+}
+
+.swal2-html-container {
+  color: var(--muted) !important;
+  font-size: 0.95rem !important;
+  line-height: 1.6 !important;
+  margin: 0 0 24px !important;
+}
+
+.swal2-actions {
+  gap: 16px !important;
+  width: 100% !important;
+  justify-content: center !important;
+}
+
+.swal2-confirm,
+.swal2-cancel {
+  border-radius: 12px !important;
+  font-weight: 600 !important;
+  font-size: 0.9rem !important;
+  padding: 12px 28px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  transition: all 0.2s ease !important;
+  box-shadow: none !important;
+}
+
+.swal2-confirm:hover,
+.swal2-cancel:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.2) !important;
+}
+
+.swal2-confirm {
+  background: var(--accent) !important;
+  color: #fff !important;
+}
+
+.swal2-cancel {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: var(--text) !important;
+}
+
+.swal2-icon {
+  border-color: var(--accent) !important;
+  color: var(--accent) !important;
+}
+.swal2-icon.swal2-warning {
+  border-color: var(--danger) !important;
+  color: var(--danger) !important;
+}
+.swal2-icon.swal2-success {
+  border-color: var(--accent-2) !important;
+  color: var(--accent-2) !important;
 }

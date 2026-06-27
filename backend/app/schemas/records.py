@@ -75,6 +75,16 @@ class PositionCreate(BaseModel):
     description: str | None = Field(default=None, max_length=500)
 
 
+class StudentDocumentCreate(BaseModel):
+    document_type: str = Field(min_length=2, max_length=100)
+    # file uploaded via form data, then we store file_url and status
+
+class OJTApprovalCreate(BaseModel):
+    student_id: str = Field(min_length=5, max_length=100)
+    approval_date: date
+    notes: str | None = Field(default=None, max_length=500)
+
+
 class RecordRead(BaseModel):
     id: str
     record_type: str

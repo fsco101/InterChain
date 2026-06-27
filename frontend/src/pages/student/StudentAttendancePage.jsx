@@ -132,6 +132,7 @@ function AttendanceList({ records }) {
 }
 
 function StudentAttendanceContent() {
+  const { user } = useAuth()
   const [records, setRecords] = useState([])
 
   const load = async () => {
@@ -153,7 +154,14 @@ function StudentAttendanceContent() {
           </div>
         </div>
         <div className="dashboard-stack">
-          <AttendanceForm onSuccess={load} />
+          {!user?.supervisor_id ? (
+            <div className="dashboard-card" style={{ borderLeft: '4px solid #f59e0b' }}>
+              <h3 style={{ color: '#f59e0b', margin: '0 0 8px' }}>Not Approved Yet</h3>
+              <p className="muted" style={{ margin: 0 }}>You cannot log attendance until your supervisor has approved your OJT link.</p>
+            </div>
+          ) : (
+            <AttendanceForm onSuccess={load} />
+          )}
           <AttendanceList records={records} />
         </div>
       </div>

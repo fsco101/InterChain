@@ -18,7 +18,7 @@ function ReviewCard({ record }) {
         </span>
       </div>
 
-      <p className="muted">Submitted by {record.user_name || record.user_id} on {new Date(record.created_at).toLocaleString()}</p>
+      <p className="muted">Submitted by {record.user_name || record.user_id} on {new Date(record.created_at).toLocaleString('en-PH', { timeZone: 'Asia/Manila' })}</p>
       <pre className="review-payload">{JSON.stringify(record.payload, null, 2)}</pre>
       <div className="review-blockchain">
         <span>{blockchain.network || 'unknown network'}</span>

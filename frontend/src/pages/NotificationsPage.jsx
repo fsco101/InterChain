@@ -9,7 +9,7 @@ import { ROLE_LINKS } from '../utils/links'
 const TYPE_COLOR = { success: '#22c55e', info: '#38bdf8', warning: '#f59e0b', error: '#ef4444' }
 
 function fmt(val) {
-  try { return new Date(val).toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) }
+  try { return new Date(val).toLocaleString('en-PH', { timeZone: 'Asia/Manila',  month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) }
   catch { return '' }
 }
 

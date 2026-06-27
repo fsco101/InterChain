@@ -6,8 +6,10 @@ import ProtectedRoute from '../../components/ProtectedRoute'
 import { fetchStudentTasks, studentMarkTaskDone } from '../../api/records'
 import { showError, showSuccess, extractError, showLoading, closeAlert } from '../../utils/alerts'
 import { STUDENT_LINKS } from '../../utils/links'
+import { useAuth } from '../../context/AuthContext'
 
 function StudentTasksPanel() {
+  const { user } = useAuth()
   const [tasks, setTasks] = useState([])
   const [loading, setLoading] = useState(true)
   const [now, setNow] = useState(Date.now())
@@ -75,6 +77,13 @@ function StudentTasksPanel() {
       </div>
 
       <div className="dashboard-card">
+        {!user?.supervisor_id && (
+          <div style={{ borderLeft: '4px solid #f59e0b', paddingLeft: 16, marginBottom: 20 }}>
+            <h3 style={{ color: '#f59e0b', margin: '0 0 8px' }}>Not Approved Yet</h3>
+            <p className="muted" style={{ margin: 0 }}>You cannot perform OJT tasks until your supervisor has approved your link.</p>
+          </div>
+        )}
+        
         {loading ? (
           <p className="muted">Loading tasks...</p>
         ) : tasks.length === 0 ? (
@@ -111,12 +120,21 @@ function StudentTasksPanel() {
                         ⏳ Tracked Time: {formatTime(currentSeconds)}
                       </p>
                       {task.employer_id ? (
-                        <Link to={`/profile/${task.employer_id}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, textDecoration: 'none', background: 'rgba(255,255,255,0.05)', padding: '6px 12px', borderRadius: 20 }}>
-                          <AvatarBadge name={task.employer_name} avatarUrl={task.employer_avatar_url} size={24} />
-                          <span style={{ fontSize: '0.8rem', color: 'var(--text)' }}>Assigned by {task.employer_name}</span>
-                        </Link>
+                        <div style={{ marginTop: 8 }}>
+                          <p className="muted" style={{ margin: '0 0 6px', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Supervisor</p>
+                          <Link to={`/profile/${task.employer_id}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 10, textDecoration: 'none', background: 'rgba(255,255,255,0.08)', padding: '8px 14px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', transition: 'background 0.2s' }} onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.12)'} onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}>
+                            <AvatarBadge name={task.employer_name} avatarUrl={task.employer_avatar_url} size={32} />
+                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                              <span style={{ fontSize: '0.85rem', color: 'var(--text)', fontWeight: 600 }}>{task.employer_name}</span>
+                              <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>View Profile</span>
+                            </div>
+                          </Link>
+                        </div>
                       ) : task.employer_name && (
-                        <p className="muted" style={{ margin: 0, fontSize: '0.75rem' }}>Assigned by {task.employer_name}</p>
+                        <div style={{ marginTop: 8 }}>
+                          <p className="muted" style={{ margin: '0 0 6px', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Supervisor</p>
+                          <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text)' }}>{task.employer_name}</p>
+                        </div>
                       )}
                     </div>
 
@@ -125,12 +143,13 @@ function StudentTasksPanel() {
                         <a href={task.attachment_url} target="_blank" rel="noreferrer" style={{ fontSize: '0.8rem', color: '#38bdf8' }}>View Attachment</a>
                       )}
 
-                      {task.status === 'pending' && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      {task.status === 'pending' && user?.supervisor_id && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 12 }}>
                           <input
                             type="file"
                             accept="image/*"
-                            ref={(el) => fileInputRefs.current[task.id] = el}
+                            capture="environment"
+                            ref={(el) => (fileInputRefs.current[task.id] = el)}
                             style={{ fontSize: '0.75rem' }}
                           />
                           <button className="primary-button" style={{ fontSize: '0.8rem', padding: '6px 16px', minHeight: 'unset' }} onClick={() => handleMarkDone(task)}>

@@ -8,6 +8,7 @@ from fastapi import UploadFile
 from app.db.mongodb import get_database
 from app.schemas.auth import AdminUserUpdate, UserCreate, UserUpdate
 from app.services.cloudinary_service import delete_avatar, upload_avatar
+from app.utils.timezone import get_pht_now, PHT
 from app.utils.security import hash_password, verify_password
 
 
@@ -89,7 +90,7 @@ async def get_user_by_id(user_id: str) -> dict | None:
 
 async def create_user(user_data: UserCreate, avatar_file: UploadFile | None = None) -> dict:
     database = get_database()
-    now = datetime.now(timezone.utc)
+    now = get_pht_now()
     avatar_url, avatar_public_id = await _handle_avatar(avatar_file)
     if avatar_url is None:
         avatar_url = user_data.avatar_url.strip() if user_data.avatar_url else None
@@ -133,7 +134,7 @@ async def update_user(user_id: str, updates: UserUpdate | AdminUserUpdate, avata
     if existing is None:
         return None
 
-    update_fields: dict = {"updated_at": datetime.now(timezone.utc)}
+    update_fields: dict = {"updated_at": get_pht_now()}
     if updates.full_name is not None:
         update_fields["full_name"] = updates.full_name.strip()
     if updates.email is not None:

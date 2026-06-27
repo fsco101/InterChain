@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 from jose import jwt
 from passlib.context import CryptContext
 
+from app.utils.timezone import get_pht_now, PHT
 from app.core.config import settings
 
 
@@ -19,6 +20,6 @@ def verify_password(password: str, hashed_password: str) -> bool:
 
 def create_access_token(payload: dict) -> str:
     token_payload = payload.copy()
-    expire_at = datetime.now(timezone.utc) + timedelta(minutes=settings.jwt_expires_minutes)
+    expire_at = get_pht_now() + timedelta(minutes=settings.jwt_expires_minutes)
     token_payload.update({"exp": expire_at})
     return jwt.encode(token_payload, settings.jwt_secret, algorithm=settings.jwt_algorithm)

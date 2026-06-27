@@ -4,6 +4,7 @@ import { createStudentActivity, createStudentReport, fetchStudentRecords } from 
 import { confirmAction, showError, showSuccess, extractError } from '../../utils/alerts'
 import { validateStudentActivity, validateStudentReport } from '../../utils/validation'
 import { InternshipSearchField } from '../SearchFields'
+import { useFormPersist } from '../../hooks/useFormPersist'
 
 function RecordList({ title, records }) {
   return (
@@ -20,11 +21,14 @@ function toFormValues(formData) {
   return Object.fromEntries(formData.entries())
 }
 
-export default function StudentActions() {
+export default function StudentActions({ user }) {
   const [activityRecords, setActivityRecords] = useState([])
   const [reportRecords, setReportRecords] = useState([])
   const [activityReset, setActivityReset] = useState(0)
   const [reportReset, setReportReset] = useState(0)
+
+  const { formRef: activityFormRef, clearForm: clearActivityForm } = useFormPersist('student-activity-form')
+  const { formRef: reportFormRef, clearForm: clearReportForm } = useFormPersist('student-report-form')
 
   const loadRecords = async () => {
     try {
@@ -64,6 +68,7 @@ export default function StudentActions() {
       })
       showSuccess('Activity logged', 'Your internship activity has been saved.')
       formElement.reset()
+      clearActivityForm()
       setActivityReset((k) => k + 1)
       await loadRecords()
     } catch (error) {
@@ -93,6 +98,7 @@ export default function StudentActions() {
       })
       showSuccess('Report submitted', 'Your internship report has been saved.')
       formElement.reset()
+      clearReportForm()
       setReportReset((k) => k + 1)
       await loadRecords()
     } catch (error) {
@@ -102,43 +108,45 @@ export default function StudentActions() {
 
   return (
     <div className="dashboard-stack">
-      <div className="grid-two">
-        <form className="dashboard-card form-card" onSubmit={submitActivity}>
-          <h3>Daily Activity</h3>
-          <InternshipSearchField name="internship_id" callerRole="student" resetKey={activityReset} />
-          <label>
-            Activity date
-            <input name="activity_date" type="date" />
-          </label>
-          <label>
-            Title
-            <input name="title" type="text" placeholder="Client onboarding (min 3 chars)" />
-          </label>
-          <label>
-            Description
-            <textarea name="description" rows="4" placeholder="Describe the work completed (min 10 chars)" />
-          </label>
-          <label>
-            Hours spent
-            <input name="hours_spent" type="number" step="0.5" min="0.5" max="24" placeholder="6" />
-          </label>
-          <button className="primary-button" type="submit">Save activity</button>
-        </form>
+      {user?.supervisor_id && (
+        <div className="grid-two">
+          <form className="dashboard-card form-card" ref={activityFormRef} onSubmit={submitActivity}>
+            <h3>Daily Activity</h3>
+            <InternshipSearchField name="internship_id" callerRole="student" resetKey={activityReset} />
+            <label>
+              Activity date
+              <input name="activity_date" type="date" />
+            </label>
+            <label>
+              Title
+              <input name="title" type="text" placeholder="Client onboarding (min 3 chars)" />
+            </label>
+            <label>
+              Description
+              <textarea name="description" rows="4" placeholder="Describe the work completed (min 10 chars)" />
+            </label>
+            <label>
+              Hours spent
+              <input name="hours_spent" type="number" step="0.5" min="0.5" max="24" placeholder="6" />
+            </label>
+            <button className="primary-button" type="submit">Save activity</button>
+          </form>
 
-        <form className="dashboard-card form-card" onSubmit={submitReport}>
-          <h3>Internship Report</h3>
-          <InternshipSearchField name="internship_id" callerRole="student" resetKey={reportReset} />
-          <label>
-            Report title
-            <input name="report_title" type="text" placeholder="Weekly summary (min 3 chars)" />
-          </label>
-          <label>
-            Summary
-            <textarea name="summary" rows="6" placeholder="Summarize your progress and outcomes (min 20 chars)" />
-          </label>
-          <button className="primary-button" type="submit">Submit report</button>
-        </form>
-      </div>
+          <form className="dashboard-card form-card" ref={reportFormRef} onSubmit={submitReport}>
+            <h3>Internship Report</h3>
+            <InternshipSearchField name="internship_id" callerRole="student" resetKey={reportReset} />
+            <label>
+              Report title
+              <input name="report_title" type="text" placeholder="Weekly summary (min 3 chars)" />
+            </label>
+            <label>
+              Summary
+              <textarea name="summary" rows="6" placeholder="Summarize your progress and outcomes (min 20 chars)" />
+            </label>
+            <button className="primary-button" type="submit">Submit report</button>
+          </form>
+        </div>
+      )}
 
       <div className="grid-two">
         <RecordList title="Recent activities" records={activityRecords} />

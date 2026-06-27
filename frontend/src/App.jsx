@@ -12,27 +12,29 @@ import StudentActivitiesPage from './pages/student/StudentActivitiesPage'
 import StudentHistoryPage from './pages/student/StudentHistoryPage'
 import StudentAttendancePage from './pages/student/StudentAttendancePage'
 import StudentTasksPage from './pages/student/StudentTasksPage'
+import StudentDocumentsPage from './pages/student/StudentDocumentsPage'
 
 import InstructorDashboard from './pages/instructor/InstructorDashboard'
 import InstructorSchedulePage from './pages/instructor/InstructorSchedulePage'
 import InstructorRosterPage from './pages/instructor/InstructorRosterPage'
-import InstructorRankingsPage from './pages/instructor/InstructorRankingsPage'
 import InstructorHoursTrackingPage from './pages/instructor/InstructorHoursTrackingPage'
 
 import SupervisorDashboard from './pages/supervisor/SupervisorDashboard'
 import SupervisorAttendancePage from './pages/supervisor/SupervisorAttendancePage'
+import SupervisorActivitiesPage from './pages/supervisor/SupervisorActivitiesPage'
 import SupervisorEvaluationsPage from './pages/supervisor/SupervisorEvaluationsPage'
 import SupervisorCompletionPage from './pages/supervisor/SupervisorCompletionPage'
-import SupervisorRankingsPage from './pages/supervisor/SupervisorRankingsPage'
 import SupervisorTasksPage from './pages/supervisor/SupervisorTasksPage'
 import SupervisorRosterPage from './pages/supervisor/SupervisorRosterPage'
 import SupervisorInternRosterPage from './pages/supervisor/SupervisorInternRosterPage'
+import StudentDocumentsViewPage from './pages/supervisor/StudentDocumentsViewPage'
 
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminUsersPage from './pages/admin/AdminUsersPage'
 import AdminRecordsPage from './pages/admin/AdminRecordsPage'
 import NotificationsPage from './pages/NotificationsPage'
 import IpfsViewerPage from './pages/IpfsViewerPage'
+import RankingsPage from './pages/RankingsPage'
 
 function RoleRedirect() {
   const { user } = useAuth()
@@ -55,23 +57,27 @@ export default function App() {
       <Route path="/student/attendance" element={<StudentAttendancePage />} />
       <Route path="/student/history" element={<StudentHistoryPage />} />
       <Route path="/student/tasks" element={<StudentTasksPage />} />
+      <Route path="/student/documents" element={<StudentDocumentsPage />} />
 
       {/* Instructor */}
       <Route path="/instructor/dashboard" element={<InstructorDashboard />} />
       <Route path="/instructor/schedule" element={<InstructorSchedulePage />} />
       <Route path="/instructor/hours" element={<InstructorHoursTrackingPage />} />
-      <Route path="/instructor/rankings" element={<InstructorRankingsPage />} />
       <Route path="/instructor/roster" element={<InstructorRosterPage />} />
+      <Route path="/instructor/interns/:studentId/documents" element={<StudentDocumentsViewPage />} />
 
       {/* Supervisor */}
       <Route path="/supervisor/dashboard" element={<SupervisorDashboard />} />
       <Route path="/supervisor/attendance" element={<SupervisorAttendancePage />} />
+      <Route path="/supervisor/activities" element={<SupervisorActivitiesPage />} />
       <Route path="/supervisor/evaluations" element={<SupervisorEvaluationsPage />} />
       <Route path="/supervisor/completion" element={<SupervisorCompletionPage />} />
-      <Route path="/supervisor/rankings" element={<SupervisorRankingsPage />} />
       <Route path="/supervisor/tasks" element={<SupervisorTasksPage />} />
       <Route path="/supervisor/roster" element={<SupervisorRosterPage />} />
       <Route path="/supervisor/interns" element={<SupervisorInternRosterPage />} />
+      <Route path="/supervisor/interns/:studentId/documents" element={<StudentDocumentsViewPage />} />
+      {/* Global Rankings */}
+      <Route path="/rankings" element={<RankingsPage />} />
 
       {/* Admin */}
       <Route path="/admin/dashboard" element={<AdminDashboard />} />

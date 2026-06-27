@@ -95,7 +95,7 @@ function InstructorRosterPanel() {
 
   return (
     <div className="dashboard-stack">
-      <div className="dashboard-card">
+      <div className="dashboard-card" style={{ zIndex: 10 }}>
         <p className="eyebrow">Instructor</p>
         <h2>My Students</h2>
         <p className="muted">Add students by their Student ID. Supervisors can see this roster and the school they belong to.</p>
@@ -134,8 +134,15 @@ function InstructorRosterPanel() {
                   {s.institution && <span className="muted" style={{ fontSize: '0.75rem' }}>🏫 {s.institution}</span>}
                   {s.internship_id && <span className="muted" style={{ fontSize: '0.75rem' }}>💼 Internship ID: {s.internship_id}</span>}
                 </div>
-                <span className="role-chip">{s.role_id}</span>
-                <button className="secondary-button" onClick={() => handleRemove(s)}>Remove</button>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-end' }}>
+                  <span className="role-chip" style={{ alignSelf: 'flex-end' }}>{s.role_id}</span>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <Link to={`/instructor/interns/${s.user_id || s.id}/documents`} className="secondary-button" style={{ textDecoration: 'none', fontSize: '0.8rem', padding: '6px 12px' }}>
+                      View Docs
+                    </Link>
+                    <button className="secondary-button danger-button" style={{ fontSize: '0.8rem', padding: '6px 12px' }} onClick={() => handleRemove(s)}>Remove</button>
+                  </div>
+                </div>
               </div>
             ))}
           </div>

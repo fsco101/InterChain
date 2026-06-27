@@ -12,6 +12,7 @@ function InstructorSchedulePanel() {
   const [records, setRecords] = useState([])
   const [students, setStudents] = useState([])
   const [filterStudent, setFilterStudent] = useState('all')
+  const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
     fetchInstructorStudentAttendance()
@@ -32,7 +33,16 @@ function InstructorSchedulePanel() {
     if (r.payload.validation_status === 'validated') hoursByStudent[uid].validated += r.payload.hours || 0
   })
 
-  const filtered = filterStudent === 'all' ? records : records.filter((r) => r.user_id === filterStudent)
+  const filtered = records.filter((r) => {
+    if (filterStudent !== 'all' && r.user_id !== filterStudent) return false
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase()
+      const nameMatch = (r.user_name || '').toLowerCase().includes(q)
+      const dateMatch = (r.payload.attendance_date || '').includes(q)
+      if (!nameMatch && !dateMatch) return false
+    }
+    return true
+  })
 
   return (
     <div className="dashboard-stack">
@@ -69,6 +79,14 @@ function InstructorSchedulePanel() {
               {s.full_name}
             </button>
           ))}
+          <div style={{ flex: 1, minWidth: '100%', height: 1, background: 'rgba(148,163,184,0.1)', margin: '4px 0' }} />
+          <input 
+            type="text" 
+            placeholder="Search name or date..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{ padding: '6px 14px', borderRadius: 6, border: '1px solid var(--border)', background: 'rgba(15, 23, 42, 0.6)', color: '#fff', flex: 1, maxWidth: 300 }}
+          />
         </div>
       </div>
 
@@ -77,20 +95,32 @@ function InstructorSchedulePanel() {
         <p className="eyebrow" style={{ marginBottom: 12 }}>Attendance Records ({filtered.length})</p>
         {filtered.length === 0 ? <p className="muted">No attendance records found.</p> : (
           <div className="users-table">
-            {filtered.map((r) => (
-              <div key={r.id} className="users-row" style={{ alignItems: 'flex-start' }}>
-                {r.payload.photo_url && (
-                  <img src={r.payload.photo_url} alt="Proof" style={{ width: 48, height: 48, borderRadius: 8, objectFit: 'cover' }} />
-                )}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <strong>{r.user_name || 'Student'}</strong>
-                  <p className="muted" style={{ margin: 0, fontSize: '0.82rem' }}>{r.payload.attendance_date} · {r.payload.time_in}–{r.payload.time_out} · {r.payload.hours}h</p>
+            {filtered.map((r) => {
+              const studentDoc = students.find(s => s.user_id === r.user_id)
+              return (
+                <div key={r.id} className="users-row" style={{ alignItems: 'flex-start' }}>
+                  {r.payload.photo_url && (
+                    <img src={r.payload.photo_url} alt="Proof" style={{ width: 48, height: 48, borderRadius: 8, objectFit: 'cover' }} />
+                  )}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <strong>{r.user_name || 'Student'}</strong>
+                    <p className="muted" style={{ margin: 0, fontSize: '0.82rem' }}>{r.payload.attendance_date} · {r.payload.time_in}–{r.payload.time_out} · {r.payload.hours}h</p>
+                  </div>
+                  {studentDoc && studentDoc.supervisor_name && (
+                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, padding: '0 12px', borderLeft: '1px solid var(--border)' }}>
+                      <AvatarBadge name={studentDoc.supervisor_name} avatarUrl={studentDoc.supervisor_avatar} size={28} />
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{studentDoc.supervisor_name}</span>
+                        <span className="muted" style={{ fontSize: '0.7rem' }}>{studentDoc.company || 'Supervisor'}</span>
+                      </div>
+                    </div>
+                  )}
+                  <span className="role-chip" style={{ background: STATUS_COLORS[r.payload.validation_status] + '22', color: STATUS_COLORS[r.payload.validation_status] }}>
+                    {r.payload.validation_status}
+                  </span>
                 </div>
-                <span className="role-chip" style={{ background: STATUS_COLORS[r.payload.validation_status] + '22', color: STATUS_COLORS[r.payload.validation_status] }}>
-                  {r.payload.validation_status}
-                </span>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>

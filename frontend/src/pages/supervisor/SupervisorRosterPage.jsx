@@ -21,30 +21,13 @@ function InstructorCard({ instructor, onRefresh, positions }) {
     catch (err) { showError('Failed', extractError(err)) }
   }
 
-  const handlePosition = async (studentId, studentName, currentPos) => {
-    const posNames = positions.map((p) => p.name)
-    if (posNames.length === 0) { showError('No positions', 'Please create positions in the Tasks page first.'); return }
-
-    // Provide a simple prompt or custom dialog (using built-in prompt for now, could be improved)
-    const position = window.prompt(`Assign OJT position to ${studentName}:\n\nAvailable:\n${posNames.join('\n')}`, currentPos || '')
-    if (position === null) return // Cancelled
-
-    try {
-      await assignStudentPosition(studentId, position)
-      showSuccess('Position assigned', `${studentName} is now ${position}`)
-      onRefresh?.()
-    } catch (err) {
-      showError('Failed', extractError(err))
-    }
-  }
-
   const handleLinkStudent = async (studentId, studentName) => {
     try {
       await linkStudentToCompany(studentId)
-      showSuccess('Student Linked', `${studentName} is now linked to your company for OJT.`)
+      showSuccess('Added to Roster', `${studentName} is now pending in your Intern Roster. Please review their documents.`)
       onRefresh?.()
     } catch (err) {
-      showError('Failed to link', extractError(err))
+      showError('Failed to add', extractError(err))
     }
   }
 
@@ -94,9 +77,6 @@ function InstructorCard({ instructor, onRefresh, positions }) {
                     </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <span className="role-chip" style={{ cursor: 'pointer', background: s.ojt_position ? 'rgba(56,189,248,0.1)' : 'rgba(148,163,184,0.1)', color: s.ojt_position ? '#38bdf8' : 'var(--muted)' }} onClick={() => handlePosition(s.user_id, s.full_name, s.ojt_position)} title="Click to assign position">
-                      {s.ojt_position || 'Assign Position'}
-                    </span>
                     {s.supervisor_id === currentUser.id ? (
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <span style={{ fontSize: '0.8rem', color: '#22c55e', fontWeight: 600 }}>Linked</span>
@@ -105,7 +85,7 @@ function InstructorCard({ instructor, onRefresh, positions }) {
                     ) : s.supervisor_id ? (
                       <span className="muted" style={{ fontSize: '0.8rem' }}>Unavailable</span>
                     ) : (
-                      <button className="primary-button" style={{ padding: '4px 10px', fontSize: '0.75rem' }} onClick={() => handleLinkStudent(s.user_id, s.full_name)}>Accept for OJT</button>
+                      <button className="primary-button" style={{ padding: '4px 10px', fontSize: '0.75rem' }} onClick={() => handleLinkStudent(s.user_id, s.full_name)}>Add to Intern Roster</button>
                     )}
                   </div>
                 </div>
@@ -160,7 +140,7 @@ function SupervisorRosterPanel() {
 
   return (
     <div className="dashboard-stack">
-      <div className="dashboard-card">
+      <div className="dashboard-card" style={{ zIndex: 10 }}>
         <p className="eyebrow">Supervisor</p>
         <h2>Instructor Roster</h2>
         <p className="muted" style={{ maxWidth: 500 }}>Add university instructors to your roster using their Instructor ID. This gives you access to their students for attendance validation and evaluations.</p>

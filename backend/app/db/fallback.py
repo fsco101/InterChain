@@ -124,7 +124,7 @@ class _FallbackCursor:
     def sort(self, key: str, direction: int):
         reverse = direction < 0
         self._documents.sort(
-            key=lambda document: document.get(key) or datetime.min.replace(tzinfo=timezone.utc),
+            key=lambda document: document.get(key) or datetime.min.replace(tzinfo=PHT),
             reverse=reverse,
         )
         return self

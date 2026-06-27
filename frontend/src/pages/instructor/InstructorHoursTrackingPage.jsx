@@ -13,6 +13,7 @@ function HoursTrackingPanel() {
   const [sortMode, setSortMode] = useState('alphabetical') // alphabetical, remaining_few, remaining_many, latest
   const [editId, setEditId] = useState(null)
   const [editValue, setEditValue] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
 
   const load = async () => {
     setLoading(true)
@@ -70,6 +71,12 @@ function HoursTrackingPanel() {
     return 0
   })
 
+  const filteredStudents = sortedStudents.filter(s => {
+    if (!searchQuery.trim()) return true
+    const q = searchQuery.toLowerCase()
+    return (s.full_name?.toLowerCase().includes(q) || s.role_id?.toLowerCase().includes(q))
+  })
+
   return (
     <div className="dashboard-stack">
       <div className="dashboard-card">
@@ -89,6 +96,13 @@ function HoursTrackingPanel() {
             <option value="remaining_many">More Remaining Hours</option>
             <option value="latest">Latest Updated</option>
           </select>
+          <input 
+            type="text" 
+            placeholder="Search student name or ID..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{ padding: '6px 14px', borderRadius: 6, border: '1px solid var(--border)', background: 'rgba(15, 23, 42, 0.6)', color: '#fff', flex: 1, maxWidth: 300 }}
+          />
         </div>
       </div>
 
@@ -106,7 +120,7 @@ function HoursTrackingPanel() {
               <div style={{ flex: 1, textAlign: 'right', paddingRight: 10 }}>Consumed</div>
               <div style={{ flex: 1, textAlign: 'right', paddingRight: 10 }}>Remaining</div>
             </div>
-            {sortedStudents.map((s) => (
+            {filteredStudents.map((s) => (
               <div key={s.role_id} className="users-row" style={{ alignItems: 'center' }}>
                 <div style={{ flex: 2, display: 'flex', alignItems: 'center', gap: 12 }}>
                   <AvatarBadge name={s.full_name} avatarUrl={s.avatar_url} size={36} />

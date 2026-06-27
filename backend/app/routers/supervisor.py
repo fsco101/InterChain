@@ -9,6 +9,7 @@ from app.deps import require_roles
 from app.db.mongodb import get_database
 from app.services.auth_service import serialize_user
 from app.services.blockchain_service import build_blockchain_metadata_async
+from app.utils.timezone import get_pht_now, PHT
 from app.services.email_service import send_certificate_email
 
 
@@ -88,6 +89,9 @@ async def search_users(
 ):
     db = get_database()
     query: dict = {"role": role}
+    if role == "student":
+        query["supervisor_id"] = current_user["id"]
+
     if q.strip():
         query["$or"] = [
             {"full_name": {"$regex": q.strip(), "$options": "i"}},
@@ -99,7 +103,60 @@ async def search_users(
     return {"users": [serialize_user(u) async for u in cursor]}
 
 
-# ── Instructor Roster ──────────────────────────────────────────────────────────
+# ── Supervisor Student Activities (Approval) ───────────────────────────────────
+
+@router.get("/activities")
+async def get_all_student_activities(current_user: dict = Depends(require_roles("supervisor"))):
+    db = get_database()
+    # Find all students linked to this supervisor
+    cursor = db.users.find({"role": "student", "supervisor_id": current_user["id"]})
+    student_ids = [str(u["_id"]) async for u in cursor]
+
+    if not student_ids:
+        return {"activities": []}
+
+    cursor = db.activity_logs.find({"user_id": {"$in": student_ids}}).sort("created_at", -1)
+    
+    from app.services.records_service import serialize_record
+    activities = [serialize_record(doc) async for doc in cursor]
+    return {"activities": activities}
+
+class ActivityValidationBody(BaseModel):
+    status: str  # validated | rejected
+
+@router.patch("/activities/{record_id}/validate")
+async def validate_student_activity(record_id: str, body: ActivityValidationBody, current_user: dict = Depends(require_roles("supervisor"))):
+    db = get_database()
+    oid = _oid(record_id)
+    if not oid:
+        raise HTTPException(status_code=400, detail="Invalid record ID")
+
+    if body.status not in ["validated", "rejected"]:
+        raise HTTPException(status_code=400, detail="Status must be validated or rejected")
+
+    # verify it belongs to a student under this supervisor
+    record = await db.activity_logs.find_one({"_id": oid})
+    if not record:
+        raise HTTPException(status_code=404, detail="Activity not found")
+
+    student = await db.users.find_one({"_id": _oid(record["user_id"])})
+    if not student or student.get("supervisor_id") != current_user["id"]:
+        raise HTTPException(status_code=403, detail="Not authorized to validate this activity")
+
+    await db.activity_logs.update_one(
+        {"_id": oid},
+        {"$set": {"payload.validation_status": body.status}}
+    )
+
+    from app.routers.notifications import push_notification
+    color = "success" if body.status == "validated" else "error"
+    action = "approved" if body.status == "validated" else "rejected"
+    await push_notification(db, record["user_id"], "Activity Validated", f"Your activity '{record['payload'].get('title')}' was {action}.", color)
+
+    return {"ok": True, "status": body.status}
+
+
+# ── Supervisor Positions ──────────────────────────────────────────────────────────
 
 @router.get("/roster")
 async def get_roster(current_user: dict = Depends(require_roles("supervisor"))):
@@ -137,35 +194,48 @@ async def get_supervisor_interns_hours(current_user: dict = Depends(require_role
     explicit_students_cursor = db.users.find({"role": "student", "supervisor_id": sup_id})
     explicit_students = [u async for u in explicit_students_cursor]
     
-    # 2. Get students under instructors in supervisor's roster
     roster = await db.employer_rosters.find_one({"employer_id": sup_id})
-    student_users = list(explicit_students)
     
+    # Get pending students
+    pending_ids = roster.get("pending_interns", []) if roster else []
+    pending_students = []
+    if pending_ids:
+        from bson import ObjectId
+        # pending_ids might be strings or ObjectIds
+        p_oids = []
+        for pid in pending_ids:
+            try:
+                p_oids.append(ObjectId(pid))
+            except:
+                p_oids.append(pid)
+        cursor = db.users.find({"_id": {"$in": p_oids}})
+        pending_students = [u async for u in cursor]
+
+    # Deduplicate in case a student is in both explicit and pending
+    seen_ids = set()
+    student_users = []
+    for u in explicit_students + pending_students:
+        sid = str(u["_id"])
+        if sid not in seen_ids:
+            seen_ids.add(sid)
+            student_users.append(u)
+    
+    # Inject instructor info for reference
     if roster:
         instructors = roster.get("instructors", [])
         for ins in instructors:
             ins_user = await db.users.find_one({"role_id": ins["role_id"]})
             if ins_user:
-                # Get students for this instructor
                 ins_roster = await db.instructor_rosters.find_one({"instructor_id": ins["user_id"]})
                 if ins_roster:
                     for s in ins_roster.get("students", []):
-                        # Check if already in student_users
-                        existing_user = next((u for u in student_users if str(u["_id"]) == s.get("user_id")), None)
-                        if existing_user:
-                            # Inject instructor info for reference even if already explicitly linked
-                            if "_instructor_id" not in existing_user:
-                                existing_user["_instructor_name"] = ins_user.get("full_name")
-                                existing_user["_instructor_id"] = str(ins_user.get("_id"))
-                                existing_user["_instructor_avatar"] = ins_user.get("avatar_url")
-                        else:
-                            s_user = await db.users.find_one({"role_id": s["role_id"]})
-                            if s_user:
-                                # Inject instructor profile info for reference
-                                s_user["_instructor_name"] = ins_user.get("full_name")
-                                s_user["_instructor_id"] = str(ins_user.get("_id"))
-                                s_user["_instructor_avatar"] = ins_user.get("avatar_url")
-                                student_users.append(s_user)
+                        # Find the student in student_users and inject info
+                        for u in student_users:
+                            if str(u["_id"]) == s.get("user_id"):
+                                if "_instructor_id" not in u:
+                                    u["_instructor_name"] = ins_user.get("full_name")
+                                    u["_instructor_id"] = str(ins_user.get("_id"))
+                                    u["_instructor_avatar"] = ins_user.get("avatar_url")
 
     # Calculate hours
     results = []
@@ -178,10 +248,22 @@ async def get_supervisor_interns_hours(current_user: dict = Depends(require_role
             consumed += doc["payload"].get("hours", 0)
             
         rem = max(0, required - consumed)
+        # Document completion check
+        doc_cursor = db.student_documents.find({"student_id": str(s["_id"])})
+        doc_count = 0
+        async for d in doc_cursor:
+            doc_count += 1
+        docs_complete = doc_count >= 4
+        
+        # Link status
+        is_linked = str(s.get("supervisor_id")) == str(sup_id)
         
         results.append({
             "user_id": str(s["_id"]),
             "role_id": s.get("role_id"),
+            "internship_id": s.get("internship_id"),
+            "institution": s.get("institution", ""),
+            "phone": s.get("phone", ""),
             "full_name": s.get("full_name"),
             "avatar_url": s.get("avatar_url"),
             "instructor_name": s.get("_instructor_name") or "Directly Linked",
@@ -189,10 +271,47 @@ async def get_supervisor_interns_hours(current_user: dict = Depends(require_role
             "instructor_avatar": s.get("_instructor_avatar"),
             "required_hours": required,
             "consumed_hours": round(consumed, 2),
-            "remaining_hours": round(rem, 2)
+            "remaining_hours": round(rem, 2),
+            "docs_complete": docs_complete,
+            "ojt_position": s.get("ojt_position"),
+            "link_status": "linked" if is_linked else "pending"
         })
         
     return {"students": results}
+
+@router.post("/interns/{student_id}/link")
+async def link_student_intern(student_id: str, current_user: dict = Depends(require_roles("supervisor"))):
+    db = get_database()
+    from bson import ObjectId
+    try:
+        oid = ObjectId(student_id)
+    except:
+        oid = student_id
+        
+    # Check if student exists
+    student = await db.users.find_one({"_id": oid, "role": "student"})
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+        
+    # Update supervisor_id and remove from pending_interns
+    await db.users.update_one(
+        {"_id": oid},
+        {"$set": {"supervisor_id": current_user["id"]}}
+    )
+    
+    await db.employer_rosters.update_one(
+        {"employer_id": current_user["id"]},
+        {"$pull": {"pending_interns": str(oid)}}
+    )
+    
+    # Notify student
+    from app.routers.notifications import push_notification
+    await push_notification(
+        db, str(student["_id"]), "Company Linked", 
+        f"You have been officially accepted by {current_user['full_name']} for your OJT.", "success"
+    )
+
+    return {"message": "Student successfully linked to supervisor"}
 
 
 @router.post("/roster/add", status_code=status.HTTP_201_CREATED)
@@ -244,18 +363,9 @@ async def remove_instructor(role_id: str, current_user: dict = Depends(require_r
 # ── Students (all under supervisor via instructor rosters) ───────────────────────
 
 async def _get_supervisor_student_ids(db, supervisor_id: str) -> list[str]:
-    """Return user_ids of all students under this supervisor (via instructor rosters)."""
-    doc = await db.employer_rosters.find_one({"employer_id": supervisor_id})
-    if not doc:
-        return []
-    student_ids = []
-    for ins in doc.get("instructors", []):
-        roster = await db.instructor_rosters.find_one({"instructor_id": ins["user_id"]})
-        if roster:
-            for s in roster.get("students", []):
-                if s["user_id"] not in student_ids:
-                    student_ids.append(s["user_id"])
-    return student_ids
+    """Return user_ids of all students explicitly linked to this supervisor."""
+    cursor = db.users.find({"role": "student", "supervisor_id": supervisor_id})
+    return [str(u["_id"]) async for u in cursor]
 
 
 @router.get("/students")
@@ -321,7 +431,7 @@ async def validate_student_attendance(record_id: str, body: AttendanceValidateBo
             "payload.validated_by": current_user["id"],
             "payload.validated_by_name": current_user["full_name"],
             "payload.validation_notes": body.notes,
-            "payload.validated_at": datetime.now(timezone.utc).isoformat(),
+            "payload.validated_at": get_pht_now().isoformat(),
         }},
     )
     if result.modified_count == 0:
@@ -356,7 +466,7 @@ async def create_position(body: PositionBody, current_user: dict = Depends(requi
         "employer_id": current_user["id"],
         "name": body.name.strip(),
         "description": body.description.strip() if body.description else None,
-        "created_at": datetime.now(timezone.utc),
+        "created_at": get_pht_now(),
     }
     result = await db.positions.insert_one(doc)
     return {"id": str(result.inserted_id), "name": doc["name"], "description": doc["description"]}
@@ -410,7 +520,7 @@ async def assign_position(student_id: str, body: AssignPositionBody, current_use
 
 @router.post("/student/{student_id}/link")
 async def link_student_to_supervisor(student_id: str, current_user: dict = Depends(require_roles("supervisor"))):
-    """Supervisor accepts a student, linking them directly to their company."""
+    """Supervisor accepts a student, adding them to the pending intern roster."""
     db = get_database()
     oid = _oid(student_id)
     if not oid:
@@ -420,21 +530,18 @@ async def link_student_to_supervisor(student_id: str, current_user: dict = Depen
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
 
-    await db.users.update_one({"_id": oid}, {"$set": {"supervisor_id": current_user["id"]}})
-    
-    # Notify student
-    from app.routers.notifications import push_notification
-    await push_notification(
-        db, str(student["_id"]), "Company Linked", 
-        f"You have been accepted by {current_user['full_name']} for your OJT.", "success"
+    await db.employer_rosters.update_one(
+        {"employer_id": current_user["id"]},
+        {"$addToSet": {"pending_interns": str(oid)}},
+        upsert=True
     )
-
-    return {"ok": True, "message": "Student linked successfully"}
+    
+    return {"ok": True, "message": "Student added to intern roster (pending approval)"}
 
 
 @router.delete("/student/{student_id}/link")
 async def unlink_student_from_supervisor(student_id: str, current_user: dict = Depends(require_roles("supervisor"))):
-    """Supervisor unlinks a student from their company."""
+    """Supervisor unlinks a student from their company or removes them from pending."""
     db = get_database()
     oid = _oid(student_id)
     if not oid:
@@ -444,19 +551,32 @@ async def unlink_student_from_supervisor(student_id: str, current_user: dict = D
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
 
-    if student.get("supervisor_id") != current_user["id"]:
-        raise HTTPException(status_code=403, detail="Student is not linked to you")
-
-    await db.users.update_one({"_id": oid}, {"$set": {"supervisor_id": None}})
-    
-    # Notify student
-    from app.routers.notifications import push_notification
-    await push_notification(
-        db, str(student["_id"]), "Company Unlinked", 
-        f"You have been unlinked from {current_user['full_name']}'s company.", "info"
+    # Try to remove from pending first
+    pull_res = await db.employer_rosters.update_one(
+        {"employer_id": current_user["id"]},
+        {"$pull": {"pending_interns": str(oid)}}
     )
+    was_pending = pull_res.modified_count > 0
 
-    return {"ok": True, "message": "Student unlinked successfully"}
+    is_linked = student.get("supervisor_id") == current_user["id"]
+
+    if not is_linked and not was_pending:
+        # We don't want to throw an error if we are just force-removing
+        # but to be safe we'll just return OK even if neither matched, 
+        # as it effectively achieves the goal of unlinking.
+        pass
+
+    if is_linked:
+        await db.users.update_one({"_id": oid}, {"$set": {"supervisor_id": None}})
+        
+        # Notify student
+        from app.routers.notifications import push_notification
+        await push_notification(
+            db, str(student["_id"]), "Company Unlinked", 
+            f"You have been unlinked from {current_user['full_name']}'s company.", "info"
+        )
+
+    return {"ok": True, "message": "Student unlinked or removed from pending successfully"}
 
 
 # ── Tasks (supervisor assigns) ──────────────────────────────────────────────────
@@ -469,15 +589,25 @@ async def create_task(body: TaskBody, current_user: dict = Depends(require_roles
     if body.student_ids and len(body.student_ids) > 0:
         # Single or multi assign by specific student IDs
         target_ids = body.student_ids
+        
+        # Validate that these students belong to the supervisor
+        valid_cursor = db.users.find({"_id": {"$in": [_oid(sid) for sid in target_ids]}, "supervisor_id": current_user["id"]})
+        valid_ids = [str(u["_id"]) async for u in valid_cursor]
+        if len(valid_ids) != len(target_ids):
+            raise HTTPException(status_code=400, detail="One or more selected students are not in your roster.")
     else:
-        # Assign to all students with matching position
-        cursor = db.users.find({"role": "student", "ojt_position": {"$regex": f"^{body.position.strip()}$", "$options": "i"}})
+        # Assign to all students in roster with matching position
+        cursor = db.users.find({
+            "role": "student",
+            "supervisor_id": current_user["id"],
+            "ojt_position": {"$regex": f"^{body.position.strip()}$", "$options": "i"}
+        })
         target_ids = [str(u["_id"]) async for u in cursor]
 
     if not target_ids:
         raise HTTPException(status_code=400, detail="No students found for this position or selection.")
 
-    now = datetime.now(timezone.utc)
+    now = get_pht_now()
     docs = []
     for sid in target_ids:
         docs.append({
@@ -506,7 +636,7 @@ async def create_task(body: TaskBody, current_user: dict = Depends(require_roles
 @router.get("/tasks")
 async def list_tasks(current_user: dict = Depends(require_roles("supervisor"))):
     db = get_database()
-    cursor = db.tasks.find({"employer_id": current_user["id"]}).sort("created_at", -1).limit(50)
+    cursor = db.tasks.find({"employer_id": current_user["id"], "deleted_by_supervisor": {"$ne": True}}).sort("created_at", -1).limit(50)
     tasks = []
     
     from bson import ObjectId
@@ -571,20 +701,20 @@ async def update_task_status(task_id: str, body: TaskStatusBody, current_user: d
         completed_at = task.get("completed_at")
         if completed_at:
             dt = datetime.fromisoformat(completed_at)
-            if (datetime.now(timezone.utc) - dt).total_seconds() > 20:
+            if (get_pht_now() - dt).total_seconds() > 20:
                 raise HTTPException(status_code=400, detail="Task is locked and cannot be changed.")
 
     update_data = {"status": body.status}
     if body.status == "completed":
         # Check 20-second lock if it was ALREADY completed and they are trying to do something else
         # Wait, if they are setting it to completed, we just set the timestamp
-        update_data["completed_at"] = datetime.now(timezone.utc).isoformat()
+        update_data["completed_at"] = get_pht_now().isoformat()
         
         # Stop tracking time if it was running (e.g. they bypass 'done' directly to 'completed')
         last_start = task.get("last_active_start")
         if last_start:
             dt_start = datetime.fromisoformat(last_start)
-            elapsed = (datetime.now(timezone.utc) - dt_start).total_seconds()
+            elapsed = (get_pht_now() - dt_start).total_seconds()
             update_data["accumulated_seconds"] = task.get("accumulated_seconds", 0) + int(elapsed)
             update_data["last_active_start"] = None
 
@@ -594,18 +724,18 @@ async def update_task_status(task_id: str, body: TaskStatusBody, current_user: d
         
         if body.status == "pending":
             # Redo: restart timer
-            update_data["last_active_start"] = datetime.now(timezone.utc).isoformat()
+            update_data["last_active_start"] = get_pht_now().isoformat()
 
     elif body.status == "pending" and task.get("status") != "pending":
         # REDO flow or re-opening a done/cancelled task
-        update_data["last_active_start"] = datetime.now(timezone.utc).isoformat()
+        update_data["last_active_start"] = get_pht_now().isoformat()
     
     elif body.status == "cancelled" or body.status == "done":
         # Stop timer
         last_start = task.get("last_active_start")
         if last_start:
             dt_start = datetime.fromisoformat(last_start)
-            elapsed = (datetime.now(timezone.utc) - dt_start).total_seconds()
+            elapsed = (get_pht_now() - dt_start).total_seconds()
             update_data["accumulated_seconds"] = task.get("accumulated_seconds", 0) + int(elapsed)
             update_data["last_active_start"] = None
 
@@ -625,102 +755,18 @@ async def delete_task(task_id: str, current_user: dict = Depends(require_roles("
     if not oid:
         raise HTTPException(status_code=400, detail="Invalid task ID")
 
-    result = await db.tasks.delete_one({"_id": oid, "employer_id": current_user["id"]})
-    if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Task not found")
+    # Soft delete instead of hard delete so students retain it in their profile
+    result = await db.tasks.update_one(
+        {"_id": oid, "employer_id": current_user["id"]},
+        {"$set": {"deleted_by_supervisor": True}}
+    )
+    if result.modified_count == 0:
+        # Maybe it's already deleted or not found
+        task = await db.tasks.find_one({"_id": oid, "employer_id": current_user["id"]})
+        if not task:
+            raise HTTPException(status_code=404, detail="Task not found")
     return {"ok": True}
 
-
-# ── Rankings (evaluation-based) ───────────────────────────────────────────────
-
-@router.get("/rankings")
-async def get_rankings(
-    start_date: str | None = None,
-    end_date: str | None = None,
-    current_user: dict = Depends(require_roles("supervisor"))
-):
-    """Get student rankings based on supervisor evaluations: overall, per school, per position."""
-    db = get_database()
-
-    query = {"user_id": current_user["id"]}
-    if start_date or end_date:
-        query["created_at"] = {}
-        if start_date:
-            try:
-                query["created_at"]["$gte"] = datetime.strptime(start_date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
-            except ValueError: pass
-        if end_date:
-            try:
-                query["created_at"]["$lte"] = datetime.strptime(end_date, "%Y-%m-%d").replace(tzinfo=timezone.utc, hour=23, minute=59, second=59)
-            except ValueError: pass
-        if not query["created_at"]:
-            del query["created_at"]
-
-    # Gather all evaluations by this supervisor
-    cursor = db.employer_evaluations.find(query).sort("created_at", -1)
-    evaluations = []
-    async for doc in cursor:
-        evaluations.append(doc)
-
-    if not evaluations:
-        return {"overall": [], "by_school": {}, "by_position": {}}
-
-    # Aggregate scores per student
-    student_scores = {}
-    for ev in evaluations:
-        sid = ev["payload"]["student_id"]
-        if sid not in student_scores:
-            student_scores[sid] = {"scores": [], "student_id": sid}
-        student_scores[sid]["scores"].append(ev["payload"]["score"])
-
-    # Enrich with user data
-    for sid, data in student_scores.items():
-        user = await db.users.find_one({"role_id": sid})
-        if user:
-            data["full_name"] = user.get("full_name", "Unknown")
-            data["institution"] = user.get("institution")
-            data["ojt_position"] = user.get("ojt_position")
-            data["avatar_url"] = user.get("avatar_url")
-            data["user_id"] = str(user["_id"])
-        else:
-            data["full_name"] = sid
-            data["institution"] = None
-            data["ojt_position"] = None
-            data["avatar_url"] = None
-            data["user_id"] = None
-        data["avg_score"] = round(sum(data["scores"]) / len(data["scores"]), 2)
-        data["eval_count"] = len(data["scores"])
-
-    ranked = sorted(student_scores.values(), key=lambda x: x["avg_score"], reverse=True)
-
-    # Overall
-    overall = [{"rank": i + 1, **{k: v for k, v in r.items() if k != "scores"}} for i, r in enumerate(ranked)]
-
-    # By school
-    by_school = {}
-    for r in ranked:
-        school = r.get("institution") or "Unknown"
-        if school not in by_school:
-            by_school[school] = []
-        by_school[school].append(r)
-
-    for school in by_school:
-        by_school[school] = sorted(by_school[school], key=lambda x: x["avg_score"], reverse=True)
-        by_school[school] = [{"rank": i + 1, **{k: v for k, v in r.items() if k != "scores"}} for i, r in enumerate(by_school[school])]
-
-    # By position
-    by_position = {}
-    for r in ranked:
-        pos = r.get("ojt_position") or "Unassigned"
-        if pos not in by_position:
-            by_position[pos] = []
-        by_position[pos].append(r)
-
-    for pos in by_position:
-        by_position[pos] = sorted(by_position[pos], key=lambda x: x["avg_score"], reverse=True)
-        by_position[pos] = [{"rank": i + 1, **{k: v for k, v in r.items() if k != "scores"}} for i, r in enumerate(by_position[pos])]
-
-    return {"overall": overall, "by_school": by_school, "by_position": by_position}
 
 
 # ── Certificates ───────────────────────────────────────────────────────────────
@@ -778,7 +824,7 @@ async def issue_certificate(body: CertificateCreate, current_user: dict = Depend
         "employer_id": current_user["id"],
         "payload": payload,
         "blockchain": blockchain,
-        "created_at": datetime.now(timezone.utc),
+        "created_at": get_pht_now(),
     }
 
     result = await db.certificates.insert_one(document)
@@ -850,4 +896,75 @@ async def get_student_hours(role_id: str, current_user: dict = Depends(require_r
         "pending_hours": round(pending_hours, 2),
         "total_days": total_days,
         "required_hours": student.get("required_hours", 0),
+    }
+
+
+# ── Student Documents & OJT Approval ──────────────────────────────────────────
+
+@router.get("/students/{student_id}/documents")
+async def get_student_documents(student_id: str, current_user: dict = Depends(require_roles("supervisor"))):
+    """Supervisor views a specific student's documents."""
+    db = get_database()
+    oid = _oid(student_id)
+    if not oid:
+        raise HTTPException(status_code=400, detail="Invalid student ID")
+    
+    cursor = db.student_documents.find({"student_id": str(oid)}).sort("created_at", -1)
+    documents = []
+    async for doc in cursor:
+        documents.append({
+            "id": str(doc["_id"]),
+            "document_type": doc.get("document_type"),
+            "file_url": doc.get("file_url"),
+            "status": doc.get("status"),
+            "created_at": doc.get("created_at")
+        })
+    return {"documents": documents}
+
+
+@router.post("/students/{student_id}/ojt-approval")
+async def approve_ojt(student_id: str, current_user: dict = Depends(require_roles("supervisor"))):
+    """Supervisor officially approves the student's OJT. Saved in Blockchain."""
+    db = get_database()
+    oid = _oid(student_id)
+    if not oid:
+        raise HTTPException(status_code=400, detail="Invalid student ID")
+
+    student = await db.users.find_one({"_id": oid, "role": "student"})
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    payload = {
+        "student_id": str(oid),
+        "student_name": student.get("full_name"),
+        "role_id": student.get("role_id"),
+        "approval_date": get_pht_now().date().isoformat(),
+        "approved_by": current_user["full_name"],
+        "approved_by_id": current_user["id"],
+        "status": "Approved"
+    }
+
+    blockchain = await build_blockchain_metadata_async("ojt_approval_letter", current_user["id"], payload)
+
+    document = {
+        "record_type": "ojt_approval_letter",
+        "employer_id": current_user["id"],
+        "student_id": str(oid),
+        "payload": payload,
+        "blockchain": blockchain,
+        "created_at": get_pht_now(),
+    }
+
+    result = await db.ojt_approvals.insert_one(document)
+
+    from app.routers.notifications import push_notification
+    await push_notification(
+        db, str(oid), "OJT Approved",
+        f"Your OJT has been officially approved by {current_user['full_name']}. The approval letter is saved on the blockchain.", "success"
+    )
+
+    return {
+        "id": str(result.inserted_id),
+        "blockchain": blockchain,
+        "message": "OJT Approved successfully"
     }

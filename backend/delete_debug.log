@@ -1,0 +1,5 @@
+Received document_type: 'Resume'
+User ID: '6a39756cac2bb1b8f812b83a'
+Query: {'student_id': '6a39756cac2bb1b8f812b83a', 'document_type': 'Resume'}
+Found exactly this doc? True
+All docs for user: ["Resume"]

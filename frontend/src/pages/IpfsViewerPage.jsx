@@ -58,7 +58,7 @@ const TYPE_COLORS = {
 
 function fmt(val) {
   if (!val) return '—'
-  try { return new Date(val).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' }) }
+  try { return new Date(val).toLocaleDateString('en-PH', { timeZone: 'Asia/Manila',  year: 'numeric', month: 'short', day: 'numeric' }) }
   catch { return val }
 }
 

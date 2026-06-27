@@ -53,29 +53,42 @@ async def get_roster(current_user: dict = Depends(require_roles("instructor"))):
     db = get_database()
     doc = await db.instructor_rosters.find_one({"instructor_id": current_user["id"]})
     students = doc.get("students", []) if doc else []
-    # Enrich with ojt_position and company (from supervisor)
-    # First, find which supervisor has this instructor
-    supervisor_doc = await db.employer_rosters.find_one({"instructors.user_id": current_user["id"]})
-    supervisor_company = None
-    if supervisor_doc:
-        from bson import ObjectId
-        sup_id = supervisor_doc["employer_id"]
-        if ObjectId.is_valid(sup_id):
-            sup_user = await db.users.find_one({"_id": ObjectId(sup_id)})
-        else:
-            sup_user = await db.users.find_one({"_id": sup_id})
-        if sup_user:
-            supervisor_company = sup_user.get("company")
+    from bson import ObjectId
 
     enriched = []
     for s in students:
         user_doc = await db.users.find_one({"role_id": s["role_id"]})
-        s["ojt_position"] = user_doc.get("ojt_position") if user_doc else None
-        s["internship_id"] = user_doc.get("internship_id") if user_doc else None
-        s["avatar_url"] = user_doc.get("avatar_url") if user_doc else None
-        s["company"] = supervisor_company
+        if user_doc:
+            s["ojt_position"] = user_doc.get("ojt_position")
+            s["internship_id"] = user_doc.get("internship_id")
+            s["avatar_url"] = user_doc.get("avatar_url")
+            s["supervisor_id"] = user_doc.get("supervisor_id")
+            s["company"] = None
+            s["supervisor_name"] = None
+            s["supervisor_avatar"] = None
+            
+            if s["supervisor_id"]:
+                sup_id = s["supervisor_id"]
+                if ObjectId.is_valid(sup_id):
+                    sup_user = await db.users.find_one({"_id": ObjectId(sup_id)})
+                else:
+                    sup_user = await db.users.find_one({"_id": sup_id})
+                
+                if sup_user:
+                    s["company"] = sup_user.get("company")
+                    s["supervisor_name"] = sup_user.get("full_name")
+                    s["supervisor_avatar"] = sup_user.get("avatar_url")
+        else:
+            s["ojt_position"] = None
+            s["internship_id"] = None
+            s["avatar_url"] = None
+            s["supervisor_id"] = None
+            s["company"] = None
+            s["supervisor_name"] = None
+            s["supervisor_avatar"] = None
+            
         enriched.append(s)
-    return {"students": enriched, "supervisor_company": supervisor_company}
+    return {"students": enriched}
 
 
 @router.post("/roster/add", status_code=status.HTTP_201_CREATED)
@@ -276,80 +289,33 @@ async def get_student_attendance(current_user: dict = Depends(require_roles("ins
     return {"attendance": [serialize_record(doc) async for doc in cursor]}
 
 
-# ── Rankings (read-only for instructor) ────────────────────────────────────────
 
-@router.get("/rankings")
-async def get_rankings(
-    start_date: str | None = None,
-    end_date: str | None = None,
-    current_user: dict = Depends(require_roles("instructor"))
-):
-    """Instructor views rankings for students in their roster (read-only).
-    Rankings are based on supervisor evaluations."""
+# ── Student Documents ──────────────────────────────────────────────────────────
+
+@router.get("/students/{student_id}/documents")
+async def get_student_documents(student_id: str, current_user: dict = Depends(require_roles("instructor"))):
+    """Instructor views a specific student's documents."""
     db = get_database()
-    doc = await db.instructor_rosters.find_one({"instructor_id": current_user["id"]})
-    students = doc.get("students", []) if doc else []
-    student_role_ids = [s["role_id"] for s in students]
-
-    if not student_role_ids:
-        return {"overall": [], "by_position": {}}
-
-    query = {"payload.student_id": {"$in": student_role_ids}}
-    if start_date or end_date:
-        query["created_at"] = {}
-        if start_date:
-            try:
-                query["created_at"]["$gte"] = datetime.strptime(start_date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
-            except ValueError: pass
-        if end_date:
-            try:
-                query["created_at"]["$lte"] = datetime.strptime(end_date, "%Y-%m-%d").replace(tzinfo=timezone.utc, hour=23, minute=59, second=59)
-            except ValueError: pass
-        if not query["created_at"]:
-            del query["created_at"]
-
-    # Find evaluations for these students
-    cursor = db.employer_evaluations.find(query).sort("created_at", -1)
-    evaluations = [ev async for ev in cursor]
-
-    if not evaluations:
-        return {"overall": [], "by_school": {}, "by_position": {}}
-
-    student_scores = {}
-    for ev in evaluations:
-        sid = ev["payload"]["student_id"]
-        if sid not in student_scores:
-            student_scores[sid] = {"scores": [], "student_id": sid}
-        student_scores[sid]["scores"].append(ev["payload"]["score"])
-
-    for sid, data in student_scores.items():
-        user = await db.users.find_one({"role_id": sid})
-        if user:
-            data["full_name"] = user.get("full_name", "Unknown")
-            data["institution"] = user.get("institution")
-            data["ojt_position"] = user.get("ojt_position")
-            data["avatar_url"] = user.get("avatar_url")
-            data["user_id"] = str(user["_id"])
-        else:
-            data["full_name"] = sid
-            data["institution"] = None
-            data["ojt_position"] = None
-            data["avatar_url"] = None
-            data["user_id"] = None
-        data["avg_score"] = round(sum(data["scores"]) / len(data["scores"]), 2)
-        data["eval_count"] = len(data["scores"])
-
-    ranked = sorted(student_scores.values(), key=lambda x: x["avg_score"], reverse=True)
-    overall = [{"rank": i + 1, **{k: v for k, v in r.items() if k != "scores"}} for i, r in enumerate(ranked)]
-
-    by_position = {}
-    for r in ranked:
-        pos = r.get("ojt_position") or "Unassigned"
-        if pos not in by_position:
-            by_position[pos] = []
-        by_position[pos].append(r)
-    for pos in by_position:
-        by_position[pos] = sorted(by_position[pos], key=lambda x: x["avg_score"], reverse=True)
-        by_position[pos] = [{"rank": i + 1, **{k: v for k, v in r.items() if k != "scores"}} for i, r in enumerate(by_position[pos])]
-
-    return {"overall": overall, "by_position": by_position}
+    from bson import ObjectId
+    
+    def _oid(val: str):
+        try:
+            return ObjectId(val)
+        except Exception:
+            return None
+            
+    oid = _oid(student_id)
+    if not oid:
+        raise HTTPException(status_code=400, detail="Invalid student ID")
+    
+    cursor = db.student_documents.find({"student_id": str(oid)}).sort("created_at", -1)
+    documents = []
+    async for doc in cursor:
+        documents.append({
+            "id": str(doc["_id"]),
+            "document_type": doc.get("document_type"),
+            "file_url": doc.get("file_url"),
+            "status": doc.get("status"),
+            "created_at": doc.get("created_at")
+        })
+    return {"documents": documents}

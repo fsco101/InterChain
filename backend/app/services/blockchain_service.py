@@ -4,6 +4,7 @@ import os
 from datetime import datetime, timezone
 
 from app.services.pinata_service import pin_to_ipfs
+from app.utils.timezone import get_pht_now, PHT
 from app.services.polygon_service import store_on_polygon
 
 
@@ -16,7 +17,7 @@ def build_blockchain_metadata(record_type: str, user_id: str, payload: dict) -> 
         "record_type": record_type,
         "user_id": user_id,
         "payload": payload,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": get_pht_now().isoformat(),
     }
     tx_hash = hashlib.sha256(_canonicalize_payload(tx_seed).encode("utf-8")).hexdigest()
     explorer_base = os.getenv("BLOCKCHAIN_EXPLORER_BASE", "https://explorer.local/tx")
@@ -26,7 +27,7 @@ def build_blockchain_metadata(record_type: str, user_id: str, payload: dict) -> 
         "tx_hash": f"0x{tx_hash}",
         "explorer_url": f"{explorer_base}/0x{tx_hash}",
         "network": os.getenv("BLOCKCHAIN_NETWORK", "private-simulated"),
-        "recorded_at": datetime.now(timezone.utc),
+        "recorded_at": get_pht_now(),
         "status": "confirmed",
         "ipfs": None,  # populated asynchronously by build_blockchain_metadata_async
     }

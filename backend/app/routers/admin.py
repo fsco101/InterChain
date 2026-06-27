@@ -5,6 +5,7 @@ from app.deps import require_roles
 from app.db.mongodb import get_database
 from app.schemas.auth import AdminUserUpdate, UserCreate, UserRead, UserRole
 from app.services.auth_service import create_user, delete_user, list_users, serialize_user, update_user
+from app.utils.timezone import get_pht_now, PHT
 from app.services.records_service import list_records
 
 
@@ -27,7 +28,7 @@ async def dashboard(current_user: dict = Depends(require_roles("admin"))):
 
     # 2. Activity Timeline (last 14 days)
     from datetime import datetime, timedelta, timezone
-    now = datetime.now(timezone.utc)
+    now = get_pht_now()
     cutoff = now - timedelta(days=14)
     
     # We will sum across multiple core collections to get a sense of "system activity"

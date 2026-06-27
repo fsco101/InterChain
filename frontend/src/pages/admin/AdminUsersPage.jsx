@@ -165,7 +165,7 @@ function AdminUsersPanel() {
                   <p className="muted" style={{ margin: 0, fontSize: '0.75rem' }}>{u.institution}</p>
                 )}
                 <p className="muted" style={{ margin: 0, fontSize: '0.75rem' }}>
-                  Joined {u.created_at ? new Date(u.created_at).toLocaleDateString() : '—'}
+                  Joined {u.created_at ? new Date(u.created_at).toLocaleDateString('en-PH', { timeZone: 'Asia/Manila' }) : '—'}
                 </p>
               </div>
               <span className="role-chip">{u.role}</span>

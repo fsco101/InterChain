@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
 from app.deps import require_roles
+from app.utils.timezone import get_pht_now, PHT
 from app.db.mongodb import get_database
 
 router = APIRouter(prefix="/notifications", tags=["notifications"])
@@ -84,5 +85,5 @@ async def push_notification(db, user_id: str, title: str, message: str, notif_ty
         "message": message,
         "type": notif_type,
         "read": False,
-        "created_at": datetime.now(timezone.utc),
+        "created_at": get_pht_now(),
     })

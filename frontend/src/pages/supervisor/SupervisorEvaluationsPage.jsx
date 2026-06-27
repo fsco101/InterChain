@@ -14,10 +14,14 @@ function RecordList({ title, records }) {
         {records.length === 0
           ? <p className="muted">No evaluations yet.</p>
           : records.map((r) => (
-            <div key={r.id} className="mini-card">
-              <strong>{r.payload.student_id}</strong>
-              <span style={{ marginLeft: 8 }}>Score: {r.payload.score}/10</span>
-              <p className="muted" style={{ margin: '4px 0 0', fontSize: '0.78rem' }}>{r.payload.feedback?.slice(0, 80)}{r.payload.feedback?.length > 80 ? '…' : ''}</p>
+            <div key={r.id} className="mini-card" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <strong style={{ fontSize: '0.9rem' }}>{r.payload.student_id}</strong>
+                <span style={{ fontWeight: 600, color: '#38bdf8' }}>Score: {r.payload.score}/10</span>
+              </div>
+              <p className="muted" style={{ margin: 0, fontSize: '0.8rem', lineHeight: 1.4 }}>
+                "{r.payload.feedback?.slice(0, 100)}{r.payload.feedback?.length > 100 ? '…' : ''}"
+              </p>
             </div>
           ))}
       </div>
@@ -74,7 +78,7 @@ function SupervisorEvaluationsPanel() {
       </div>
 
       <div className="grid-two">
-        <form className="dashboard-card form-card" onSubmit={handleSubmit} ref={formRef}>
+        <form className="dashboard-card form-card" style={{ zIndex: 10 }} onSubmit={handleSubmit} ref={formRef}>
           <h3>New Evaluation</h3>
           <InternshipSearchField name="internship_id" callerRole="supervisor" />
           <UserSearchField

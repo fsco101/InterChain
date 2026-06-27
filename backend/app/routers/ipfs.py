@@ -26,7 +26,7 @@ def _sort_key(r: dict) -> datetime:
             return datetime.fromisoformat(val)
         except Exception:
             pass
-    return datetime.min.replace(tzinfo=timezone.utc)
+    return datetime.min.replace(tzinfo=PHT)
 
 
 def _summarize(payload: dict) -> str:
