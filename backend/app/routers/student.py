@@ -139,6 +139,25 @@ async def upload_student_document(
         }
         await db.student_documents.insert_one(document)
 
+    # Check if all required documents are completed
+    required_docs = ['Resume', 'Endorsement Letter', 'Waiver', 'Medical Certificate']
+    completed_docs = await db.student_documents.count_documents({
+        "student_id": current_user["id"],
+        "document_type": {"$in": required_docs}
+    })
+
+    if completed_docs >= len(required_docs) and not existing:
+        from app.routers.notifications import push_notification
+        # Find instructors in instructor_rosters
+        roster_cursor = db.instructor_rosters.find({"students.user_id": current_user["id"]})
+        async for roster in roster_cursor:
+            instructor_id = roster.get("instructor_id")
+            if instructor_id:
+                await push_notification(
+                    db, instructor_id, "Documents Completed",
+                    f"{current_user['full_name']} has completed all required OJT documents.", "success"
+                )
+
     return {"ok": True, "file_url": file_url, "document_type": document_type}
 
 

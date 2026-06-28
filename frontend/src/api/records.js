@@ -5,7 +5,8 @@ export const createStudentReport = (payload) => api.post('/records/student/repor
 export const fetchStudentRecords = () => api.get('/records/student')
 
 // Student Attendance
-export const createStudentAttendance = (formData) => api.post('/records/student/attendance', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
+export const timeInStudentAttendance = (formData) => api.post('/records/student/attendance/time-in', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
+export const timeOutStudentAttendance = (formData) => api.post('/records/student/attendance/time-out', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
 export const fetchStudentAttendance = () => api.get('/records/student/attendance')
 export const fetchStudentAttendanceHistory = () => api.get('/records/student/attendance/history')
 export const deleteStudentAttendance = (id) => api.delete(`/records/student/attendance/${id}`)
@@ -101,6 +102,7 @@ export const deleteStudentActivity = (id) => api.delete(`/records/student/activi
 export const deleteStudentReport = (id) => api.delete(`/records/student/report/${id}`)
 export const bulkDeleteStudentActivity = (ids) => api.post('/records/student/activity/bulk-delete', { ids })
 export const bulkDeleteStudentReport = (ids) => api.post('/records/student/report/bulk-delete', { ids })
+export const bulkDeleteStudentAttendance = (ids) => api.post('/records/student/attendance/bulk-delete', { ids })
 
 // Delete (instructor)
 export const deleteInstructorAttendance = (id) => api.delete(`/records/instructor/attendance/${id}`)

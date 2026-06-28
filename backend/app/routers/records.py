@@ -81,18 +81,13 @@ async def create_student_report(payload: StudentReportCreate, current_user: dict
     return record
 
 
-@router.post("/student/attendance")
-async def create_student_attendance(
+@router.post("/student/attendance/time-in")
+async def student_time_in(
     internship_id: str = Form(...),
-    attendance_date: str = Form(...),
-    time_in: str = Form(...),
-    time_out: str = Form(...),
-    hours: float = Form(...),
-    notes: str | None = Form(None),
     photo: UploadFile = File(...),
     current_user: dict = Depends(require_roles("student")),
 ):
-    """Student logs attendance with a required photo as proof. Photo is uploaded to Cloudinary."""
+    """Student logs time in with a required photo as proof."""
     if not photo or not photo.filename:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Attendance photo is required as proof.")
 
@@ -100,22 +95,33 @@ async def create_student_attendance(
     if not photo_bytes:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Uploaded photo is empty.")
 
-    # Upload photo to Cloudinary
+    now = get_pht_now()
+    attendance_date = now.strftime("%Y-%m-%d")
+    time_in = now.strftime("%H:%M")
+
+    db = get_database()
+    # Check if already timed in for today
+    existing = await db.student_attendance.find_one({
+        "user_id": current_user["id"],
+        "payload.attendance_date": attendance_date
+    })
+    if existing:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Already timed in for today.")
+
     photo_result = await upload_attendance_photo(photo_bytes)
 
     payload = {
         "internship_id": internship_id,
         "attendance_date": attendance_date,
         "time_in": time_in,
-        "time_out": time_out,
-        "hours": hours,
-        "notes": notes,
+        "time_out": None,
+        "hours": 0.0,
+        "notes": None,
         "photo_url": photo_result["url"],
         "photo_public_id": photo_result["public_id"],
-        "validation_status": "pending",  # pending | validated | rejected
+        "validation_status": "pending",
     }
 
-    db = get_database()
     blockchain = await build_blockchain_metadata_async("student_attendance", current_user["id"], payload)
     document = {
         "record_type": "student_attendance",
@@ -124,13 +130,70 @@ async def create_student_attendance(
         "user_name": current_user["full_name"],
         "payload": payload,
         "blockchain": blockchain,
-        "created_at": get_pht_now(),
+        "created_at": now,
     }
     result = await db.student_attendance.insert_one(document)
     created = await db.student_attendance.find_one({"_id": result.inserted_id})
     from app.services.records_service import serialize_record
-    await push_notification(db, current_user["id"], "Attendance logged", f"Attendance for {attendance_date} has been saved with photo proof.", "success")
+    await push_notification(db, current_user["id"], "Time In logged", f"Time In for {attendance_date} has been saved.", "success")
     return serialize_record(created)
+
+
+@router.post("/student/attendance/time-out")
+async def student_time_out(
+    photo: UploadFile = File(...),
+    current_user: dict = Depends(require_roles("student")),
+):
+    """Student logs time out with a required photo as proof."""
+    if not photo or not photo.filename:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Attendance photo is required as proof.")
+
+    photo_bytes = await photo.read()
+    if not photo_bytes:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Uploaded photo is empty.")
+
+    now = get_pht_now()
+    attendance_date = now.strftime("%Y-%m-%d")
+    time_out = now.strftime("%H:%M")
+
+    db = get_database()
+    # Find the active attendance record for today
+    existing = await db.student_attendance.find_one({
+        "user_id": current_user["id"],
+        "payload.attendance_date": attendance_date
+    })
+
+    if not existing:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No time in record found for today.")
+    if existing["payload"].get("time_out"):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Already timed out for today.")
+
+    time_in = existing["payload"]["time_in"]
+    h_in, m_in = map(int, time_in.split(':'))
+    h_out, m_out = map(int, time_out.split(':'))
+    hours = max(0.0, (h_out + m_out / 60) - (h_in + m_in / 60))
+
+    photo_result = await upload_attendance_photo(photo_bytes)
+
+    await db.student_attendance.update_one(
+        {"_id": existing["_id"]},
+        {"$set": {
+            "payload.time_out": time_out,
+            "payload.hours": round(hours, 2),
+            "payload.photo_out_url": photo_result["url"],
+            "payload.photo_out_public_id": photo_result["public_id"],
+        }}
+    )
+
+    updated = await db.student_attendance.find_one({"_id": existing["_id"]})
+    from app.services.records_service import serialize_record
+    await push_notification(db, current_user["id"], "Time Out logged", f"Time Out for {attendance_date} has been saved.", "success")
+    
+    supervisor_id = current_user.get("supervisor_id")
+    if supervisor_id:
+        await push_notification(db, supervisor_id, "Student Time Out", f"{current_user['full_name']} has logged out.", "info")
+
+    return serialize_record(updated)
 
 
 @router.get("/student/attendance")
@@ -166,7 +229,8 @@ async def get_student_records(current_user: dict = Depends(require_roles("studen
 async def get_student_history(current_user: dict = Depends(require_roles("student"))):
     activity_logs = await list_all_records("activity_logs", current_user["id"])
     reports = await list_all_records("student_reports", current_user["id"])
-    return {"activity_logs": activity_logs, "reports": reports}
+    attendance = await list_all_records("student_attendance", current_user["id"])
+    return {"activity_logs": activity_logs, "reports": reports, "attendance": attendance}
 
 
 @router.delete("/student/activity/{record_id}")
@@ -190,6 +254,11 @@ async def bulk_delete_student_activity(body: BulkDeleteBody, current_user: dict 
 @router.post("/student/report/bulk-delete")
 async def bulk_delete_student_report(body: BulkDeleteBody, current_user: dict = Depends(require_roles("student"))):
     count = await delete_records_bulk("student_reports", body.ids, current_user["id"])
+    return {"deleted": count}
+
+@router.post("/student/attendance/bulk-delete")
+async def bulk_delete_student_attendance(body: BulkDeleteBody, current_user: dict = Depends(require_roles("student"))):
+    count = await delete_records_bulk("student_attendance", body.ids, current_user["id"])
     return {"deleted": count}
 
 
@@ -320,9 +389,31 @@ async def approve_completion(payload: CompletionApprovalCreate, current_user: di
 
 @router.post("/supervisor/evaluation")
 async def submit_supervisor_evaluation(payload: EmployerEvaluationCreate, current_user: dict = Depends(require_roles("supervisor"))):
-    record = await create_record("employer_evaluations", "supervisor_evaluation", "supervisor", current_user, payload.model_dump(mode="json"))
     db = get_database()
-    await push_notification(db, current_user["id"], "Evaluation submitted", f"Score {payload.score}/10 saved for student {payload.student_id}.", "success")
+    existing = await db.employer_evaluations.find_one({
+        "user_id": current_user["id"],
+        "payload.student_id": payload.student_id
+    })
+
+    if existing:
+        now = get_pht_now()
+        await db.employer_evaluations.update_one(
+            {"_id": existing["_id"]},
+            {"$set": {
+                "payload.score": payload.score,
+                "payload.feedback": payload.feedback,
+                "payload.internship_id": payload.internship_id,
+                "created_at": now
+            }}
+        )
+        updated = await db.employer_evaluations.find_one({"_id": existing["_id"]})
+        from app.services.records_service import serialize_record
+        record = serialize_record(updated)
+        await push_notification(db, current_user["id"], "Evaluation updated", f"Score {payload.score}/10 updated for student {payload.student_id}.", "success")
+    else:
+        record = await create_record("employer_evaluations", "supervisor_evaluation", "supervisor", current_user, payload.model_dump(mode="json"))
+        await push_notification(db, current_user["id"], "Evaluation submitted", f"Score {payload.score}/10 saved for student {payload.student_id}.", "success")
+        
     return record
 
 

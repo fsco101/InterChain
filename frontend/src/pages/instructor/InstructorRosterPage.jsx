@@ -14,6 +14,7 @@ function InstructorRosterPanel() {
   const [selectedStudent, setSelectedStudent] = useState(null)
   const [adding, setAdding] = useState(false)
   const [resetKey, setResetKey] = useState(0)
+  const [documentFilter, setDocumentFilter] = useState('All')
 
   const load = async () => {
     try {
@@ -93,6 +94,11 @@ function InstructorRosterPanel() {
     }
   }
 
+  const filteredStudents = students.filter(s => {
+    if (documentFilter === 'All') return true
+    return s.document_status === documentFilter
+  })
+
   return (
     <div className="dashboard-stack">
       <div className="dashboard-card" style={{ zIndex: 10 }}>
@@ -116,12 +122,27 @@ function InstructorRosterPanel() {
       </div>
 
       <div className="dashboard-card">
-        <p className="eyebrow" style={{ marginBottom: 12 }}>Roster ({students.length})</p>
-        {students.length === 0 ? (
-          <p className="muted">No students yet. Add a student using their Student ID above.</p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <p className="eyebrow" style={{ margin: 0 }}>Roster ({filteredStudents.length})</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span className="muted" style={{ fontSize: '0.85rem' }}>Docs Status:</span>
+            <select
+              value={documentFilter}
+              onChange={(e) => setDocumentFilter(e.target.value)}
+              style={{ fontSize: '0.85rem', padding: '4px 8px' }}
+            >
+              <option value="All">All</option>
+              <option value="Pending">Pending</option>
+              <option value="Complete">Complete</option>
+            </select>
+          </div>
+        </div>
+
+        {filteredStudents.length === 0 ? (
+          <p className="muted">No students found matching criteria.</p>
         ) : (
           <div className="users-table">
-            {students.map((s) => (
+            {filteredStudents.map((s) => (
               <div key={s.role_id} className="users-row">
                 <Link to={`/profile/${s.user_id || s.id}`} style={{ flexShrink: 0, display: 'block' }}>
                   <AvatarBadge name={s.full_name} avatarUrl={s.avatar_url} size={42} />
@@ -135,7 +156,14 @@ function InstructorRosterPanel() {
                   {s.internship_id && <span className="muted" style={{ fontSize: '0.75rem' }}>💼 Internship ID: {s.internship_id}</span>}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-end' }}>
-                  <span className="role-chip" style={{ alignSelf: 'flex-end' }}>{s.role_id}</span>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    {s.document_status && (
+                      <span className="role-chip" style={{ background: s.document_status === 'Complete' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(245, 158, 11, 0.15)', color: s.document_status === 'Complete' ? '#22c55e' : '#f59e0b', padding: '2px 8px', fontSize: '0.7rem' }}>
+                        Docs: {s.document_status}
+                      </span>
+                    )}
+                    <span className="role-chip">{s.role_id}</span>
+                  </div>
                   <div style={{ display: 'flex', gap: 8 }}>
                     <Link to={`/instructor/interns/${s.user_id || s.id}/documents`} className="secondary-button" style={{ textDecoration: 'none', fontSize: '0.8rem', padding: '6px 12px' }}>
                       View Docs

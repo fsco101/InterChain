@@ -87,6 +87,14 @@ async def get_roster(current_user: dict = Depends(require_roles("instructor"))):
             s["supervisor_name"] = None
             s["supervisor_avatar"] = None
             
+        # Check document status
+        required_docs = ['Resume', 'Endorsement Letter', 'Waiver', 'Medical Certificate']
+        completed_docs = await db.student_documents.count_documents({
+            "student_id": s["user_id"],
+            "document_type": {"$in": required_docs}
+        })
+        s["document_status"] = "Complete" if completed_docs >= len(required_docs) else "Pending"
+
         enriched.append(s)
     return {"students": enriched}
 

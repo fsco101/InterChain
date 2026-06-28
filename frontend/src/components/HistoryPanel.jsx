@@ -9,6 +9,7 @@ function fmt(val) {
 
 function getLabel(record) {
   const p = record.payload
+  if (record.record_type === 'student_attendance') return `Attendance - ${p.attendance_date}`
   return p.title || p.report_title || p.student_id || p.recipient_name || record.record_type
 }
 

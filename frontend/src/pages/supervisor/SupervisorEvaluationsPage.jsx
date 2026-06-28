@@ -14,13 +14,22 @@ function RecordList({ title, records }) {
         {records.length === 0
           ? <p className="muted">No evaluations yet.</p>
           : records.map((r) => (
-            <div key={r.id} className="mini-card" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <strong style={{ fontSize: '0.9rem' }}>{r.payload.student_id}</strong>
-                <span style={{ fontWeight: 600, color: '#38bdf8' }}>Score: {r.payload.score}/10</span>
+            <div key={r.id} className="mini-card" style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '12px 14px', borderLeft: '3px solid #38bdf8' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div>
+                  <strong style={{ fontSize: '0.95rem', color: 'var(--text)', display: 'block' }}>{r.user_name || r.payload.student_id}</strong>
+                  <div style={{ display: 'flex', gap: 8, marginTop: 4, alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.75rem', background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: 4, color: 'var(--muted)' }}>Student ID: {r.payload.student_id}</span>
+                    <span style={{ fontSize: '0.75rem', background: 'rgba(167,139,250,0.15)', padding: '2px 6px', borderRadius: 4, color: '#c4b5fd' }}>Intern ID: {r.payload.internship_id || 'N/A'}</span>
+                  </div>
+                </div>
+                <div style={{ background: 'rgba(56,189,248,0.15)', padding: '4px 10px', borderRadius: 8, border: '1px solid rgba(56,189,248,0.3)', textAlign: 'center' }}>
+                  <span style={{ display: 'block', fontSize: '0.65rem', textTransform: 'uppercase', color: '#7dd3fc', letterSpacing: 0.5 }}>Score</span>
+                  <strong style={{ fontSize: '1.1rem', color: '#38bdf8' }}>{r.payload.score}<span style={{ fontSize: '0.8rem', color: 'var(--muted)', fontWeight: 'normal' }}>/10</span></strong>
+                </div>
               </div>
-              <p className="muted" style={{ margin: 0, fontSize: '0.8rem', lineHeight: 1.4 }}>
-                "{r.payload.feedback?.slice(0, 100)}{r.payload.feedback?.length > 100 ? '…' : ''}"
+              <p className="muted" style={{ margin: '4px 0 0', fontSize: '0.85rem', lineHeight: 1.5, fontStyle: 'italic', background: 'rgba(0,0,0,0.2)', padding: '8px 10px', borderRadius: 6 }}>
+                "{r.payload.feedback}"
               </p>
             </div>
           ))}
@@ -80,15 +89,31 @@ function SupervisorEvaluationsPanel() {
       <div className="grid-two">
         <form className="dashboard-card form-card" style={{ zIndex: 10 }} onSubmit={handleSubmit} ref={formRef}>
           <h3>New Evaluation</h3>
-          <InternshipSearchField name="internship_id" callerRole="supervisor" />
           <UserSearchField
-            label="Student *"
+            label="Student / Intern *"
             role="student"
             callerRole="supervisor"
             name="student_id"
-            placeholder="Search student by name or ID…"
+            placeholder="Search student by name, student ID, or intern ID…"
             onChange={setSelectedStudent}
           />
+          {selectedStudent && (
+            <label style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>
+              Intern ID
+              <input 
+                type="text" 
+                name="internship_id" 
+                readOnly 
+                value={selectedStudent.internship_id || 'N/A'} 
+                style={{ 
+                  width: '100%', minHeight: 44, borderRadius: 14, 
+                  border: '1px solid rgba(148,163,184,0.28)', 
+                  background: 'rgba(255,255,255,0.05)', color: 'var(--text)', 
+                  padding: '0 14px', marginTop: 8, cursor: 'not-allowed' 
+                }} 
+              />
+            </label>
+          )}
           <label>
             Score (1–10) *
             <input name="score" type="number" min="1" max="10" step="1" placeholder="8" />

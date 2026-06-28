@@ -2,48 +2,38 @@ import { useEffect, useState } from 'react'
 import ProtectedRoute from '../../components/ProtectedRoute'
 import DashboardShell from '../../components/DashboardShell'
 import AvatarBadge from '../../components/AvatarBadge'
-import { createStudentAttendance, fetchStudentAttendance } from '../../api/records'
+import { timeInStudentAttendance, timeOutStudentAttendance, fetchStudentAttendance } from '../../api/records'
 import { showError, showSuccess, extractError, confirmAction } from '../../utils/alerts'
 import { useAuth } from '../../context/AuthContext'
 import { STUDENT_LINKS } from '../../utils/links'
 
-function AttendanceForm({ onSuccess }) {
+function AttendanceForm({ records, onSuccess }) {
   const { user } = useAuth()
   const [submitting, setSubmitting] = useState(false)
-  const [currentTime] = useState(() => {
-    const d = new Date()
-    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
-  })
 
-  const handleSubmit = async (e) => {
+  // Find today's record (assume PHT date format matching backend YYYY-MM-DD)
+  const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' })
+  const todayRecord = records.find(r => r.payload.attendance_date === todayStr)
+
+  const handleTimeIn = async (e) => {
     e.preventDefault()
     const formElement = e.currentTarget
     const fd = new FormData(formElement)
 
     if (!fd.get('photo') || !fd.get('photo').size) {
-      showError('Photo required', 'Please upload a photo as attendance proof.')
-      return
-    }
-    if (!fd.get('attendance_date') || !fd.get('time_in') || !fd.get('time_out')) {
-      showError('Missing fields', 'Date, time-in, and time-out are required.')
+      showError('Photo required', 'Please upload a photo as proof.')
       return
     }
 
-    const timeIn = fd.get('time_in')
-    const timeOut = fd.get('time_out')
-    const [hIn, mIn] = timeIn.split(':').map(Number)
-    const [hOut, mOut] = timeOut.split(':').map(Number)
-    const hours = Math.max(0, (hOut + mOut / 60) - (hIn + mIn / 60))
-    fd.set('hours', hours.toFixed(2))
     fd.set('internship_id', user?.internship_id || 'N/A')
 
-    const ok = await confirmAction({ title: 'Log attendance?', text: 'Your photo proof will be uploaded.' })
+    const ok = await confirmAction({ title: 'Time In?', text: 'Your photo proof will be uploaded.' })
     if (!ok) return
 
     setSubmitting(true)
     try {
-      await createStudentAttendance(fd)
-      showSuccess('Attendance logged', 'Your attendance with photo proof has been saved.')
+      await timeInStudentAttendance(fd)
+      showSuccess('Timed In', 'Your time in has been logged.')
       formElement.reset()
       onSuccess?.()
     } catch (err) {
@@ -53,39 +43,83 @@ function AttendanceForm({ onSuccess }) {
     }
   }
 
-  return (
-    <form className="dashboard-card form-card" onSubmit={handleSubmit}>
-      <h3>Log Attendance</h3>
-      <p className="muted" style={{ marginBottom: 12, fontSize: '0.85rem' }}>Upload a photo as proof. All fields are required.</p>
+  const handleTimeOut = async (e) => {
+    e.preventDefault()
+    const formElement = e.currentTarget
+    const fd = new FormData(formElement)
 
-      <label>
-        Date
-        <input name="attendance_date" type="date" required />
-      </label>
+    if (!fd.get('photo') || !fd.get('photo').size) {
+      showError('Photo required', 'Please upload a photo as proof.')
+      return
+    }
 
-      <div className="grid-two" style={{ gap: 12 }}>
-        <label>
-          Time In
-          <input name="time_in" type="time" value={currentTime} readOnly required />
-        </label>
-        <label>
-          Time Out
-          <input name="time_out" type="time" required />
-        </label>
+    const ok = await confirmAction({ title: 'Time Out?', text: 'Your photo proof will be uploaded.' })
+    if (!ok) return
+
+    setSubmitting(true)
+    try {
+      await timeOutStudentAttendance(fd)
+      showSuccess('Timed Out', 'Your time out has been logged.')
+      formElement.reset()
+      onSuccess?.()
+    } catch (err) {
+      showError('Failed', extractError(err))
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  if (todayRecord && todayRecord.payload.time_out) {
+    return (
+      <div className="dashboard-card form-card" style={{ textAlign: 'center', padding: '32px 16px' }}>
+        <h3 style={{ color: '#22c55e', margin: '0 0 8px' }}>Attendance Completed</h3>
+        <p className="muted" style={{ margin: 0 }}>You have already timed in and out for today.</p>
       </div>
+    )
+  }
+
+  const isTimedIn = todayRecord && !todayRecord.payload.time_out
+
+  return (
+    <form className="dashboard-card form-card" onSubmit={isTimedIn ? handleTimeOut : handleTimeIn}>
+      <h3>{isTimedIn ? 'Time Out' : 'Time In'}</h3>
+      <p className="muted" style={{ marginBottom: 12, fontSize: '0.85rem' }}>Upload a photo as proof of your current location/activity.</p>
+
+      {isTimedIn && (
+        <div style={{ background: 'rgba(56, 189, 248, 0.1)', padding: '12px', borderRadius: '8px', marginBottom: '16px' }}>
+          <p style={{ margin: 0, fontSize: '0.85rem', color: '#38bdf8' }}>
+            <strong>Current Status:</strong> Timed in at {todayRecord.payload.time_in}
+          </p>
+        </div>
+      )}
 
       <label>
         Photo Proof *
         <input name="photo" type="file" accept="image/*" capture="environment" required />
       </label>
 
-      <label>
-        Notes (optional)
-        <textarea name="notes" rows="3" placeholder="Optional notes about today's attendance" />
-      </label>
-
-      <button className="primary-button" type="submit" disabled={submitting}>
-        {submitting ? 'Uploading…' : '📸 Log Attendance'}
+      <button className="primary-button" type="submit" disabled={submitting} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+        {submitting ? (
+          'Uploading…'
+        ) : isTimedIn ? (
+          <>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 8 }}>
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+            Log Time Out
+          </>
+        ) : (
+          <>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 8 }}>
+              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+              <polyline points="10 17 15 12 10 7" />
+              <line x1="15" y1="12" x2="3" y2="12" />
+            </svg>
+            Log Time In
+          </>
+        )}
       </button>
     </form>
   )
@@ -103,17 +137,32 @@ function AttendanceList({ records }) {
         <div className="users-table">
           {records.map((r) => (
             <div key={r.id} className="users-row" style={{ alignItems: 'flex-start' }}>
-              {r.payload.photo_url && (
-                <img
-                  src={r.payload.photo_url}
-                  alt="Proof"
-                  style={{ width: 56, height: 56, borderRadius: 10, objectFit: 'cover', border: '2px solid rgba(148,163,184,0.2)' }}
-                />
-              )}
-              <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', gap: 8 }}>
+                {r.payload.photo_url && (
+                  <div style={{ position: 'relative' }}>
+                    <img
+                      src={r.payload.photo_url}
+                      alt="Time In Proof"
+                      style={{ width: 56, height: 56, borderRadius: 10, objectFit: 'cover', border: '2px solid rgba(148,163,184,0.2)' }}
+                    />
+                    <div style={{ position: 'absolute', bottom: -6, left: '50%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: '0.6rem', padding: '2px 4px', borderRadius: 4 }}>In</div>
+                  </div>
+                )}
+                {r.payload.photo_out_url && (
+                  <div style={{ position: 'relative' }}>
+                    <img
+                      src={r.payload.photo_out_url}
+                      alt="Time Out Proof"
+                      style={{ width: 56, height: 56, borderRadius: 10, objectFit: 'cover', border: '2px solid rgba(148,163,184,0.2)' }}
+                    />
+                    <div style={{ position: 'absolute', bottom: -6, left: '50%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: '0.6rem', padding: '2px 4px', borderRadius: 4 }}>Out</div>
+                  </div>
+                )}
+              </div>
+              <div style={{ flex: 1, minWidth: 0, marginLeft: 8 }}>
                 <strong>{r.payload.attendance_date}</strong>
                 <p className="muted" style={{ margin: 0, fontSize: '0.82rem' }}>
-                  {r.payload.time_in} – {r.payload.time_out} · {r.payload.hours}h
+                  {r.payload.time_in} – {r.payload.time_out || 'Pending'} · {r.payload.hours}h
                 </p>
                 {r.payload.notes && <p className="muted" style={{ margin: '4px 0 0', fontSize: '0.78rem' }}>{r.payload.notes}</p>}
               </div>
@@ -160,7 +209,7 @@ function StudentAttendanceContent() {
               <p className="muted" style={{ margin: 0 }}>You cannot log attendance until your supervisor has approved your OJT link.</p>
             </div>
           ) : (
-            <AttendanceForm onSuccess={load} />
+            <AttendanceForm records={records} onSuccess={load} />
           )}
           <AttendanceList records={records} />
         </div>

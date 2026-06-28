@@ -22,7 +22,7 @@ function RankTable({ title, rows }) {
       <h3 style={{ marginBottom: 14 }}>{title}</h3>
       <div className="rank-table" style={{ overflowX: 'auto' }}>
         <div className="rank-header">
-          <span>#</span><span>Student</span><span>Position</span><span>Company</span><span>School</span><span>Avg Score</span><span>Evals</span><span>Recent Feedback</span>
+          <span>#</span><span>Student</span><span>Position</span><span>Company</span><span>School</span><span>Avg Score</span><span>Recent Feedback</span>
         </div>
         {rows.map((r, i) => (
           <div key={r.student_id} className={`rank-row${i === 0 ? ' rank-first' : i === 1 ? ' rank-second' : i === 2 ? ' rank-third' : ''}`}>
@@ -42,7 +42,6 @@ function RankTable({ title, rows }) {
             <span>{r.company || '—'}</span>
             <span>{r.institution || '—'}</span>
             <span style={{ fontWeight: 700, color: '#22c55e' }}>{r.avg_score}/10</span>
-            <span>{r.eval_count}</span>
             <span style={{ fontSize: '0.75rem', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'center' }} title={r.recent_feedback}>
               <span className="muted" style={{ fontStyle: 'italic', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {r.recent_feedback ? `"${r.recent_feedback}"` : '—'}

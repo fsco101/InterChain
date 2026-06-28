@@ -32,15 +32,32 @@ function AttendanceCard({ record, onValidate }) {
 
   return (
     <div className="users-row" style={{ alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
-      {record.payload.photo_url && (
-        <a href={record.payload.photo_url} target="_blank" rel="noreferrer">
-          <img
-            src={record.payload.photo_url}
-            alt="Proof"
-            style={{ width: 72, height: 72, borderRadius: 10, objectFit: 'cover', border: '2px solid rgba(148,163,184,0.2)', cursor: 'pointer' }}
-          />
-        </a>
-      )}
+      <div style={{ display: 'flex', gap: 8 }}>
+        {record.payload.photo_url && (
+          <div style={{ position: 'relative' }}>
+            <a href={record.payload.photo_url} target="_blank" rel="noreferrer">
+              <img
+                src={record.payload.photo_url}
+                alt="Time In Proof"
+                style={{ width: 72, height: 72, borderRadius: 10, objectFit: 'cover', border: '2px solid rgba(148,163,184,0.2)', cursor: 'pointer' }}
+              />
+            </a>
+            <div style={{ position: 'absolute', bottom: -6, left: '50%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: '0.6rem', padding: '2px 4px', borderRadius: 4 }}>In</div>
+          </div>
+        )}
+        {record.payload.photo_out_url && (
+          <div style={{ position: 'relative' }}>
+            <a href={record.payload.photo_out_url} target="_blank" rel="noreferrer">
+              <img
+                src={record.payload.photo_out_url}
+                alt="Time Out Proof"
+                style={{ width: 72, height: 72, borderRadius: 10, objectFit: 'cover', border: '2px solid rgba(148,163,184,0.2)', cursor: 'pointer' }}
+              />
+            </a>
+            <div style={{ position: 'absolute', bottom: -6, left: '50%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: '0.6rem', padding: '2px 4px', borderRadius: 4 }}>Out</div>
+          </div>
+        )}
+      </div>
       <Link to={`/profile/${record.user_id}`} style={{ flexShrink: 0, display: 'block', marginTop: 4 }}>
         <AvatarBadge name={record.user_name || 'Student'} avatarUrl={record.user_avatar_url} size={42} />
       </Link>
