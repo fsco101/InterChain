@@ -6,7 +6,7 @@ import { searchUsers, searchStudentsByInternshipId } from '../api/records'
 const INPUT_STYLE = {
   width: '100%', minHeight: 44, borderRadius: 14,
   border: '1px solid rgba(148,163,184,0.28)',
-  background: 'rgba(15,23,42,0.7)', color: 'var(--text)',
+  background: 'var(--input-bg)', color: 'var(--text)',
   padding: '0 14px', font: 'inherit', boxSizing: 'border-box',
 }
 

@@ -120,7 +120,7 @@ function SupervisorInternRosterPanel() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <p className="eyebrow" style={{ margin: 0 }}>
             Interns ({filteredStudents.length})
-            {pendingReadyCount > 0 && <span style={{ marginLeft: 8, background: '#ef4444', color: 'white', padding: '2px 8px', borderRadius: 12, fontSize: '0.75rem', fontWeight: 'bold' }}>{pendingReadyCount} pending approval</span>}
+            {pendingReadyCount > 0 && <span style={{ marginLeft: 8, background: '#ef4444', color: 'var(--text)', padding: '2px 8px', borderRadius: 12, fontSize: '0.75rem', fontWeight: 'bold' }}>{pendingReadyCount} pending approval</span>}
           </p>
           <div style={{ display: 'flex', gap: 12 }}>
             <input 
@@ -190,7 +190,7 @@ function SupervisorInternRosterPanel() {
                   <select 
                     value={s.ojt_position || ''} 
                     onChange={(e) => handlePositionChange(s.user_id, e.target.value)}
-                    style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid rgba(148, 163, 184, 0.2)', background: 'rgba(15, 23, 42, 0.6)', color: '#fff', fontSize: '0.85rem', width: '100%', cursor: 'pointer' }}
+                    style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid rgba(148, 163, 184, 0.2)', background: 'var(--input-bg)', color: 'var(--text)', fontSize: '0.85rem', width: '100%', cursor: 'pointer' }}
                   >
                     <option value="" disabled>Assign Position</option>
                     {positions.map(p => (

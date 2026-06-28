@@ -98,7 +98,7 @@ function StudentTasksPanel() {
               }
 
               return (
-                <div key={task.id} className="users-row" style={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 12, padding: '16px', background: 'rgba(15, 23, 42, 0.4)', borderRadius: 12, marginBottom: 12, border: '1px solid var(--border)' }}>
+                <div key={task.id} className="users-row" style={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 12, padding: '16px', background: 'var(--input-bg)', borderRadius: 12, marginBottom: 12, border: '1px solid var(--border)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
                     <div style={{ flex: 1 }}>
                       <h4 style={{ margin: '0 0 6px', fontSize: '1.05rem', fontWeight: 600 }}>{task.title}</h4>

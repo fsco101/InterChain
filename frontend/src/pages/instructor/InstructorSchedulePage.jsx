@@ -85,7 +85,7 @@ function InstructorSchedulePanel() {
             placeholder="Search name or date..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            style={{ padding: '6px 14px', borderRadius: 6, border: '1px solid var(--border)', background: 'rgba(15, 23, 42, 0.6)', color: '#fff', flex: 1, maxWidth: 300 }}
+            style={{ padding: '6px 14px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--input-bg)', color: 'var(--text)', flex: 1, maxWidth: 300 }}
           />
         </div>
       </div>

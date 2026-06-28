@@ -218,8 +218,8 @@ export default function DashboardShell({ links = [], children }) {
                   <span style={{
                     position: 'absolute', top: -4, right: -4,
                     minWidth: 16, height: 16, padding: '0 3px',
-                    borderRadius: 999, background: '#ef4444',
-                    color: '#fff', fontSize: '0.6rem', fontWeight: 800,
+                    borderRadius: 999, background: 'var(--danger)',
+                    color: 'var(--text)', fontSize: '0.6rem', fontWeight: 800,
                     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                     border: '2px solid var(--bg)',
                   }}>
@@ -230,8 +230,8 @@ export default function DashboardShell({ links = [], children }) {
                   <span style={{
                     position: 'absolute', top: -4, right: -4,
                     minWidth: 16, height: 16, padding: '0 3px',
-                    borderRadius: 999, background: '#f59e0b',
-                    color: '#fff', fontSize: '0.6rem', fontWeight: 800,
+                    borderRadius: 999, background: 'var(--accent)',
+                    color: 'var(--text)', fontSize: '0.6rem', fontWeight: 800,
                     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                     border: '2px solid var(--bg)',
                   }}>
@@ -246,7 +246,7 @@ export default function DashboardShell({ links = [], children }) {
                     {link.label === 'Notifications' && unread > 0 && (
                       <span style={{
                         marginLeft: 6, padding: '1px 6px', borderRadius: 999,
-                        background: 'rgba(239,68,68,0.18)', color: '#f87171',
+                        background: 'rgba(239,68,68,0.18)', color: 'var(--danger)',
                         fontSize: '0.68rem', fontWeight: 800,
                       }}>{unread}</span>
                     )}

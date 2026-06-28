@@ -6,9 +6,9 @@ export function showSuccess(message, description) {
     description,
     duration: 4000,
     style: {
-      background: 'rgba(2, 6, 23, 0.95)',
-      border: '1px solid rgba(34, 197, 94, 0.35)',
-      color: '#e2e8f0',
+      background: 'rgba(var(--panel-rgb), 0.95)',
+      border: '1px solid rgba(var(--success-rgb), 0.35)',
+      color: 'var(--text)',
       backdropFilter: 'blur(12px)',
     },
   })
@@ -19,9 +19,9 @@ export function showError(message, description) {
     description,
     duration: 5000,
     style: {
-      background: 'rgba(2, 6, 23, 0.95)',
-      border: '1px solid rgba(239, 68, 68, 0.35)',
-      color: '#e2e8f0',
+      background: 'rgba(var(--panel-rgb), 0.95)',
+      border: '1px solid rgba(var(--danger-rgb), 0.35)',
+      color: 'var(--text)',
       backdropFilter: 'blur(12px)',
     },
   })
@@ -32,9 +32,9 @@ export function showInfo(message, description) {
     description,
     duration: 3500,
     style: {
-      background: 'rgba(2, 6, 23, 0.95)',
-      border: '1px solid rgba(56, 189, 248, 0.35)',
-      color: '#e2e8f0',
+      background: 'rgba(var(--panel-rgb), 0.95)',
+      border: '1px solid rgba(var(--accent-rgb), 0.35)',
+      color: 'var(--text)',
       backdropFilter: 'blur(12px)',
     },
   })
@@ -55,9 +55,9 @@ export function showSignedOut(name) {
     description: `Goodbye, ${name}. See you next time.`,
     duration: 4000,
     style: {
-      background: 'rgba(2, 6, 23, 0.95)',
+      background: 'rgba(var(--panel-rgb), 0.95)',
       border: '1px solid rgba(148, 163, 184, 0.3)',
-      color: '#e2e8f0',
+      color: 'var(--text)',
       backdropFilter: 'blur(12px)',
     },
   })
@@ -71,10 +71,10 @@ export async function confirmLogout() {
     showCancelButton: true,
     confirmButtonText: 'Yes, sign out',
     cancelButtonText: 'Stay',
-    confirmButtonColor: '#ef4444',
-    cancelButtonColor: '#64748b',
-    background: '#0f172a',
-    color: '#e2e8f0',
+    confirmButtonColor: 'var(--danger)',
+    cancelButtonColor: 'var(--muted)',
+    background: 'var(--panel)',
+    color: 'var(--text)',
   })
   return result.isConfirmed
 }
@@ -87,10 +87,10 @@ export async function confirmAction({ title, text, confirmButtonText = 'Confirm'
     showCancelButton: true,
     confirmButtonText,
     cancelButtonText: 'Cancel',
-    confirmButtonColor: '#0ea5e9',
-    cancelButtonColor: '#64748b',
-    background: '#0f172a',
-    color: '#e2e8f0',
+    confirmButtonColor: 'var(--accent)',
+    cancelButtonColor: 'var(--muted)',
+    background: 'var(--panel)',
+    color: 'var(--text)',
   })
   return result.isConfirmed
 }
@@ -101,8 +101,8 @@ export function showLoading(title = 'Processing...') {
     text: 'Please wait',
     allowOutsideClick: false,
     showConfirmButton: false,
-    background: '#0f172a',
-    color: '#e2e8f0',
+    background: 'var(--panel)',
+    color: 'var(--text)',
     didOpen: () => {
       Swal.showLoading()
     }

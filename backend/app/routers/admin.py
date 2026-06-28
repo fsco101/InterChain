@@ -174,3 +174,13 @@ async def remove_user(user_id: str, current_user: dict = Depends(require_roles("
     if not removed:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     return {"message": "User deleted"}
+
+
+@router.patch("/users/{user_id}/verify")
+async def verify_user(user_id: str, current_user: dict = Depends(require_roles("admin"))):
+    from bson import ObjectId
+    database = get_database()
+    result = await database.users.update_one({"_id": ObjectId(user_id)}, {"$set": {"is_verified": True}})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    return {"message": "User manually verified"}

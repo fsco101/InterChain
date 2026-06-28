@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import AvatarBadge from '../../components/AvatarBadge'
 import DashboardShell from '../../components/DashboardShell'
 import ProtectedRoute from '../../components/ProtectedRoute'
-import { fetchAdminUsers, updateAdminUserRole, backfillRoleIds } from '../../api/admin'
+import { fetchAdminUsers, updateAdminUserRole, backfillRoleIds, verifyAdminUser } from '../../api/admin'
 import { confirmAction, showError, showSuccess, extractError } from '../../utils/alerts'
 import { useAuth } from '../../context/AuthContext'
 
@@ -11,6 +11,7 @@ const LINKS = [
   { to: '/admin/dashboard', label: 'Overview', description: 'Dashboard summary', end: true },
   { to: '/admin/users', label: 'Users', description: 'Manage accounts' },
   { to: '/admin/records', label: 'Records', description: 'Review all records' },
+  { to: '/notifications', label: 'Notifications', description: 'View system alerts' },
   { to: '/profile', label: 'Profile', description: 'Edit your account' },
 ]
 
@@ -83,6 +84,22 @@ function AdminUsersPanel() {
     }
   }
 
+  const handleVerify = async (user) => {
+    const confirmed = await confirmAction({
+      title: 'Override Verification?',
+      text: `Manually verify ${user.full_name}'s account so they can log in?`,
+      confirmButtonText: 'Verify User',
+    })
+    if (!confirmed) return
+    try {
+      await verifyAdminUser(user.id)
+      showSuccess('Verified', `${user.full_name} is now verified.`)
+      await loadUsers()
+    } catch (error) {
+      showError('Verification failed', extractError(error))
+    }
+  }
+
   return (
     <div className="dashboard-stack">
       <div className="dashboard-card">
@@ -95,12 +112,12 @@ function AdminUsersPanel() {
             placeholder="Search by name, email or role..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            style={{ flex: 1, minWidth: 200, minHeight: 44, borderRadius: 12, border: '1px solid rgba(148,163,184,0.28)', background: 'rgba(15,23,42,0.7)', color: 'var(--text)', padding: '0 14px' }}
+            style={{ flex: 1, minWidth: 200, minHeight: 44, borderRadius: 12, border: '1px solid rgba(148,163,184,0.28)', background: 'var(--input-bg)', color: 'var(--text)', padding: '0 14px' }}
           />
           <select
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
-            style={{ minHeight: 44, borderRadius: 12, border: '1px solid rgba(148,163,184,0.28)', background: 'rgba(15,23,42,0.7)', color: 'var(--text)', padding: '0 14px' }}
+            style={{ minHeight: 44, borderRadius: 12, border: '1px solid rgba(148,163,184,0.28)', background: 'var(--input-bg)', color: 'var(--text)', padding: '0 14px' }}
           >
             <option value="all">All Roles</option>
             {ROLES.map((r) => <option key={r} value={r} style={{ textTransform: 'capitalize' }}>{r}</option>)}
@@ -129,7 +146,7 @@ function AdminUsersPanel() {
             <select
               value={newRole}
               onChange={(e) => setNewRole(e.target.value)}
-              style={{ minHeight: 44, borderRadius: 12, border: '1px solid rgba(148,163,184,0.28)', background: 'rgba(15,23,42,0.7)', color: 'var(--text)', padding: '0 14px' }}
+              style={{ minHeight: 44, borderRadius: 12, border: '1px solid rgba(148,163,184,0.28)', background: 'var(--input-bg)', color: 'var(--text)', padding: '0 14px' }}
             >
               {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
             </select>
@@ -178,6 +195,17 @@ function AdminUsersPanel() {
               >
                 Change Role
               </button>
+              {!u.is_verified && (
+                <button
+                  className="secondary-button"
+                  type="button"
+                  onClick={() => handleVerify(u)}
+                  style={{ color: 'var(--success)', borderColor: 'rgba(var(--success-rgb), 0.3)', background: 'rgba(var(--success-rgb), 0.08)' }}
+                  title="Override email verification"
+                >
+                  Verify
+                </button>
+              )}
             </div>
           ))}
         </div>

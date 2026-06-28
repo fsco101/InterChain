@@ -1,22 +1,37 @@
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useTheme } from '../context/ThemeContext'
 import Notifications from './Notifications'
+
+import { spacing, fontSize } from '../utils/responsive'
 
 export default function Header() {
   const { user } = useAuth()
+  const { theme, setTheme } = useTheme()
+
+  const handleThemeToggle = () => {
+    if (theme === 'system') setTheme('dark')
+    else if (theme === 'dark') setTheme('light')
+    else setTheme('system')
+  }
+
+  const themeIcons = {
+    light: '☀️',
+    dark: '🌙',
+    system: '💻'
+  }
 
   return (
     <header style={{
-      position: 'sticky',
-      top: 0,
-      zIndex: 100,
-      padding: '16px 32px',
-      borderBottom: '1px solid rgba(148, 163, 184, 0.1)',
-      background: 'rgba(2, 6, 23, 0.75)',
+      padding: `${spacing.md}px ${spacing.xxxl}px`,
+      borderBottom: '1px solid var(--panel-border)',
+      background: 'var(--panel)',
       backdropFilter: 'blur(16px)',
       display: 'flex',
       alignItems: 'center',
-      justifyContent: 'space-between'
+      justifyContent: 'space-between',
+      position: 'relative',
+      zIndex: 10
     }}>
       <Link to="/" className="header-brand">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -26,10 +41,32 @@ export default function Header() {
         </svg>
         InterChain
       </Link>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: spacing.xxl }}>
+        <button 
+          onClick={handleThemeToggle} 
+          className="theme-toggle-btn"
+          style={{ 
+            background: 'var(--bg-soft)', 
+            border: '1px solid var(--panel-border)', 
+            borderRadius: '999px',
+            padding: `${spacing.xs}px ${spacing.md}px`,
+            cursor: 'pointer',
+            color: 'var(--text)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: `${spacing.sm}px`,
+            fontSize: fontSize.sm,
+            boxShadow: 'var(--shadow)',
+            transition: 'all 0.2s ease'
+          }}
+          title="Toggle Theme"
+        >
+          <span style={{ fontSize: '1.2rem', display: 'flex', alignItems: 'center' }}>{themeIcons[theme]}</span>
+          <span style={{ textTransform: 'capitalize', fontWeight: 600 }}>{theme}</span>
+        </button>
         {user && <Notifications />}
         {user && (
-          <span style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>
+          <span style={{ fontSize: fontSize.sm, color: 'var(--muted)' }}>
             Logged in as <strong style={{ color: 'var(--text)' }}>{user.full_name}</strong>
           </span>
         )}

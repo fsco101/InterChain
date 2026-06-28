@@ -11,6 +11,7 @@ const LINKS = [
   { to: '/admin/dashboard', label: 'Overview', description: 'Dashboard summary', end: true },
   { to: '/admin/users', label: 'Users', description: 'Manage accounts' },
   { to: '/admin/records', label: 'Records', description: 'Review all records' },
+  { to: '/notifications', label: 'Notifications', description: 'View system alerts' },
   { to: '/profile', label: 'Profile', description: 'Edit your account' },
 ]
 
@@ -64,8 +65,8 @@ function AdminDashboardContent() {
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       return (
-        <div style={{ background: '#1e293b', border: '1px solid #334155', padding: '8px 12px', borderRadius: 8, color: '#f8fafc', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.5)' }}>
-          <p className="label" style={{ margin: 0, fontSize: '0.85rem', color: '#94a3b8' }}>{label}</p>
+        <div style={{ background: 'var(--panel)', border: '1px solid var(--panel-border)', padding: '8px 12px', borderRadius: 8, color: 'var(--text)', boxShadow: 'var(--shadow)' }}>
+          <p className="label" style={{ margin: 0, fontSize: '0.85rem', color: 'var(--muted)' }}>{label}</p>
           <p className="intro" style={{ margin: '4px 0 0', fontWeight: 600 }}>{payload[0].value} records</p>
         </div>
       )
@@ -76,8 +77,8 @@ function AdminDashboardContent() {
   const RoleTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       return (
-        <div style={{ background: '#1e293b', border: '1px solid #334155', padding: '8px 12px', borderRadius: 8, color: '#f8fafc', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.5)' }}>
-          <p className="label" style={{ margin: 0, fontSize: '0.85rem', color: '#94a3b8' }}>{label}</p>
+        <div style={{ background: 'var(--panel)', border: '1px solid var(--panel-border)', padding: '8px 12px', borderRadius: 8, color: 'var(--text)', boxShadow: 'var(--shadow)' }}>
+          <p className="label" style={{ margin: 0, fontSize: '0.85rem', color: 'var(--muted)' }}>{label}</p>
           <p className="intro" style={{ margin: '4px 0 0', fontWeight: 600 }}>{payload[0].value} users</p>
         </div>
       )

@@ -133,13 +133,13 @@ function SupervisorAttendancePanel() {
             placeholder="Search student name or ID..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            style={{ flex: 1, minWidth: 200, padding: '8px 14px', borderRadius: 12, border: '1px solid rgba(148, 163, 184, 0.2)', background: 'rgba(15, 23, 42, 0.6)', color: '#fff' }}
+            style={{ flex: 1, minWidth: 200, padding: '8px 14px', borderRadius: 12, border: '1px solid rgba(148, 163, 184, 0.2)', background: 'var(--input-bg)', color: 'var(--text)' }}
           />
           <input 
             type="date" 
             value={dateFilter}
             onChange={(e) => setDateFilter(e.target.value)}
-            style={{ padding: '8px 14px', borderRadius: 12, border: '1px solid rgba(148, 163, 184, 0.2)', background: 'rgba(15, 23, 42, 0.6)', color: '#fff' }}
+            style={{ padding: '8px 14px', borderRadius: 12, border: '1px solid rgba(148, 163, 184, 0.2)', background: 'var(--input-bg)', color: 'var(--text)' }}
           />
           {dateFilter && <button className="secondary-button" style={{ padding: '6px 12px' }} onClick={() => setDateFilter('')}>Clear Date</button>}
         </div>

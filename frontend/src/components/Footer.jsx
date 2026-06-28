@@ -1,12 +1,14 @@
+import { spacing, fontSize } from '../utils/responsive'
+
 export default function Footer() {
   return (
     <footer style={{ 
-      padding: '24px', 
+      padding: spacing.xxl, 
       textAlign: 'center', 
       color: 'var(--muted)', 
-      fontSize: '0.85rem', 
-      borderTop: '1px solid rgba(148, 163, 184, 0.05)', 
-      background: '#020617',
+      fontSize: fontSize.sm, 
+      borderTop: '1px solid var(--panel-border)', 
+      background: 'var(--bg-soft)',
       marginTop: 'auto'
     }}>
       &copy; 2026 InterChain. All rights reserved.

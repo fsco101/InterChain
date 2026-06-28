@@ -86,7 +86,7 @@ function StudentDocumentsViewPanel() {
               const isDone = status !== 'Pending'
 
               return (
-                <div key={docType} className="users-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, padding: '16px', background: 'rgba(15, 23, 42, 0.4)', borderRadius: 12, marginBottom: 12, border: '1px solid var(--border)' }}>
+                <div key={docType} className="users-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, padding: '16px', background: 'var(--input-bg)', borderRadius: 12, marginBottom: 12, border: '1px solid var(--border)' }}>
                   <div style={{ flex: 1 }}>
                     <h4 style={{ margin: '0 0 6px', fontSize: '1.05rem', fontWeight: 600 }}>{docType}</h4>
                     <span className="role-chip" style={{ background: isDone ? 'rgba(34, 197, 94, 0.15)' : 'rgba(245, 158, 11, 0.15)' }}>

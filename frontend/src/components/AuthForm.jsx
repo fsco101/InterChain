@@ -6,6 +6,7 @@ import PasswordField from './PasswordField'
 import InstitutionField from './InstitutionField'
 import { useAuth } from '../context/AuthContext'
 import { showError, showSuccess, extractError } from '../utils/alerts'
+import { spacing, radius } from '../utils/responsive'
 
 function validateAuth(formData, isSignup) {
   const full_name = formData.get('full_name')?.trim() || ''
@@ -133,14 +134,16 @@ export default function AuthForm({ mode }) {
   }
 
   return (
-    <div className="page-shell auth-shell">
-      <motion.form
-        className="auth-card"
-        onSubmit={handleSubmit}
-        initial={{ opacity: 0, y: 18 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35 }}
-      >
+    <>
+      <div className="page-shell auth-shell" style={{ position: 'relative', zIndex: 1 }}>
+        <motion.form
+          className="auth-card"
+          onSubmit={handleSubmit}
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35 }}
+          style={{ padding: spacing.xxxl, borderRadius: radius.xxl }}
+        >
         <h2>
             {isSignup && 'Create account'}
             {isLogin && 'Welcome back'}
@@ -271,7 +274,8 @@ export default function AuthForm({ mode }) {
             </p>
         )}
       </motion.form>
-    </div>
+      </div>
+    </>
   )
 }
 

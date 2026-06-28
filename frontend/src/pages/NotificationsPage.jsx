@@ -71,7 +71,7 @@ function NotificationsPanel() {
               value={search} 
               onChange={(e) => setSearch(e.target.value)}
               className="notif-search-input"
-              style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(148,163,184,0.28)', background: 'rgba(15,23,42,0.7)', color: 'var(--text)' }}
+              style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(148,163,184,0.28)', background: 'var(--input-bg)', color: 'var(--text)' }}
             />
             {selected.size > 0 && (
               <button className="notif-action-btn danger" onClick={handleBulkDelete}>Delete {selected.size}</button>

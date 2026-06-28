@@ -208,7 +208,7 @@ function TaskList({ tasks, onRefresh }) {
             }
 
             return (
-              <div key={t.id} className="users-row" style={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 12, padding: '16px', background: 'rgba(15, 23, 42, 0.4)', borderRadius: 12, marginBottom: 12, border: '1px solid var(--border)' }}>
+              <div key={t.id} className="users-row" style={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 12, padding: '16px', background: 'var(--input-bg)', borderRadius: 12, marginBottom: 12, border: '1px solid var(--border)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
                   <div style={{ flex: 1 }}>
                     <h4 style={{ margin: '0 0 6px', fontSize: '1.05rem', fontWeight: 600 }}>{t.title}</h4>
@@ -255,7 +255,7 @@ function TaskList({ tasks, onRefresh }) {
                       value={t.status} 
                       onChange={(e) => handleStatus(t.id, e.target.value)} 
                       disabled={isLocked}
-                      style={{ fontSize: '0.8rem', padding: '6px 12px', borderRadius: 8, minHeight: 'unset', opacity: isLocked ? 0.6 : 1, background: '#ffffff', color: '#0f172a' }}
+                      style={{ fontSize: '0.8rem', padding: '6px 12px', borderRadius: 8, minHeight: 'unset', opacity: isLocked ? 0.6 : 1, background: 'var(--bg)', color: 'var(--text)' }}
                     >
                       <option value="pending">Pending (Redo)</option>
                       <option value="done">Done (Waiting)</option>

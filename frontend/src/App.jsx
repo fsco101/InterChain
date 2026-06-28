@@ -5,7 +5,8 @@ import LoginPage from './pages/auth/LoginPage'
 import SignupPage from './pages/auth/SignupPage'
 import ProfilePage from './pages/ProfilePage'
 import UserProfilePage from './pages/UserProfilePage'
-import { useAuth } from './context/AuthContext'
+import { AuthProvider, useAuth } from './context/AuthContext'
+import InteractiveBackground from './components/InteractiveBackground'
 import Header from './components/Header'
 import Footer from './components/Footer'
 
@@ -45,55 +46,56 @@ function RoleRedirect() {
 
 export default function App() {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      <InteractiveBackground />
       <Header />
-      <div id="main-scroll-container" style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+      <div id="main-scroll-container" style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative' }}>
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
-      <Route path="/signup" element={<SignupPage />} />
-      <Route path="/profile" element={<ProfilePage />} />
-      <Route path="/profile/:userId" element={<UserProfilePage />} />
-      <Route path="/dashboard" element={<RoleRedirect />} />
+          <Route path="/signup" element={<SignupPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/profile/:userId" element={<UserProfilePage />} />
+          <Route path="/dashboard" element={<RoleRedirect />} />
 
-      {/* Student */}
-      <Route path="/student/dashboard" element={<StudentDashboard />} />
-      <Route path="/student/activities" element={<StudentActivitiesPage />} />
-      <Route path="/student/attendance" element={<StudentAttendancePage />} />
-      <Route path="/student/history" element={<StudentHistoryPage />} />
-      <Route path="/student/tasks" element={<StudentTasksPage />} />
-      <Route path="/student/documents" element={<StudentDocumentsPage />} />
+          {/* Student */}
+          <Route path="/student/dashboard" element={<StudentDashboard />} />
+          <Route path="/student/activities" element={<StudentActivitiesPage />} />
+          <Route path="/student/attendance" element={<StudentAttendancePage />} />
+          <Route path="/student/history" element={<StudentHistoryPage />} />
+          <Route path="/student/tasks" element={<StudentTasksPage />} />
+          <Route path="/student/documents" element={<StudentDocumentsPage />} />
 
-      {/* Instructor */}
-      <Route path="/instructor/dashboard" element={<InstructorDashboard />} />
-      <Route path="/instructor/schedule" element={<InstructorSchedulePage />} />
-      <Route path="/instructor/hours" element={<InstructorHoursTrackingPage />} />
-      <Route path="/instructor/roster" element={<InstructorRosterPage />} />
-      <Route path="/instructor/interns/:studentId/documents" element={<StudentDocumentsViewPage />} />
+          {/* Instructor */}
+          <Route path="/instructor/dashboard" element={<InstructorDashboard />} />
+          <Route path="/instructor/schedule" element={<InstructorSchedulePage />} />
+          <Route path="/instructor/hours" element={<InstructorHoursTrackingPage />} />
+          <Route path="/instructor/roster" element={<InstructorRosterPage />} />
+          <Route path="/instructor/interns/:studentId/documents" element={<StudentDocumentsViewPage />} />
 
-      {/* Supervisor */}
-      <Route path="/supervisor/dashboard" element={<SupervisorDashboard />} />
-      <Route path="/supervisor/attendance" element={<SupervisorAttendancePage />} />
-      <Route path="/supervisor/activities" element={<SupervisorActivitiesPage />} />
-      <Route path="/supervisor/evaluations" element={<SupervisorEvaluationsPage />} />
-      <Route path="/supervisor/completion" element={<SupervisorCompletionPage />} />
-      <Route path="/supervisor/tasks" element={<SupervisorTasksPage />} />
-      <Route path="/supervisor/roster" element={<SupervisorRosterPage />} />
-      <Route path="/supervisor/interns" element={<SupervisorInternRosterPage />} />
-      <Route path="/supervisor/interns/:studentId/documents" element={<StudentDocumentsViewPage />} />
-      {/* Global Rankings */}
-      <Route path="/rankings" element={<RankingsPage />} />
+          {/* Supervisor */}
+          <Route path="/supervisor/dashboard" element={<SupervisorDashboard />} />
+          <Route path="/supervisor/attendance" element={<SupervisorAttendancePage />} />
+          <Route path="/supervisor/activities" element={<SupervisorActivitiesPage />} />
+          <Route path="/supervisor/evaluations" element={<SupervisorEvaluationsPage />} />
+          <Route path="/supervisor/completion" element={<SupervisorCompletionPage />} />
+          <Route path="/supervisor/tasks" element={<SupervisorTasksPage />} />
+          <Route path="/supervisor/roster" element={<SupervisorRosterPage />} />
+          <Route path="/supervisor/interns" element={<SupervisorInternRosterPage />} />
+          <Route path="/supervisor/interns/:studentId/documents" element={<StudentDocumentsViewPage />} />
+          {/* Global Rankings */}
+          <Route path="/rankings" element={<RankingsPage />} />
 
-      {/* Admin */}
-      <Route path="/admin/dashboard" element={<AdminDashboard />} />
-      <Route path="/admin/users" element={<AdminUsersPage />} />
-      <Route path="/admin/records" element={<AdminRecordsPage />} />
+          {/* Admin */}
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/users" element={<AdminUsersPage />} />
+          <Route path="/admin/records" element={<AdminRecordsPage />} />
 
-      {/* Notifications */}
-      <Route path="/notifications" element={<NotificationsPage />} />
+          {/* Notifications */}
+          <Route path="/notifications" element={<NotificationsPage />} />
 
-      {/* IPFS Records Viewer */}
-      <Route path="/ipfs-records" element={<IpfsViewerPage />} />
+          {/* IPFS Records Viewer */}
+          <Route path="/ipfs-records" element={<IpfsViewerPage />} />
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

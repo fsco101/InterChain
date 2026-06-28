@@ -6,6 +6,7 @@ const LINKS = [
   { to: '/admin/dashboard', label: 'Overview', description: 'Dashboard summary', end: true },
   { to: '/admin/users', label: 'Users', description: 'Manage accounts' },
   { to: '/admin/records', label: 'Records', description: 'Review all records' },
+  { to: '/notifications', label: 'Notifications', description: 'View system alerts' },
   { to: '/profile', label: 'Profile', description: 'Edit your account' },
 ]
 

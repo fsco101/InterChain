@@ -3,7 +3,7 @@ import { confirmAction, showError, showSuccess, extractError } from '../utils/al
 
 function fmt(val) {
   if (!val) return '—'
-  try { return new Date(val).toLocaleDateString('en-PH', { timeZone: 'Asia/Manila',  year: 'numeric', month: 'short', day: 'numeric' }) }
+  try { return new Date(val).toLocaleDateString('en-PH', { timeZone: 'Asia/Manila', year: 'numeric', month: 'short', day: 'numeric' }) }
   catch { return val }
 }
 
@@ -112,7 +112,23 @@ export default function HistoryPanel({ title, records, onDelete, onBulkDelete, l
             <div key={r.id} className={`history-row${selected.has(r.id) ? ' selected' : ''}`}>
               <input type="checkbox" checked={selected.has(r.id)} onChange={() => toggle(r.id)} />
               <span className="history-label">{getLabel(r)}</span>
-              <span className="history-meta">{getMeta(r)}</span>
+              <span className="history-meta">
+                {getMeta(r)}
+                {r.blockchain?.tx_hash && (
+                  <>
+                    {' · '}
+                    <a
+                      href={r.blockchain.explorer_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{ color: 'var(--accent)', textDecoration: 'underline', fontFamily: 'monospace', fontSize: '0.8rem' }}
+                      title={r.blockchain.tx_hash}
+                    >
+                      Tx Link
+                    </a>
+                  </>
+                )}
+              </span>
               <span className="history-date">{fmt(r.created_at)}</span>
               <button
                 className="history-del-btn"

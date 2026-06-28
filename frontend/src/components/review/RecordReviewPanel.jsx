@@ -103,7 +103,7 @@ export default function RecordReviewPanel() {
             placeholder="Search by name, ID, payload, or hash..." 
             value={search} 
             onChange={(e) => setSearch(e.target.value)}
-            style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(148,163,184,0.3)', background: 'rgba(15,23,42,0.5)', color: 'var(--text)', outline: 'none' }}
+            style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(148,163,184,0.3)', background: 'var(--input-bg)', color: 'var(--text)', outline: 'none' }}
           />
         </label>
         <button className="secondary-button" onClick={copyTip} type="button" style={{ alignSelf: 'flex-end', padding: '9px 16px' }}>
