@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import { FiBookOpen, FiEdit, FiBriefcase, FiShield } from 'react-icons/fi'
 
 import { useAuth } from '../context/AuthContext'
 
@@ -7,10 +8,10 @@ export default function LandingPage() {
   const { user } = useAuth()
 
   const roleLinks = [
-    { label: 'Student', path: '/student/dashboard', description: 'Log activities and submit verified internship reports.', icon: '🎓' },
-    { label: 'Instructor', path: '/instructor/dashboard', description: 'Validate progress and monitor performance on-chain.', icon: '📝' },
-    { label: 'Supervisor', path: '/supervisor/dashboard', description: 'Review attendance and approve completion securely.', icon: '🏢' },
-    { label: 'Admin', path: '/admin/dashboard', description: 'Audit all records and monitor the blockchain network.', icon: '🛡️' },
+    { label: 'Student', path: '/student/dashboard', description: 'Log activities and submit verified internship reports.', icon: <FiBookOpen size={24} /> },
+    { label: 'Instructor', path: '/instructor/dashboard', description: 'Validate progress and monitor performance on-chain.', icon: <FiEdit size={24} /> },
+    { label: 'Supervisor', path: '/supervisor/dashboard', description: 'Review attendance and approve completion securely.', icon: <FiBriefcase size={24} /> },
+    { label: 'Admin', path: '/admin/dashboard', description: 'Audit all records and monitor the blockchain network.', icon: <FiShield size={24} /> },
   ]
 
   const containerVariants = {
