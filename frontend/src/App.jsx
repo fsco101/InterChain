@@ -46,7 +46,7 @@ function RoleRedirect() {
 
 export default function App() {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: 'calc(var(--vh, 1vh) * 100)' }}>
       <InteractiveBackground />
       <Header />
       <div id="main-scroll-container" style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative' }}>

@@ -12,6 +12,18 @@ const isWeb = typeof window !== 'undefined';
 const SCREEN_WIDTH = isWeb ? window.innerWidth : 1024;
 const SCREEN_HEIGHT = isWeb ? window.innerHeight : 768;
 
+// Fix for mobile 100vh address bar cutoff issue
+if (isWeb) {
+    const setVh = () => {
+        const vh = window.innerHeight * 0.01;
+        document.documentElement.style.setProperty('--vh', `${vh}px`);
+    };
+    setVh();
+    window.addEventListener('resize', setVh);
+    window.addEventListener('orientationchange', setVh);
+}
+
+
 // Responsive breakpoints
 export const BREAKPOINTS = {
     xs: 0,      // Extra small phones
