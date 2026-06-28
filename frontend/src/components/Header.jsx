@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import Notifications from './Notifications'
+import { FiSun, FiMoon, FiMonitor } from 'react-icons/fi'
 
 import { spacing, fontSize } from '../utils/responsive'
 
@@ -16,9 +17,9 @@ export default function Header() {
   }
 
   const themeIcons = {
-    light: '☀️',
-    dark: '🌙',
-    system: '💻'
+    light: <FiSun size={18} />,
+    dark: <FiMoon size={18} />,
+    system: <FiMonitor size={18} />
   }
 
   return (
@@ -42,12 +43,12 @@ export default function Header() {
         InterChain
       </Link>
       <div style={{ display: 'flex', alignItems: 'center', gap: spacing.xxl }}>
-        <button 
-          onClick={handleThemeToggle} 
+        <button
+          onClick={handleThemeToggle}
           className="theme-toggle-btn"
-          style={{ 
-            background: 'var(--bg-soft)', 
-            border: '1px solid var(--panel-border)', 
+          style={{
+            background: 'var(--bg-soft)',
+            border: '1px solid var(--panel-border)',
             borderRadius: '999px',
             padding: `${spacing.xs}px ${spacing.md}px`,
             cursor: 'pointer',
