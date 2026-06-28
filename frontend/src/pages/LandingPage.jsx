@@ -43,9 +43,11 @@ export default function LandingPage() {
             <Link className="primary-button pulse-btn" to={user ? `/${user.role}/dashboard` : '/signup'}>
               {user ? 'Go to Dashboard' : 'Get Started'}
             </Link>
-            <Link className="secondary-button" to="/login">
-              Login to Account
-            </Link>
+            {!user && (
+              <Link className="secondary-button" to="/login">
+                Login to Account
+              </Link>
+            )}
           </div>
         </motion.div>
       </section>
