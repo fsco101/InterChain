@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext'
 import { useNotifications } from '../context/NotificationContext'
 import { confirmLogout, showSignedOut } from '../utils/alerts'
 import { fetchStudentTasks } from '../api/records'
+import { useIsMobile } from '../utils/responsive'
 
 const ICONS = {
   Overview: (
@@ -151,6 +152,8 @@ function getIcon(label) {
 export default function DashboardShell({ links = [], children }) {
   const { user, logout } = useAuth()
   const { unread } = useNotifications()
+  const isMobile = useIsMobile()
+  const [isMobileOpen, setIsMobileOpen] = useState(false)
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('internchain_sidebar_collapsed') === 'true')
   const [pendingTasksCount, setPendingTasksCount] = useState(0)
 
@@ -175,8 +178,25 @@ export default function DashboardShell({ links = [], children }) {
   }
 
   return (
-    <div className={`dashboard-layout${collapsed ? ' sidebar-collapsed' : ''}`}>
-      <aside className={`dashboard-sidebar${collapsed ? ' collapsed' : ''}`}>
+    <div className={`dashboard-layout${collapsed && !isMobile ? ' sidebar-collapsed' : ''}`}>
+      <button 
+        className="mobile-menu-toggle"
+        onClick={() => setIsMobileOpen(!isMobileOpen)}
+        aria-label="Toggle mobile menu"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="3" y1="12" x2="21" y2="12" />
+          <line x1="3" y1="6" x2="21" y2="6" />
+          <line x1="3" y1="18" x2="21" y2="18" />
+        </svg>
+      </button>
+
+      <div 
+        className={`sidebar-backdrop ${isMobileOpen ? 'visible' : ''}`}
+        onClick={() => setIsMobileOpen(false)}
+      />
+
+      <aside className={`dashboard-sidebar${collapsed && !isMobile ? ' collapsed' : ''}${isMobileOpen ? ' mobile-open' : ''}`}>
         <div className="sidebar-brand-block" style={{ justifyContent: 'flex-end', display: 'flex', padding: '12px' }}>
           <button
             className="sidebar-collapse-button"
@@ -191,16 +211,16 @@ export default function DashboardShell({ links = [], children }) {
         <div className="sidebar-user-card">
           <div className="sidebar-user-top">
             <AvatarBadge name={user?.full_name} avatarUrl={user?.avatar_url} size={collapsed ? 40 : 48} />
-            {!collapsed && (
+            {!collapsed || isMobile ? (
               <div title={`${user?.full_name}\n${user?.email}`}>
                 <p className="eyebrow" style={{ marginBottom: 2 }}>Signed in</p>
                 <strong>{user?.full_name}</strong>
                 <br />
                 <span style={{ fontSize: '0.82rem' }}>{user?.email}</span>
               </div>
-            )}
+            ) : null}
           </div>
-          {!collapsed && <span className="role-chip">{user?.role}</span>}
+          {(!collapsed || isMobile) && <span className="role-chip">{user?.role}</span>}
         </div>
 
         <nav className="sidebar-nav">
@@ -209,6 +229,7 @@ export default function DashboardShell({ links = [], children }) {
               key={link.to}
               to={link.to}
               end={link.end}
+              onClick={() => { if (isMobile) setIsMobileOpen(false) }}
               className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
               title={`${link.label}${link.description ? ' - ' + link.description : ''}`}
             >
@@ -239,7 +260,7 @@ export default function DashboardShell({ links = [], children }) {
                   </span>
                 )}
               </span>
-              {!collapsed && (
+              {(!collapsed || isMobile) && (
                 <span className="sidebar-link-content">
                   <span className="sidebar-link-text">
                     {link.label}
@@ -269,10 +290,10 @@ export default function DashboardShell({ links = [], children }) {
           className="sidebar-logout-button"
           onClick={handleLogout}
           type="button"
-          title={collapsed ? 'Logout' : undefined}
+          title={collapsed && !isMobile ? 'Logout' : undefined}
         >
           {LOGOUT_ICON}
-          {!collapsed && <span>Logout</span>}
+          {(!collapsed || isMobile) && <span>Logout</span>}
         </button>
       </aside>
 

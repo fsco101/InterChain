@@ -16,7 +16,7 @@ export default function LandingPage() {
 
   const containerVariants = {
     hidden: { opacity: 0 },
-    visible: { 
+    visible: {
       opacity: 1,
       transition: { staggerChildren: 0.1 }
     }
@@ -30,7 +30,7 @@ export default function LandingPage() {
   return (
     <div className="page-shell hero-shell">
       <div className="blockchain-bg-effect"></div>
-      
+
       <section className="hero-card modern-hero">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: "easeOut" }}>
           <div className="badge-glow">
@@ -53,7 +53,7 @@ export default function LandingPage() {
         </motion.div>
       </section>
 
-      <motion.section 
+      <motion.section
         className="feature-grid"
         variants={containerVariants}
         initial="hidden"

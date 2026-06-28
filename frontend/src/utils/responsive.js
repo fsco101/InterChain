@@ -1,3 +1,5 @@
+import { useState, useEffect } from 'react';
+
 // Responsive Utility System
 // Provides flexible sizing that adapts to any screen size and zoom level for the Web
 
@@ -168,6 +170,21 @@ export const createResponsiveStyles = (width = SCREEN_WIDTH) => ({
     breakpoint: getBreakpoint(width),
 });
 
+export const useIsMobile = () => {
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const checkIsMobile = () => setIsMobile(window.innerWidth < BREAKPOINTS.lg);
+            checkIsMobile();
+            window.addEventListener('resize', checkIsMobile);
+            return () => window.removeEventListener('resize', checkIsMobile);
+        }
+    }, []);
+
+    return isMobile;
+};
+
 export { SCREEN_WIDTH, SCREEN_HEIGHT };
 
 export default {
@@ -178,5 +195,6 @@ export default {
     getColumns, getCardWidth, getMaxContentWidth,
     responsive, responsivePadding, normalize,
     getContainerPadding, createResponsiveStyles,
+    useIsMobile,
     SCREEN_WIDTH, SCREEN_HEIGHT, BREAKPOINTS,
 };
