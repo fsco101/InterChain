@@ -30,6 +30,7 @@ function getMeta(record) {
 export default function HistoryPanel({ title, records, onDelete, onBulkDelete, loading }) {
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState(new Set())
+  const [expandedIds, setExpandedIds] = useState(new Set())
 
   const filtered = records.filter((r) => {
     const q = search.toLowerCase()
@@ -109,35 +110,57 @@ export default function HistoryPanel({ title, records, onDelete, onBulkDelete, l
             <span>Date</span>
             <span></span>
           </div>
-          {filtered.map((r) => (
-            <div key={r.id} className={`history-row${selected.has(r.id) ? ' selected' : ''}`}>
-              <input type="checkbox" checked={selected.has(r.id)} onChange={() => toggle(r.id)} />
-              <span className="history-label">{getLabel(r)}</span>
-              <span className="history-meta">
-                {getMeta(r)}
-                {r.blockchain?.tx_hash && (
-                  <>
-                    {' · '}
-                    <a
-                      href={r.blockchain.explorer_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      style={{ color: 'var(--accent)', textDecoration: 'underline', fontFamily: 'monospace', fontSize: '0.8rem' }}
-                      title={r.blockchain.tx_hash}
-                    >
-                      Tx Link
-                    </a>
-                  </>
+          {filtered.map((r) => {
+            const isExpanded = expandedIds.has(r.id)
+            const content = r.payload.description || r.payload.summary || r.payload.remarks
+            return (
+              <div key={r.id} style={{ borderBottom: '1px solid var(--panel-border)', display: 'flex', flexDirection: 'column' }}>
+                <div className={`history-row${selected.has(r.id) ? ' selected' : ''}`} style={{ borderBottom: 'none' }}>
+                  <input type="checkbox" checked={selected.has(r.id)} onChange={() => toggle(r.id)} />
+                  <span className="history-label" style={{ cursor: content ? 'pointer' : 'default', display: 'flex', alignItems: 'center' }} onClick={() => {
+                    if (!content) return
+                    setExpandedIds(prev => {
+                      const n = new Set(prev)
+                      if (n.has(r.id)) n.delete(r.id)
+                      else n.add(r.id)
+                      return n
+                    })
+                  }}>
+                    {getLabel(r)}
+                    {content && <span style={{ marginLeft: 6, fontSize: '0.7rem', color: 'var(--accent)' }}>{isExpanded ? '▼' : '▶'}</span>}
+                  </span>
+                  <span className="history-meta">
+                    {getMeta(r)}
+                    {r.blockchain?.tx_hash && (
+                      <>
+                        {' · '}
+                        <a
+                          href={r.blockchain.explorer_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{ color: 'var(--accent)', textDecoration: 'underline', fontFamily: 'monospace', fontSize: '0.8rem' }}
+                          title={r.blockchain.tx_hash}
+                        >
+                          Tx Link
+                        </a>
+                      </>
+                    )}
+                  </span>
+                  <span className="history-date">{fmt(r.created_at)}</span>
+                  <button
+                    className="history-del-btn"
+                    onClick={() => handleDelete(r.id)}
+                    title="Delete"
+                  >✕</button>
+                </div>
+                {content && isExpanded && (
+                  <div style={{ padding: '0 16px 16px 46px', color: 'var(--text)', fontSize: '0.85rem', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>
+                    {content}
+                  </div>
                 )}
-              </span>
-              <span className="history-date">{fmt(r.created_at)}</span>
-              <button
-                className="history-del-btn"
-                onClick={() => handleDelete(r.id)}
-                title="Delete"
-              >✕</button>
-            </div>
-          ))}
+              </div>
+            )
+          })}
         </div>
       )}
     </div>

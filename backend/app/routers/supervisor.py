@@ -113,9 +113,13 @@ async def search_users(
 @router.get("/activities")
 async def get_all_student_activities(current_user: dict = Depends(require_roles("supervisor"))):
     db = get_database()
-    # Find all students linked to this supervisor
-    cursor = db.users.find({"role": "student", "supervisor_id": current_user["id"]})
-    student_ids = [str(u["_id"]) async for u in cursor]
+    
+    student_ids = []
+    user_avatars = {}
+    async for u in db.users.find({"role": "student", "supervisor_id": current_user["id"]}):
+        uid = str(u["_id"])
+        student_ids.append(uid)
+        user_avatars[uid] = u.get("avatar_url")
 
     if not student_ids:
         return {"activities": []}
@@ -123,7 +127,12 @@ async def get_all_student_activities(current_user: dict = Depends(require_roles(
     cursor = db.activity_logs.find({"user_id": {"$in": student_ids}}).sort("created_at", -1)
     
     from app.services.records_service import serialize_record
-    activities = [serialize_record(doc) async for doc in cursor]
+    activities = []
+    async for doc in cursor:
+        serialized = serialize_record(doc)
+        serialized["user_avatar_url"] = user_avatars.get(serialized["user_id"])
+        activities.append(serialized)
+        
     return {"activities": activities}
 
 class ActivityValidationBody(BaseModel):

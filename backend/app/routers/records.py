@@ -70,6 +70,14 @@ async def create_student_activity(payload: StudentActivityCreate, current_user: 
     record = await create_record("activity_logs", "student_activity", "student", current_user, data)
     db = get_database()
     await push_notification(db, current_user["id"], "Activity logged", f"'{payload.title}' saved for {payload.activity_date}.", "success")
+    
+    supervisor_id = current_user.get("supervisor_id")
+    if supervisor_id:
+        await push_notification(
+            db, supervisor_id, "New Student Activity",
+            f"{current_user['full_name']} has logged a new activity: '{payload.title}'.", "info"
+        )
+        
     return record
 
 
@@ -78,6 +86,14 @@ async def create_student_report(payload: StudentReportCreate, current_user: dict
     record = await create_record("student_reports", "student_report", "student", current_user, payload.model_dump(mode="json"))
     db = get_database()
     await push_notification(db, current_user["id"], "Report submitted", f"'{payload.report_title}' has been saved.", "success")
+    
+    supervisor_id = current_user.get("supervisor_id")
+    if supervisor_id:
+        await push_notification(
+            db, supervisor_id, "New Internship Report",
+            f"{current_user['full_name']} has submitted a new report: '{payload.report_title}'.", "info"
+        )
+        
     return record
 
 

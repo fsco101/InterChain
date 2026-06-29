@@ -14,6 +14,7 @@ function SupervisorInternRosterPanel() {
   const [search, setSearch] = useSessionStorage('sup-roster-search', '')
   const [docFilter, setDocFilter] = useSessionStorage('sup-roster-doc', 'All') // 'All', 'Done', 'Processing'
   const [positions, setPositions] = useState([])
+  const [selectedFinished, setSelectedFinished] = useState(new Set())
   const navigate = useNavigate()
 
   const loadStudents = () => {
@@ -82,6 +83,47 @@ function SupervisorInternRosterPanel() {
     }
   }
 
+  const handleUnlink = async (studentId, studentName) => {
+    const ok = await confirmAction({
+      title: `Unlink ${studentName}?`,
+      text: 'This will unlink the student from your roster. Proceed?',
+      confirmButtonText: 'Unlink'
+    })
+    if (!ok) return
+
+    try {
+      showLoading('Unlinking...')
+      await unlinkStudentFromCompany(studentId)
+      closeAlert()
+      showSuccess('Unlinked', 'The student has been unlinked.')
+      loadStudents()
+    } catch (err) {
+      closeAlert()
+      showError('Failed to unlink', extractError(err))
+    }
+  }
+
+  const handleBulkUnlink = async () => {
+    const ok = await confirmAction({
+      title: `Unlink ${selectedFinished.size} interns?`,
+      text: 'This will unlink all selected interns from your roster. Proceed?',
+      confirmButtonText: 'Unlink All'
+    })
+    if (!ok) return
+
+    try {
+      showLoading('Unlinking...')
+      await Promise.all(Array.from(selectedFinished).map(id => unlinkStudentFromCompany(id)))
+      closeAlert()
+      showSuccess('Unlinked', 'The selected interns have been unlinked.')
+      setSelectedFinished(new Set())
+      loadStudents()
+    } catch (err) {
+      closeAlert()
+      showError('Failed to unlink some interns', extractError(err))
+    }
+  }
+
   const filteredStudents = useMemo(() => {
     let list = students.filter(s => {
       const q = search.toLowerCase()
@@ -123,6 +165,15 @@ function SupervisorInternRosterPanel() {
             {pendingReadyCount > 0 && <span style={{ marginLeft: 8, background: '#ef4444', color: 'var(--text)', padding: '2px 8px', borderRadius: 12, fontSize: '0.75rem', fontWeight: 'bold' }}>{pendingReadyCount} pending approval</span>}
           </p>
           <div style={{ display: 'flex', gap: 12 }}>
+            {selectedFinished.size > 0 && (
+              <button 
+                className="secondary-button danger-button" 
+                style={{ padding: '6px 12px', fontSize: '0.85rem' }}
+                onClick={handleBulkUnlink}
+              >
+                Unlink Selected ({selectedFinished.size})
+              </button>
+            )}
             <input 
               type="text" 
               className="search-input" 
@@ -161,6 +212,19 @@ function SupervisorInternRosterPanel() {
             {filteredStudents.map((s) => (
               <div key={s.user_id} className="users-row" style={{ display: 'grid', gridTemplateColumns: '2fr 1.5fr 1.5fr 1fr 1fr 1fr 2fr', gap: 16, alignItems: 'center', padding: '12px 0' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  {s.link_status !== 'pending' && s.remaining_hours <= 0 && s.required_hours > 0 ? (
+                    <input 
+                      type="checkbox" 
+                      checked={selectedFinished.has(s.user_id)} 
+                      onChange={(e) => {
+                        const newSet = new Set(selectedFinished)
+                        if (e.target.checked) newSet.add(s.user_id)
+                        else newSet.delete(s.user_id)
+                        setSelectedFinished(newSet)
+                      }}
+                      style={{ cursor: 'pointer', width: 16, height: 16 }}
+                    />
+                  ) : <div style={{ width: 16 }} />}
                   <Link to={`/profile/${s.user_id}`} style={{ position: 'relative' }}>
                     <AvatarBadge name={s.full_name} avatarUrl={s.avatar_url} size={36} />
                     {s.link_status === 'pending' && (
@@ -240,13 +304,22 @@ function SupervisorInternRosterPanel() {
                     </>
                   ) : (
                     s.remaining_hours <= 0 && s.required_hours > 0 ? (
-                      <button
-                        className="primary-button"
-                        style={{ padding: '6px 12px', fontSize: '0.75rem', minHeight: 'unset' }}
-                        onClick={() => navigate('/supervisor/completion', { state: { student_id: s.role_id } })}
-                      >
-                        Approve OJT
-                      </button>
+                      <>
+                        <button
+                          className="primary-button"
+                          style={{ padding: '6px 12px', fontSize: '0.75rem', minHeight: 'unset' }}
+                          onClick={() => navigate('/supervisor/completion', { state: { student_id: s.role_id } })}
+                        >
+                          Approve OJT
+                        </button>
+                        <button
+                          className="secondary-button danger-button"
+                          style={{ padding: '6px 12px', fontSize: '0.75rem', minHeight: 'unset' }}
+                          onClick={() => handleUnlink(s.user_id, s.full_name)}
+                        >
+                          Unlink
+                        </button>
+                      </>
                     ) : (
                       <button className="primary-button" style={{ padding: '6px 12px', fontSize: '0.75rem', minHeight: 'unset', opacity: 0.5, cursor: 'not-allowed' }} disabled>
                         Linked

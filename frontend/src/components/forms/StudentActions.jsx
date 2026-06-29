@@ -3,15 +3,85 @@ import { useEffect, useRef, useState } from 'react'
 import { createStudentActivity, createStudentReport, fetchStudentRecords } from '../../api/records'
 import { confirmAction, showError, showSuccess, extractError } from '../../utils/alerts'
 import { validateStudentActivity, validateStudentReport } from '../../utils/validation'
-import { InternshipSearchField } from '../SearchFields'
 import { useFormPersist } from '../../hooks/useFormPersist'
+
+function ExpandableRecord({ record, title, content }) {
+  const [expanded, setExpanded] = useState(false)
+
+  return (
+    <div className="mini-card" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+        <div>
+          <span style={{ fontWeight: 600 }}>{title}</span>
+          {record.payload.activity_date && <div style={{ fontSize: '0.8rem', color: 'var(--muted)', marginTop: 4 }}>{record.payload.activity_date} &middot; {record.payload.hours_spent}h</div>}
+        </div>
+        {record.payload.validation_status && (
+          <span
+            className="role-chip"
+            style={{
+              background:
+                record.payload.validation_status === 'validated'
+                  ? 'rgba(34, 197, 94, 0.15)'
+                  : record.payload.validation_status === 'rejected'
+                  ? 'rgba(239, 68, 68, 0.15)'
+                  : 'rgba(245, 158, 11, 0.15)',
+              color:
+                record.payload.validation_status === 'validated'
+                  ? '#22c55e'
+                  : record.payload.validation_status === 'rejected'
+                  ? '#ef4444'
+                  : '#f59e0b',
+              fontSize: '0.7rem',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              flexShrink: 0
+            }}
+          >
+            {record.payload.validation_status}
+          </span>
+        )}
+      </div>
+      
+      {content && (
+        <div style={{ fontSize: '0.85rem' }}>
+          {expanded ? (
+            <div style={{ whiteSpace: 'pre-wrap', color: 'var(--text)', marginTop: 4 }}>{content}</div>
+          ) : (
+            <div style={{ color: 'var(--muted)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{content}</div>
+          )}
+          {content.length > 80 && (
+            <button 
+              onClick={() => setExpanded(!expanded)}
+              type="button"
+              style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', padding: '4px 0', fontSize: '0.8rem', fontWeight: 600, display: 'block', marginTop: 4 }}
+            >
+              {expanded ? 'See Less' : 'See More'}
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
 
 function RecordList({ title, records }) {
   return (
     <div className="dashboard-card compact-card">
       <h3>{title}</h3>
       <div className="stack-list">
-        {records.length === 0 ? <p className="muted">No records yet.</p> : records.map((record) => <div key={record.id} className="mini-card">{record.payload.title || record.payload.report_title}</div>)}
+        {records.length === 0 ? (
+          <p className="muted">No records yet.</p>
+        ) : (
+          records.map((record) => {
+            const isActivity = !!record.payload.title
+            const title = record.payload.title || record.payload.report_title
+            const content = record.payload.description || record.payload.summary
+            
+            return (
+              <ExpandableRecord key={record.id} record={record} title={title} content={content} />
+            )
+          })
+        )}
       </div>
     </div>
   )
@@ -112,7 +182,10 @@ export default function StudentActions({ user }) {
         <div className="grid-two">
           <form className="dashboard-card form-card" ref={activityFormRef} onSubmit={submitActivity}>
             <h3>Daily Activity</h3>
-            <InternshipSearchField name="internship_id" callerRole="student" resetKey={activityReset} />
+            <label>
+              Internship ID (Auto-detected)
+              <input name="internship_id" type="text" value={user?.internship_id || ''} readOnly style={{ background: 'var(--input-bg)', opacity: 0.7, cursor: 'not-allowed' }} />
+            </label>
             <label>
               Activity date
               <input name="activity_date" type="date" />
@@ -134,7 +207,10 @@ export default function StudentActions({ user }) {
 
           <form className="dashboard-card form-card" ref={reportFormRef} onSubmit={submitReport}>
             <h3>Internship Report</h3>
-            <InternshipSearchField name="internship_id" callerRole="student" resetKey={reportReset} />
+            <label>
+              Internship ID (Auto-detected)
+              <input name="internship_id" type="text" value={user?.internship_id || ''} readOnly style={{ background: 'var(--input-bg)', opacity: 0.7, cursor: 'not-allowed' }} />
+            </label>
             <label>
               Report title
               <input name="report_title" type="text" placeholder="Weekly summary (min 3 chars)" />
