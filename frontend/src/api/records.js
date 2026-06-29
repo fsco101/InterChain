@@ -12,7 +12,6 @@ export const fetchStudentAttendanceHistory = () => api.get('/records/student/att
 export const deleteStudentAttendance = (id) => api.delete(`/records/student/attendance/${id}`)
 
 export const createInstructorAttendance = (payload) => api.post('/records/instructor/attendance', payload)
-export const createInstructorEvaluation = (payload) => api.post('/records/instructor/evaluation', payload)
 export const fetchInstructorRecords = () => api.get('/records/instructor')
 
 // Supervisor Evaluations
@@ -23,8 +22,6 @@ export const fetchStudentTasks = () => api.get('/student/tasks')
 export const studentMarkTaskDone = (taskId, formData) => api.patch(`/records/student/tasks/${taskId}/done`, formData, {
   headers: { 'Content-Type': 'multipart/form-data' }
 })
-export const submitInstructorEvaluation = (payload) => api.post('/instructor/evaluation', payload)
-export const fetchInstructorEvaluations = () => api.get('/instructor/evaluations')
 export const setStudentRequiredHours = (roleId, hours) => api.put(`/instructor/student/${roleId}/required-hours`, { required_hours: parseFloat(hours) })
 
 export const fetchGlobalRankings = (params) => api.get('/records/rankings', { params })
@@ -65,6 +62,7 @@ export const unlinkStudentFromCompany = (studentId) => api.delete(`/supervisor/s
 export const fetchSupervisorStudentAttendance = (studentId) => api.get(`/supervisor/student-attendance/${studentId}`)
 export const fetchSupervisorAllAttendance = () => api.get('/supervisor/attendance')
 export const validateStudentAttendance = (recordId, payload) => api.patch(`/supervisor/attendance/${recordId}/validate`, payload)
+export const bulkValidateStudentAttendance = (payload) => api.patch('/supervisor/attendance/bulk-validate', payload)
 
 // Supervisor Activities
 export const fetchSupervisorActivities = () => api.get('/supervisor/activities')
@@ -106,13 +104,12 @@ export const bulkDeleteStudentAttendance = (ids) => api.post('/records/student/a
 
 // Delete (instructor)
 export const deleteInstructorAttendance = (id) => api.delete(`/records/instructor/attendance/${id}`)
-export const deleteInstructorEvaluation = (id) => api.delete(`/records/instructor/evaluation/${id}`)
 export const bulkDeleteInstructorAttendance = (ids) => api.post('/records/instructor/attendance/bulk-delete', { ids })
-export const bulkDeleteInstructorEvaluation = (ids) => api.post('/records/instructor/evaluation/bulk-delete', { ids })
 
 // Delete (supervisor)
 export const deleteSupervisorApproval = (id) => api.delete(`/records/supervisor/approval/${id}`)
 export const bulkDeleteSupervisorApproval = (ids) => api.post('/records/supervisor/approval/bulk-delete', { ids })
+export const bulkDeleteSupervisorEvaluation = (ids) => api.post('/records/supervisor/evaluation/bulk-delete', { ids })
 
 // Public profile
 export const fetchUserProfile = (userId) => api.get(`/auth/profile/${userId}`)

@@ -4,13 +4,13 @@ import { Link } from 'react-router-dom'
 import ProtectedRoute from '../../components/ProtectedRoute'
 import DashboardShell from '../../components/DashboardShell'
 import AvatarBadge from '../../components/AvatarBadge'
-import { fetchSupervisorAllAttendance, fetchSupervisorStudents, validateStudentAttendance } from '../../api/records'
+import { fetchSupervisorAllAttendance, fetchSupervisorStudents, validateStudentAttendance, bulkValidateStudentAttendance } from '../../api/records'
 import { showError, showSuccess, extractError, confirmAction } from '../../utils/alerts'
 import { SUPERVISOR_LINKS } from '../../utils/links'
 
 const STATUS_COLORS = { pending: '#f59e0b', validated: '#22c55e', rejected: '#ef4444' }
 
-function AttendanceCard({ record, onValidate }) {
+function AttendanceCard({ record, onValidate, selected, onToggle }) {
   const [acting, setActing] = useState(false)
 
   const handle = async (validationStatus) => {
@@ -31,7 +31,10 @@ function AttendanceCard({ record, onValidate }) {
   }
 
   return (
-    <div className="users-row" style={{ alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
+    <div className={`users-row ${selected ? 'selected' : ''}`} style={{ alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
+      {record.payload.validation_status === 'pending' && (
+        <input type="checkbox" checked={selected || false} onChange={onToggle} style={{ marginTop: 8 }} />
+      )}
       <div style={{ display: 'flex', gap: 8 }}>
         {record.payload.photo_url && (
           <div style={{ position: 'relative' }}>
@@ -101,6 +104,8 @@ function SupervisorAttendancePanel() {
   const [filter, setFilter] = useSessionStorage('sup-att-filter', 'all') // all | pending | validated | rejected
   const [searchQuery, setSearchQuery] = useSessionStorage('sup-att-search', '')
   const [dateFilter, setDateFilter] = useSessionStorage('sup-att-date', '')
+  const [selected, setSelected] = useState(new Set())
+  const [bulkActing, setBulkActing] = useState(false)
 
   const load = async () => {
     try {
@@ -127,6 +132,41 @@ function SupervisorAttendancePanel() {
   })
   
   const pending = records.filter((r) => r.payload.validation_status === 'pending').length
+  const selectable = filtered.filter((r) => r.payload.validation_status === 'pending')
+
+  const handleToggle = (id) => setSelected((prev) => {
+    const next = new Set(prev)
+    next.has(id) ? next.delete(id) : next.add(id)
+    return next
+  })
+
+  const handleToggleAll = () => {
+    if (selected.size === selectable.length && selectable.length > 0) {
+      setSelected(new Set())
+    } else {
+      setSelected(new Set(selectable.map(r => r.id)))
+    }
+  }
+
+  const handleBulk = async (validationStatus) => {
+    const ids = Array.from(selected)
+    if (!ids.length) return
+    const label = validationStatus === 'validated' ? 'Validate' : 'Reject'
+    const ok = await confirmAction({ title: `${label} ${ids.length} records?`, confirmButtonText: label })
+    if (!ok) return
+
+    setBulkActing(true)
+    try {
+      await bulkValidateStudentAttendance({ ids, validation_status: validationStatus })
+      showSuccess(`Records ${validationStatus}`)
+      setSelected(new Set())
+      load()
+    } catch (err) {
+      showError('Failed', extractError(err))
+    } finally {
+      setBulkActing(false)
+    }
+  }
 
   return (
     <div className="dashboard-stack">
@@ -163,11 +203,35 @@ function SupervisorAttendancePanel() {
       </div>
 
       <div className="dashboard-card" style={{ padding: 0, overflow: 'hidden' }}>
+        {selectable.length > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', background: 'rgba(148, 163, 184, 0.05)', borderBottom: '1px solid rgba(148, 163, 184, 0.1)' }}>
+            <input type="checkbox" checked={selected.size === selectable.length && selectable.length > 0} onChange={handleToggleAll} />
+            <span style={{ fontSize: '0.85rem' }}>Select All Pending ({selectable.length})</span>
+            {selected.size > 0 && (
+              <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+                <button className="primary-button" style={{ padding: '6px 12px', fontSize: '0.8rem', minHeight: 'unset' }} onClick={() => handleBulk('validated')} disabled={bulkActing}>
+                  Validate Selected ({selected.size})
+                </button>
+                <button className="secondary-button danger-button" style={{ padding: '6px 12px', fontSize: '0.8rem', minHeight: 'unset' }} onClick={() => handleBulk('rejected')} disabled={bulkActing}>
+                  Reject Selected ({selected.size})
+                </button>
+              </div>
+            )}
+          </div>
+        )}
         {filtered.length === 0 ? (
           <p className="muted" style={{ padding: 24, margin: 0 }}>No {filter !== 'all' ? filter : ''} attendance records.</p>
         ) : (
           <div className="users-table">
-            {filtered.map((r) => <AttendanceCard key={r.id} record={r} onValidate={load} />)}
+            {filtered.map((r) => (
+              <AttendanceCard 
+                key={r.id} 
+                record={r} 
+                onValidate={load} 
+                selected={selected.has(r.id)} 
+                onToggle={() => handleToggle(r.id)} 
+              />
+            ))}
           </div>
         )}
       </div>

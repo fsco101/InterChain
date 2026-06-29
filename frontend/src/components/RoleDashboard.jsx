@@ -19,7 +19,6 @@ export default function RoleDashboard({ role, title, description, children }) {
       instructor: [
         { to: '/instructor/dashboard', label: 'Overview', description: 'Dashboard summary', end: true },
         { to: '/instructor/attendance', label: 'Attendance', description: 'Validate student attendance' },
-        { to: '/instructor/evaluations', label: 'Evaluations', description: 'Submit evaluations' },
         { to: '/profile', label: 'Profile', description: 'Edit your account' },
       ],
       employer: [

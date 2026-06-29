@@ -19,6 +19,7 @@ export const INSTRUCTOR_LINKS = [
   { to: '/instructor/hours', label: 'Required Hours', description: 'Set & track student required hours' },
   { to: '/rankings', label: 'Rankings', description: 'Student performance rankings' },
   { to: '/instructor/roster', label: 'My Students', description: 'Manage student roster' },
+  { to: '/instructor/history', label: 'History', description: 'Your attendance validations' },
   { to: '/notifications', label: 'Notifications', description: 'View all notifications' },
   { to: '/profile', label: 'Profile', description: 'Edit your account' },
 ]
@@ -33,6 +34,7 @@ export const SUPERVISOR_LINKS = [
   { to: '/supervisor/tasks', label: 'Tasks', description: 'Assign tasks to students' },
   { to: '/supervisor/roster', label: 'Instructor Roster', description: 'Instructors in your roster' },
   { to: '/supervisor/interns', label: 'Intern Roster', description: 'Interns under your supervision' },
+  { to: '/supervisor/history', label: 'History', description: 'Your approvals & evaluations' },
   { to: '/notifications', label: 'Notifications', description: 'View all notifications' },
   { to: '/profile', label: 'Profile', description: 'Edit your account' },
 ]

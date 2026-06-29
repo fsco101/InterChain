@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 
-import { createInstructorAttendance, createInstructorEvaluation, fetchInstructorRecords } from '../../api/records'
+import { createInstructorAttendance, fetchInstructorRecords } from '../../api/records'
 import { confirmAction, showError, showSuccess, extractError } from '../../utils/alerts'
-import { validateInstructorAttendance, validateInstructorEvaluation } from '../../utils/validation'
+import { validateInstructorAttendance } from '../../utils/validation'
 import { UserSearchField, InternshipSearchField } from '../SearchFields'
 
 function RecordList({ title, records }) {
@@ -40,7 +40,6 @@ export default function InstructorActions() {
     try {
       const { data } = await fetchInstructorRecords()
       setAttendanceRecords(data.attendance || [])
-      setEvaluationRecords(data.evaluations || [])
     } catch {
       showError('Unable to load instructor records')
     }
@@ -69,29 +68,6 @@ export default function InstructorActions() {
       await loadRecords()
     } catch (error) {
       showError('Could not record attendance', extractError(error))
-    }
-  }
-
-  const submitEvaluation = async (event) => {
-    event.preventDefault()
-    const values = Object.fromEntries(new FormData(event.currentTarget).entries())
-    const validationError = validateInstructorEvaluation(values)
-    if (validationError) { showError('Invalid input', validationError); return }
-    const confirmed = await confirmAction({ title: 'Submit evaluation?', text: 'This will save the performance evaluation to MongoDB.' })
-    if (!confirmed) return
-    try {
-      await createInstructorEvaluation({
-        internship_id: values.internship_id,
-        student_id: values.student_id,
-        score: Number(values.score),
-        feedback: values.feedback,
-      })
-      showSuccess('Evaluation submitted', `Score ${values.score}/10 saved for student ${values.student_id}.`)
-      evalFormRef.current?.reset()
-      setEvalStudent(null)
-      await loadRecords()
-    } catch (error) {
-      showError('Could not submit evaluation', extractError(error))
     }
   }
 
@@ -127,33 +103,10 @@ export default function InstructorActions() {
           </label>
           <button className="primary-button" type="submit">Save attendance</button>
         </form>
-
-        <form className="dashboard-card form-card" onSubmit={submitEvaluation} ref={evalFormRef}>
-          <h3>Performance Evaluation</h3>
-          <InternshipSearchField name="internship_id" callerRole="instructor" />
-          <UserSearchField
-            label="Student"
-            role="student"
-            callerRole="instructor"
-            name="student_id"
-            placeholder="Search student by name or ID…"
-            onChange={setEvalStudent}
-          />
-          <label>
-            Score
-            <input name="score" type="number" min="1" max="10" step="1" placeholder="1–10" />
-          </label>
-          <label>
-            Feedback
-            <textarea name="feedback" rows="6" placeholder="Explain the student performance (min 10 chars)" />
-          </label>
-          <button className="primary-button" type="submit">Submit evaluation</button>
-        </form>
       </div>
 
       <div className="grid-two">
         <RecordList title="Recent attendance" records={attendanceRecords} />
-        <RecordList title="Recent evaluations" records={evaluationRecords} />
       </div>
     </div>
   )

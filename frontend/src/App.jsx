@@ -21,6 +21,7 @@ import InstructorDashboard from './pages/instructor/InstructorDashboard'
 import InstructorSchedulePage from './pages/instructor/InstructorSchedulePage'
 import InstructorRosterPage from './pages/instructor/InstructorRosterPage'
 import InstructorHoursTrackingPage from './pages/instructor/InstructorHoursTrackingPage'
+import InstructorHistoryPage from './pages/instructor/InstructorHistoryPage'
 
 import SupervisorDashboard from './pages/supervisor/SupervisorDashboard'
 import SupervisorAttendancePage from './pages/supervisor/SupervisorAttendancePage'
@@ -31,6 +32,7 @@ import SupervisorTasksPage from './pages/supervisor/SupervisorTasksPage'
 import SupervisorRosterPage from './pages/supervisor/SupervisorRosterPage'
 import SupervisorInternRosterPage from './pages/supervisor/SupervisorInternRosterPage'
 import StudentDocumentsViewPage from './pages/supervisor/StudentDocumentsViewPage'
+import SupervisorHistoryPage from './pages/supervisor/SupervisorHistoryPage'
 
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminUsersPage from './pages/admin/AdminUsersPage'
@@ -71,6 +73,7 @@ export default function App() {
           <Route path="/instructor/schedule" element={<InstructorSchedulePage />} />
           <Route path="/instructor/hours" element={<InstructorHoursTrackingPage />} />
           <Route path="/instructor/roster" element={<InstructorRosterPage />} />
+          <Route path="/instructor/history" element={<InstructorHistoryPage />} />
           <Route path="/instructor/interns/:studentId/documents" element={<StudentDocumentsViewPage />} />
 
           {/* Supervisor */}
@@ -82,6 +85,7 @@ export default function App() {
           <Route path="/supervisor/tasks" element={<SupervisorTasksPage />} />
           <Route path="/supervisor/roster" element={<SupervisorRosterPage />} />
           <Route path="/supervisor/interns" element={<SupervisorInternRosterPage />} />
+          <Route path="/supervisor/history" element={<SupervisorHistoryPage />} />
           <Route path="/supervisor/interns/:studentId/documents" element={<StudentDocumentsViewPage />} />
           {/* Global Rankings */}
           <Route path="/rankings" element={<RankingsPage />} />

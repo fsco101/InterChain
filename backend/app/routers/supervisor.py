@@ -45,6 +45,11 @@ class AttendanceValidateBody(BaseModel):
     validation_status: str  # validated | rejected
     notes: str | None = None
 
+class AttendanceBulkValidateBody(BaseModel):
+    ids: list[str]
+    validation_status: str  # validated | rejected
+    notes: str | None = None
+
 
 class CertificateCreate(BaseModel):
     recipient_name: str
@@ -450,6 +455,40 @@ async def validate_student_attendance(record_id: str, body: AttendanceValidateBo
         )
 
     return {"ok": True}
+
+@router.patch("/attendance/bulk-validate")
+async def bulk_validate_student_attendance(body: AttendanceBulkValidateBody, current_user: dict = Depends(require_roles("supervisor"))):
+    db = get_database()
+    oids = [_oid(id) for id in body.ids if _oid(id)]
+    if not oids:
+        raise HTTPException(status_code=400, detail="No valid record IDs provided")
+
+    result = await db.student_attendance.update_many(
+        {"_id": {"$in": oids}},
+        {"$set": {
+            "payload.validation_status": body.validation_status,
+            "payload.validated_by": current_user["id"],
+            "payload.validated_by_name": current_user["full_name"],
+            "payload.validation_notes": body.notes,
+            "payload.validated_at": get_pht_now().isoformat(),
+        }}
+    )
+    
+    # Notify students
+    cursor = db.student_attendance.find({"_id": {"$in": oids}})
+    from app.routers.notifications import push_notification
+    status_text = "validated" if body.validation_status == "validated" else "rejected"
+    color = "success" if body.validation_status == "validated" else "warning"
+    async for doc in cursor:
+        student_id = doc["user_id"]
+        await push_notification(
+            db, student_id, f"Attendance {status_text}",
+            f"Your attendance for {doc['payload'].get('attendance_date', '?')} has been {status_text} by {current_user['full_name']}.",
+            color
+        )
+
+    return {"ok": True, "modified": result.modified_count}
+
 
 
 # ── Positions (supervisor-defined) ──────────────────────────────────────────────

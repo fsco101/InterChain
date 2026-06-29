@@ -165,7 +165,7 @@ async def student_time_out(
 
     if not existing:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No time in record found for today.")
-    if existing["payload"].get("time_out"):
+    if existing["payload"].get("time_out") and existing["payload"].get("validation_status") != "rejected":
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Already timed out for today.")
 
     time_in = existing["payload"]["time_in"]
@@ -182,6 +182,7 @@ async def student_time_out(
             "payload.hours": round(hours, 2),
             "payload.photo_out_url": photo_result["url"],
             "payload.photo_out_public_id": photo_result["public_id"],
+            "payload.validation_status": "pending"
         }}
     )
 
@@ -331,26 +332,16 @@ async def validate_attendance(payload: AttendanceValidationCreate, current_user:
     return record
 
 
-@router.post("/instructor/evaluation")
-async def submit_evaluation(payload: EvaluationCreate, current_user: dict = Depends(require_roles("instructor"))):
-    record = await create_record("performance_evaluations", "performance_evaluation", "instructor", current_user, payload.model_dump(mode="json"))
-    db = get_database()
-    await push_notification(db, current_user["id"], "Evaluation submitted", f"Score {payload.score}/10 saved for student {payload.student_id}.", "success")
-    return record
-
-
 @router.get("/instructor")
 async def get_instructor_records(current_user: dict = Depends(require_roles("instructor"))):
     attendance = await list_records("attendance_records", current_user["id"])
-    evaluations = await list_records("performance_evaluations", current_user["id"])
-    return {"attendance": attendance, "evaluations": evaluations}
+    return {"attendance": attendance}
 
 
 @router.get("/instructor/history")
 async def get_instructor_history(current_user: dict = Depends(require_roles("instructor"))):
     attendance = await list_all_records("attendance_records", current_user["id"])
-    evaluations = await list_all_records("performance_evaluations", current_user["id"])
-    return {"attendance": attendance, "evaluations": evaluations}
+    return {"attendance": attendance}
 
 
 @router.delete("/instructor/attendance/{record_id}")
@@ -359,21 +350,9 @@ async def delete_instructor_attendance(record_id: str, current_user: dict = Depe
     return {"deleted": ok}
 
 
-@router.delete("/instructor/evaluation/{record_id}")
-async def delete_instructor_evaluation(record_id: str, current_user: dict = Depends(require_roles("instructor"))):
-    ok = await delete_record("performance_evaluations", record_id, current_user["id"])
-    return {"deleted": ok}
-
-
 @router.post("/instructor/attendance/bulk-delete")
 async def bulk_delete_instructor_attendance(body: BulkDeleteBody, current_user: dict = Depends(require_roles("instructor"))):
     count = await delete_records_bulk("attendance_records", body.ids, current_user["id"])
-    return {"deleted": count}
-
-
-@router.post("/instructor/evaluation/bulk-delete")
-async def bulk_delete_instructor_evaluation(body: BulkDeleteBody, current_user: dict = Depends(require_roles("instructor"))):
-    count = await delete_records_bulk("performance_evaluations", body.ids, current_user["id"])
     return {"deleted": count}
 
 
@@ -433,6 +412,12 @@ async def get_supervisor_evaluations_history(current_user: dict = Depends(requir
 async def delete_supervisor_evaluation(record_id: str, current_user: dict = Depends(require_roles("supervisor"))):
     ok = await delete_record("employer_evaluations", record_id, current_user["id"])
     return {"deleted": ok}
+
+
+@router.post("/supervisor/evaluation/bulk-delete")
+async def bulk_delete_supervisor_evaluation(body: BulkDeleteBody, current_user: dict = Depends(require_roles("supervisor"))):
+    count = await delete_records_bulk("employer_evaluations", body.ids, current_user["id"])
+    return {"deleted": count}
 
 
 @router.get("/supervisor")
