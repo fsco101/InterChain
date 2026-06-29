@@ -200,9 +200,10 @@ async def authenticate_user(email: str, password: str) -> dict | None:
 
 async def store_verification_code(email: str, code: str, code_type: str) -> None:
     db = get_database()
-    await db.verification_codes.delete_many({"email": email, "type": code_type})
+    email_lower = email.lower().strip()
+    await db.verification_codes.delete_many({"email": email_lower, "type": code_type})
     await db.verification_codes.insert_one({
-        "email": email,
+        "email": email_lower,
         "code": code,
         "type": code_type,
         "created_at": get_pht_now()
@@ -210,9 +211,10 @@ async def store_verification_code(email: str, code: str, code_type: str) -> None
 
 async def verify_and_delete_code(email: str, code: str, code_type: str) -> bool:
     db = get_database()
-    record = await db.verification_codes.find_one({"email": email, "code": code, "type": code_type})
+    email_lower = email.lower().strip()
+    record = await db.verification_codes.find_one({"email": email_lower, "code": code, "type": code_type})
     if record:
-        await db.verification_codes.delete_many({"email": email, "type": code_type})
+        await db.verification_codes.delete_many({"email": email_lower, "type": code_type})
         return True
     return False
 

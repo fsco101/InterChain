@@ -33,6 +33,22 @@ async def signup(
     payload = UserCreate(full_name=full_name, email=email, password=password, role=role, institution=institution, company=company)
     existing_user = await get_user_by_email(payload.email)
     if existing_user is not None:
+        if not existing_user.get("is_verified"):
+            # User exists but is unverified. We should allow them to re-verify.
+            # Wait, do we update their password/details to the new ones?
+            # It's better to just resend the code for the existing unverified account.
+            code = ''.join(random.choices(string.digits, k=6))
+            await store_verification_code(payload.email, code, "registration")
+            try:
+                await send_verification_email(payload.email, code)
+            except Exception as e:
+                print(f"Error sending verification email: {e}")
+            return AuthResponse(
+                access_token="", 
+                user=serialize_user(existing_user), 
+                requires_verification=True,
+                message="Verification code resent to your email."
+            )
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
 
     created_user = await create_user(payload, avatar_file=avatar_file)

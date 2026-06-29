@@ -17,7 +17,10 @@ async def send_certificate_email(
 ) -> None:
     msg = MIMEMultipart("alternative")
     msg["Subject"] = f"Internship Certificate – {company_name}"
-    msg["From"] = settings.smtp_from or settings.smtp_user
+    if settings.smtp_from:
+        msg["From"] = f"{settings.smtp_from} <{settings.smtp_user}>"
+    else:
+        msg["From"] = settings.smtp_user
     msg["To"] = to_email
 
     html_body = f"""
@@ -84,7 +87,10 @@ async def send_certificate_email(
 async def send_verification_email(to_email: str, code: str) -> None:
     msg = MIMEMultipart("alternative")
     msg["Subject"] = "Verify Your Account - InterChain"
-    msg["From"] = settings.smtp_from or settings.smtp_user
+    if settings.smtp_from:
+        msg["From"] = f"{settings.smtp_from} <{settings.smtp_user}>"
+    else:
+        msg["From"] = settings.smtp_user
     msg["To"] = to_email
 
     html_body = f"""
@@ -144,7 +150,10 @@ async def send_verification_email(to_email: str, code: str) -> None:
 async def send_password_reset_email(to_email: str, code: str) -> None:
     msg = MIMEMultipart("alternative")
     msg["Subject"] = "Password Reset Request - InterChain"
-    msg["From"] = settings.smtp_from or settings.smtp_user
+    if settings.smtp_from:
+        msg["From"] = f"{settings.smtp_from} <{settings.smtp_user}>"
+    else:
+        msg["From"] = settings.smtp_user
     msg["To"] = to_email
 
     html_body = f"""
