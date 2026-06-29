@@ -10,7 +10,7 @@ import { SUPERVISOR_LINKS } from '../../utils/links'
 
 const STATUS_COLORS = { pending: '#f59e0b', validated: '#22c55e', rejected: '#ef4444' }
 
-function ActivityCard({ record, onValidate }) {
+function ActivityCard({ record, onValidate, selectable, selected, onToggle }) {
   const [acting, setActing] = useState(false)
 
   const handle = async (validationStatus) => {
@@ -32,6 +32,14 @@ function ActivityCard({ record, onValidate }) {
 
   return (
     <div className="users-row" style={{ alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
+      {selectable && (
+        <input 
+          type="checkbox" 
+          checked={selected} 
+          onChange={onToggle} 
+          style={{ marginTop: 14, cursor: 'pointer', width: 16, height: 16 }}
+        />
+      )}
       <Link to={`/profile/${record.user_id}`} style={{ flexShrink: 0, display: 'block', marginTop: 4 }}>
         <AvatarBadge name={record.user_name || 'Student'} avatarUrl={record.user_avatar_url} size={42} />
       </Link>
@@ -71,6 +79,8 @@ function SupervisorActivitiesPanel() {
   const [filter, setFilter] = useSessionStorage('sup-act-filter', 'pending') // all | pending | validated | rejected
   const [searchQuery, setSearchQuery] = useSessionStorage('sup-act-search', '')
   const [dateFilter, setDateFilter] = useSessionStorage('sup-act-date', '')
+  const [selectedIds, setSelectedIds] = useState(new Set())
+  const [actingBulk, setActingBulk] = useState(false)
 
   const load = async () => {
     try {
@@ -97,6 +107,42 @@ function SupervisorActivitiesPanel() {
   })
 
   const pending = records.filter((r) => r.payload.validation_status === 'pending').length
+
+  const handleBulkAction = async (status) => {
+    const ids = Array.from(selectedIds)
+    if (ids.length === 0) return
+    const label = status === 'validated' ? 'Approve' : 'Reject'
+    const ok = await confirmAction({ title: `${label} ${ids.length} selected activities?`, confirmButtonText: label })
+    if (!ok) return
+
+    setActingBulk(true)
+    try {
+      await Promise.all(ids.map(id => validateStudentActivityLog(id, { status })))
+      showSuccess(`${ids.length} activities ${status}`)
+      setSelectedIds(new Set())
+      load()
+    } catch (err) {
+      showError('Failed some updates', extractError(err))
+      load()
+    } finally {
+      setActingBulk(false)
+    }
+  }
+
+  const handleToggleAll = (e) => {
+    if (e.target.checked) {
+      const newSet = new Set()
+      filtered.forEach(r => {
+        if (r.payload.validation_status === 'pending') newSet.add(r.id)
+      })
+      setSelectedIds(newSet)
+    } else {
+      setSelectedIds(new Set())
+    }
+  }
+
+  const allPendingFiltered = filtered.filter(r => r.payload.validation_status === 'pending')
+  const allSelected = allPendingFiltered.length > 0 && allPendingFiltered.every(r => selectedIds.has(r.id))
 
   return (
     <div className="dashboard-stack">
@@ -130,6 +176,25 @@ function SupervisorActivitiesPanel() {
           />
           {dateFilter && <button className="secondary-button" style={{ padding: '6px 12px' }} onClick={() => setDateFilter('')}>Clear Date</button>}
         </div>
+
+        {filter === 'pending' && filtered.length > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 16, padding: '12px 16px', background: 'rgba(255,255,255,0.02)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: '0.85rem' }}>
+              <input type="checkbox" checked={allSelected} onChange={handleToggleAll} style={{ width: 16, height: 16 }} />
+              Select All Pending
+            </label>
+            {selectedIds.size > 0 && (
+              <div style={{ display: 'flex', gap: 8, marginLeft: 'auto' }}>
+                <button className="primary-button" style={{ padding: '6px 12px', fontSize: '0.8rem' }} onClick={() => handleBulkAction('validated')} disabled={actingBulk}>
+                  Approve Selected ({selectedIds.size})
+                </button>
+                <button className="secondary-button danger-button" style={{ padding: '6px 12px', fontSize: '0.8rem' }} onClick={() => handleBulkAction('rejected')} disabled={actingBulk}>
+                  Reject Selected ({selectedIds.size})
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="dashboard-card" style={{ padding: 0, overflow: 'hidden' }}>
@@ -137,7 +202,21 @@ function SupervisorActivitiesPanel() {
           <p className="muted" style={{ padding: 24, margin: 0 }}>No {filter !== 'all' ? filter : ''} activities found.</p>
         ) : (
           <div className="users-table">
-            {filtered.map((r) => <ActivityCard key={r.id} record={r} onValidate={load} />)}
+            {filtered.map((r) => (
+              <ActivityCard 
+                key={r.id} 
+                record={r} 
+                onValidate={load} 
+                selectable={filter === 'pending' && r.payload.validation_status === 'pending'}
+                selected={selectedIds.has(r.id)}
+                onToggle={() => {
+                  const n = new Set(selectedIds)
+                  if (n.has(r.id)) n.delete(r.id)
+                  else n.add(r.id)
+                  setSelectedIds(n)
+                }}
+              />
+            ))}
           </div>
         )}
       </div>

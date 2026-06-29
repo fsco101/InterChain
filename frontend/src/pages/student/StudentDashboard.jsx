@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import ProtectedRoute from '../../components/ProtectedRoute'
 import DashboardShell from '../../components/DashboardShell'
 import Sparkline from '../../components/Sparkline'
@@ -50,6 +51,37 @@ function StudentDashboardContent() {
   const tasks = profile?.tasks || []
   const completedTasks = tasks.filter(t => t.status === 'done' || t.status === 'completed')
 
+  const activityTimelineMap = {}
+  activities.forEach(a => {
+    const date = a.payload.activity_date
+    if (date) {
+      if (!activityTimelineMap[date]) activityTimelineMap[date] = 0
+      activityTimelineMap[date] += parseFloat(a.payload.hours_spent || 0)
+    }
+  })
+  const timelineData = Object.entries(activityTimelineMap)
+    .map(([date, hours]) => ({ date, hours }))
+    .sort((a, b) => new Date(a.date) - new Date(b.date))
+    .slice(-14)
+
+  const taskStats = [
+    { name: 'Completed', value: completedTasks.length },
+    { name: 'Pending', value: tasks.length - completedTasks.length }
+  ]
+  const COLORS = ['#22c55e', '#3b82f6']
+
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div style={{ background: 'var(--panel)', border: '1px solid var(--panel-border)', padding: '8px 12px', borderRadius: 8, color: 'var(--text)', boxShadow: 'var(--shadow)' }}>
+          <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--muted)' }}>{label || payload[0].name}</p>
+          <p style={{ margin: '4px 0 0', fontWeight: 600 }}>{payload[0].value} {payload[0].name === 'hours' ? 'hrs' : 'tasks'}</p>
+        </div>
+      )
+    }
+    return null
+  }
+
   return (
     <DashboardShell links={STUDENT_LINKS}>
       <div className="page-shell dashboard-shell">
@@ -88,6 +120,69 @@ function StudentDashboardContent() {
             sub="approved by supervisor" 
             color="#22c55e" 
           />
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 18, marginTop: 18 }}>
+          <div className="dashboard-card" style={{ height: 320, display: 'flex', flexDirection: 'column' }}>
+            <p className="eyebrow" style={{ marginBottom: 12 }}>Activity Hours (Last 14 Active Days)</p>
+            <div style={{ flex: 1, minHeight: 0 }}>
+              {timelineData.length === 0 ? (
+                <p className="muted" style={{ textAlign: 'center', marginTop: 40 }}>No activity data yet.</p>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={timelineData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="colorHours" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#a78bfa" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#a78bfa" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                    <XAxis dataKey="date" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => val.slice(5)} />
+                    <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+                    <RechartsTooltip content={<CustomTooltip />} />
+                    <Area type="monotone" dataKey="hours" stroke="#a78bfa" strokeWidth={3} fillOpacity={1} fill="url(#colorHours)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </div>
+
+          <div className="dashboard-card" style={{ height: 320, display: 'flex', flexDirection: 'column' }}>
+            <p className="eyebrow" style={{ marginBottom: 12 }}>Task Distribution</p>
+            <div style={{ flex: 1, minHeight: 0 }}>
+              {tasks.length === 0 ? (
+                <p className="muted" style={{ textAlign: 'center', marginTop: 40 }}>No tasks assigned yet.</p>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={taskStats}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="value"
+                    >
+                      {taskStats.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <RechartsTooltip content={<CustomTooltip />} />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 16, marginTop: 8 }}>
+              {taskStats.map((entry, index) => (
+                <div key={entry.name} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <div style={{ width: 10, height: 10, borderRadius: '50%', background: COLORS[index] }} />
+                  <span style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>{entry.name} ({entry.value})</span>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
         <div className="grid-two" style={{ marginTop: 18 }}>

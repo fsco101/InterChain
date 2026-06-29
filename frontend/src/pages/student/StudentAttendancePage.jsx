@@ -3,13 +3,12 @@ import ProtectedRoute from '../../components/ProtectedRoute'
 import DashboardShell from '../../components/DashboardShell'
 import AvatarBadge from '../../components/AvatarBadge'
 import { timeInStudentAttendance, timeOutStudentAttendance, fetchStudentAttendance } from '../../api/records'
-import { showError, showSuccess, extractError, confirmAction } from '../../utils/alerts'
+import { showError, showSuccess, extractError, confirmAction, showLoading, closeAlert } from '../../utils/alerts'
 import { useAuth } from '../../context/AuthContext'
 import { STUDENT_LINKS } from '../../utils/links'
 
 function AttendanceForm({ records, onSuccess }) {
   const { user } = useAuth()
-  const [submitting, setSubmitting] = useState(false)
 
   // Find today's record (assume PHT date format matching backend YYYY-MM-DD)
   const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' })
@@ -30,16 +29,16 @@ function AttendanceForm({ records, onSuccess }) {
     const ok = await confirmAction({ title: 'Time In?', text: 'Your photo proof will be uploaded.' })
     if (!ok) return
 
-    setSubmitting(true)
+    showLoading('Logging time in...')
     try {
       await timeInStudentAttendance(fd)
+      closeAlert()
       showSuccess('Timed In', 'Your time in has been logged.')
       formElement.reset()
       onSuccess?.()
     } catch (err) {
+      closeAlert()
       showError('Failed', extractError(err))
-    } finally {
-      setSubmitting(false)
     }
   }
 
@@ -55,17 +54,18 @@ function AttendanceForm({ records, onSuccess }) {
 
     const ok = await confirmAction({ title: 'Time Out?', text: 'Your photo proof will be uploaded.' })
     if (!ok) return
+    if (!ok) return
 
-    setSubmitting(true)
+    showLoading('Logging time out...')
     try {
       await timeOutStudentAttendance(fd)
+      closeAlert()
       showSuccess('Timed Out', 'Your time out has been logged.')
       formElement.reset()
       onSuccess?.()
     } catch (err) {
+      closeAlert()
       showError('Failed', extractError(err))
-    } finally {
-      setSubmitting(false)
     }
   }
 
@@ -104,10 +104,8 @@ function AttendanceForm({ records, onSuccess }) {
         <input name="photo" type="file" accept="image/*" capture="environment" required />
       </label>
 
-      <button className="primary-button" type="submit" disabled={submitting} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-        {submitting ? (
-          'Uploading…'
-        ) : isTimedIn ? (
+      <button className="primary-button" type="submit" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+        {isTimedIn ? (
           <>
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 8 }}>
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />

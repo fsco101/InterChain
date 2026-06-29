@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useSessionStorage } from '../../hooks/useSessionStorage'
 import { Link } from 'react-router-dom'
 import AvatarBadge from '../../components/AvatarBadge'
 import ProtectedRoute from '../../components/ProtectedRoute'
 import DashboardShell from '../../components/DashboardShell'
-import { createTask, fetchTasks, fetchPositions, createPosition, deletePosition, deleteTask, updateTaskStatus, fetchSupervisorStudents } from '../../api/records'
-import { showError, showSuccess, extractError, confirmAction } from '../../utils/alerts'
+import { fetchSupervisorStudents, createTask, fetchTasks, updateTaskStatus, deleteTask, fetchPositions, createPosition, deletePosition } from '../../api/records'
+import { confirmAction, showError, showSuccess, extractError, showLoading, closeAlert } from '../../utils/alerts'
 import { SUPERVISOR_LINKS } from '../../utils/links'
 
 const STATUS_COLORS = { pending: '#f59e0b', in_progress: '#38bdf8', completed: '#22c55e', cancelled: '#94a3b8' }
@@ -57,38 +57,45 @@ function PositionManager({ positions, onRefresh }) {
   )
 }
 
-function TaskForm({ positions, students, onSuccess }) {
+function TaskForm({ positions, students, onCreated }) {
   const [mode, setMode] = useSessionStorage('sup-task-mode', 'position') // position | individual
   const [title, setTitle] = useSessionStorage('sup-task-title', '')
   const [desc, setDesc] = useSessionStorage('sup-task-desc', '')
   const [position, setPosition] = useSessionStorage('sup-task-pos', '')
   const [selectedStudents, setSelectedStudents] = useSessionStorage('sup-task-students', [])
-  const [dueDate, setDueDate] = useSessionStorage('sup-task-due', '')
-  const [creating, setCreating] = useState(false)
+  const [dueDate, setDueDate] = useState('')
 
   const positionStudents = students.filter((s) => s.ojt_position && s.ojt_position.toLowerCase() === position.toLowerCase())
 
   const toggleStudent = (id) => setSelectedStudents((prev) => prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id])
 
   const handleSubmit = async () => {
-    if (!title.trim()) { showError('Required', 'Task title is required.'); return }
-    if (!desc.trim()) { showError('Required', 'Task description is required.'); return }
-    if (!position) { showError('Required', 'Please select a position.'); return }
+    if (!title.trim()) return showError('Task title is required')
+    if (!desc.trim()) return showError('Task description is required')
+    if (mode === 'all' && !position) return showError('OJT Position is required to assign all students')
+    if (mode === 'individual' && selectedStudents.length === 0) return showError('Select at least one student')
 
-    const payload = { title: title.trim(), description: desc.trim(), position, due_date: dueDate || null }
-    if (mode === 'individual') {
-      if (selectedStudents.length === 0) { showError('Required', 'Select at least one student.'); return }
-      payload.student_ids = selectedStudents
-    }
-
-    setCreating(true)
+    showLoading('Creating task...')
     try {
+      const payload = {
+        title: title.trim(),
+        description: desc.trim(),
+        position: mode === 'all' ? position : null,
+        assigned_student_ids: mode === 'individual' ? selectedStudents : [],
+        due_date: dueDate || null
+      }
       await createTask(payload)
-      showSuccess('Task created', mode === 'position' ? `Assigned to all ${position} interns.` : `Assigned to ${selectedStudents.length} student(s).`)
-      setTitle(''); setDesc(''); setPosition(''); setSelectedStudents([]); setDueDate('')
-      onSuccess?.()
-    } catch (err) { showError('Failed', extractError(err)) }
-    finally { setCreating(false) }
+      closeAlert()
+      showSuccess('Task Created', 'The task was successfully assigned.')
+      setTitle('')
+      setDesc('')
+      setDueDate('')
+      setSelectedStudents([])
+      onCreated?.()
+    } catch (err) {
+      closeAlert()
+      showError('Failed to create task', extractError(err))
+    }
   }
 
   return (
@@ -153,8 +160,7 @@ function TaskForm({ positions, students, onSuccess }) {
       <label>Task Title *<input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Complete UI mockups" /></label>
       <label>Description *<textarea rows="4" value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="Detailed description of the task…" /></label>
       <label>Due Date<input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} /></label>
-
-      <button className="primary-button" onClick={handleSubmit} disabled={creating}>{creating ? 'Creating…' : 'Create Task'}</button>
+      <button className="primary-button" onClick={handleSubmit}>Create Task</button>
     </div>
   )
 }

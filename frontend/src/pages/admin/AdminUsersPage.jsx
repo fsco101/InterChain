@@ -4,7 +4,7 @@ import AvatarBadge from '../../components/AvatarBadge'
 import DashboardShell from '../../components/DashboardShell'
 import ProtectedRoute from '../../components/ProtectedRoute'
 import { fetchAdminUsers, updateAdminUserRole, backfillRoleIds, verifyAdminUser } from '../../api/admin'
-import { confirmAction, showError, showSuccess, extractError } from '../../utils/alerts'
+import { confirmAction, showError, showSuccess, extractError, showLoading, closeAlert } from '../../utils/alerts'
 import { useAuth } from '../../context/AuthContext'
 
 const LINKS = [
@@ -24,7 +24,6 @@ function AdminUsersPanel() {
   const [roleFilter, setRoleFilter] = useState('all')
   const [selectedUser, setSelectedUser] = useState(null)
   const [newRole, setNewRole] = useState('')
-  const [saving, setSaving] = useState(false)
 
   const loadUsers = async () => {
     try {
@@ -61,16 +60,16 @@ function AdminUsersPanel() {
       confirmButtonText: 'Change Role',
     })
     if (!confirmed) return
-    setSaving(true)
+    showLoading('Updating role...')
     try {
       await updateAdminUserRole(selectedUser.id, newRole)
+      closeAlert()
       showSuccess('Role updated', `${selectedUser.full_name} is now a ${newRole}.`)
       setSelectedUser(null)
       await loadUsers()
     } catch (error) {
+      closeAlert()
       showError('Role change failed', extractError(error))
-    } finally {
-      setSaving(false)
     }
   }
 

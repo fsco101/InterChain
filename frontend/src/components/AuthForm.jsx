@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react'
 import PasswordField from './PasswordField'
 import InstitutionField from './InstitutionField'
 import { useAuth } from '../context/AuthContext'
-import { showError, showSuccess, extractError } from '../utils/alerts'
+import { showError, showSuccess, extractError, showLoading, closeAlert } from '../utils/alerts'
 import { spacing, radius } from '../utils/responsive'
 
 function validateAuth(formData, isSignup) {
@@ -51,10 +51,12 @@ export default function AuthForm({ mode }) {
   const handleSubmit = async (event) => {
     event.preventDefault()
     const formData = new FormData(event.currentTarget)
+    showLoading(isSignup ? 'Creating account...' : isLogin ? 'Logging in...' : 'Processing...')
     
     if (isSignup || isLogin) {
       const validationError = validateAuth(formData, isSignup)
       if (validationError) {
+        closeAlert()
         showError(validationError)
         return
       }
@@ -63,6 +65,7 @@ export default function AuthForm({ mode }) {
         if (isSignup) {
           const response = await signup(buildSignupPayload(formData, avatarFile))
           if (response.requires_verification) {
+            closeAlert()
             setEmailForFlow(email)
             setFlowState('verify')
             showSuccess('Verification Required', response.message || 'Please check your email.')
@@ -71,11 +74,13 @@ export default function AuthForm({ mode }) {
         } else {
           try {
             const response = await login({ email, password: formData.get('password') })
+            closeAlert()
             showSuccess('Welcome back!', 'Redirecting to your dashboard')
             navigate(`/${response.user.role}/dashboard`)
           } catch (error) {
              const msg = extractError(error)
              if (msg === 'not_verified' || msg === 'Not verified' || msg.includes('not verified')) {
+                closeAlert()
                 setEmailForFlow(email)
                 setFlowState('verify')
                 showError('Account not verified', 'Please verify your email address to continue.')
@@ -85,50 +90,62 @@ export default function AuthForm({ mode }) {
           }
         }
       } catch (error) {
+        closeAlert()
         showError(isSignup ? 'Sign up failed' : 'Login failed', extractError(error))
       }
     } else if (isVerify) {
         const code = formData.get('code')
-        if (code.length !== 6) return showError('Code must be 6 digits')
+        if (code.length !== 6) { closeAlert(); return showError('Code must be 6 digits'); }
         try {
             const response = await verifyEmail({ email: emailForFlow, code })
+            closeAlert()
             showSuccess('Verified!', 'Your account has been verified.')
             navigate(`/${response.user.role}/dashboard`)
         } catch(error) {
+            closeAlert()
             showError('Verification failed', extractError(error))
         }
     } else if (isForgot) {
         const email = formData.get('email')
-        if (!email || !email.includes('@')) return showError('Enter a valid email')
+        if (!email || !email.includes('@')) { closeAlert(); return showError('Enter a valid email'); }
         try {
             await forgotPassword({ email })
+            closeAlert()
             setEmailForFlow(email)
             setFlowState('reset-password')
             showSuccess('Code Sent', 'If the email is registered, a reset code was sent.')
         } catch(error) {
+            closeAlert()
             showError('Request failed', extractError(error))
         }
     } else if (isReset) {
         const code = formData.get('code')
         const newPassword = formData.get('new_password')
-        if (code.length !== 6) return showError('Code must be 6 digits')
-        if (newPassword.length < 8) return showError('Password must be at least 8 characters')
+        const confirmPassword = formData.get('confirm_new_password')
+        if (code.length !== 6) { closeAlert(); return showError('Code must be 6 digits'); }
+        if (newPassword.length < 8) { closeAlert(); return showError('Password must be at least 8 characters'); }
+        if (newPassword !== confirmPassword) { closeAlert(); return showError('Passwords do not match'); }
         try {
             await resetPassword({ email: emailForFlow, code, new_password: newPassword })
+            closeAlert()
             showSuccess('Password Reset', 'You can now login with your new password.')
             setFlowState('login')
             navigate('/login')
         } catch(error) {
+            closeAlert()
             showError('Reset failed', extractError(error))
         }
     }
   }
 
   const handleResend = async () => {
+    showLoading('Sending code...')
     try {
         await resendVerification({ email: emailForFlow })
+        closeAlert()
         showSuccess('Code Resent', 'Please check your email.')
     } catch(error) {
+        closeAlert()
         showError('Resend failed', extractError(error))
     }
   }
@@ -233,7 +250,8 @@ export default function AuthForm({ mode }) {
                 6-Digit Code
                 <input name="code" type="text" placeholder="123456" maxLength={6} />
               </label>
-              <PasswordField label="New Password" name="new_password" placeholder="At least 8 characters" />
+              <PasswordField label="New Password" name="new_password" placeholder="At least 8 characters" autoComplete="new-password" />
+              <PasswordField label="Confirm New Password" name="confirm_new_password" placeholder="Repeat your new password" autoComplete="new-password" />
             </>
         )}
 

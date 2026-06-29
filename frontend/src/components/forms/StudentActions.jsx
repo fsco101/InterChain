@@ -65,6 +65,9 @@ function ExpandableRecord({ record, title, content }) {
 }
 
 function RecordList({ title, records }) {
+  const [showAll, setShowAll] = useState(false)
+  const displayedRecords = showAll ? records : records.slice(0, 5)
+
   return (
     <div className="dashboard-card compact-card">
       <h3>{title}</h3>
@@ -72,15 +75,40 @@ function RecordList({ title, records }) {
         {records.length === 0 ? (
           <p className="muted">No records yet.</p>
         ) : (
-          records.map((record) => {
-            const isActivity = !!record.payload.title
-            const title = record.payload.title || record.payload.report_title
-            const content = record.payload.description || record.payload.summary
+          <>
+            {displayedRecords.map((record) => {
+              const title = record.payload.title || record.payload.report_title
+              const content = record.payload.description || record.payload.summary
+              
+              return (
+                <ExpandableRecord key={record.id} record={record} title={title} content={content} />
+              )
+            })}
             
-            return (
-              <ExpandableRecord key={record.id} record={record} title={title} content={content} />
-            )
-          })
+            {records.length > 5 && (
+              <button 
+                onClick={() => setShowAll(!showAll)}
+                type="button"
+                style={{
+                  background: 'none',
+                  border: '1px solid rgba(148,163,184,0.3)',
+                  borderRadius: '8px',
+                  color: 'var(--text)',
+                  cursor: 'pointer',
+                  padding: '8px',
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
+                  width: '100%',
+                  marginTop: '12px',
+                  transition: 'all 0.2s'
+                }}
+                onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(148,163,184,0.1)' }}
+                onMouseOut={(e) => { e.currentTarget.style.background = 'none' }}
+              >
+                {showAll ? 'See less' : `See more (${records.length - 5} hidden)`}
+              </button>
+            )}
+          </>
         )}
       </div>
     </div>

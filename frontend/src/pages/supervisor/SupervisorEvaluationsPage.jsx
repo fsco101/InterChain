@@ -7,13 +7,16 @@ import { UserSearchField, InternshipSearchField } from '../../components/SearchF
 import { SUPERVISOR_LINKS } from '../../utils/links'
 
 function RecordList({ title, records }) {
+  const [showAll, setShowAll] = useState(false)
+  const displayed = showAll ? records : records.slice(0, 5)
+
   return (
     <div className="dashboard-card compact-card">
       <h3>{title}</h3>
       <div className="stack-list">
         {records.length === 0
           ? <p className="muted">No evaluations yet.</p>
-          : records.map((r) => (
+          : displayed.map((r) => (
             <div key={r.id} className="mini-card" style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '12px 14px', borderLeft: '3px solid #38bdf8' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
@@ -33,6 +36,15 @@ function RecordList({ title, records }) {
               </p>
             </div>
           ))}
+        {records.length > 5 && (
+          <button
+            onClick={() => setShowAll(!showAll)}
+            type="button"
+            style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', padding: '8px 0', fontSize: '0.85rem', fontWeight: 600, display: 'block', width: '100%', textAlign: 'center', marginTop: 8 }}
+          >
+            {showAll ? 'See Less' : `See More (${records.length - 5} hidden)`}
+          </button>
+        )}
       </div>
     </div>
   )

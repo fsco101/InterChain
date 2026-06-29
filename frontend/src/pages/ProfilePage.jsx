@@ -5,7 +5,7 @@ import DashboardShell from '../components/DashboardShell'
 import ProtectedRoute from '../components/ProtectedRoute'
 import PasswordField from '../components/PasswordField'
 import { useAuth } from '../context/AuthContext'
-import { showError, showSuccess, extractError } from '../utils/alerts'
+import { showError, showSuccess, extractError, showLoading, closeAlert } from '../utils/alerts'
 import { validateProfile } from '../utils/validation'
 import { UserProfileContent } from './UserProfilePage'
 
@@ -15,7 +15,6 @@ function ProfileEditor() {
   const { user, updateProfile } = useAuth()
   const [form, setForm] = useState({ full_name: '', email: '', contact_number: '', password: '', confirm_password: '', social_links: { github: '', linkedin: '', website: '', facebook: '', instagram: '', twitter: '' } })
   const [avatarFile, setAvatarFile] = useState(null)
-  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     if (!user) {
@@ -42,7 +41,7 @@ function ProfileEditor() {
       showError('Invalid input', validationError)
       return
     }
-    setSaving(true)
+    showLoading('Saving changes...')
     try {
       const multipart = new FormData()
       multipart.append('full_name', form.full_name.trim())
@@ -52,13 +51,13 @@ function ProfileEditor() {
       if (avatarFile) multipart.append('avatar_file', avatarFile)
       multipart.append('social_links', JSON.stringify(form.social_links))
       await updateProfile(multipart)
+      closeAlert()
       showSuccess('Profile updated', 'Your changes have been saved.')
       setForm((current) => ({ ...current, password: '', confirm_password: '' }))
       setAvatarFile(null)
     } catch (error) {
+      closeAlert()
       showError('Update failed', extractError(error))
-    } finally {
-      setSaving(false)
     }
   }
 
@@ -144,8 +143,8 @@ function ProfileEditor() {
 
         <PasswordField label="Confirm new password" name="confirm_password" value={form.confirm_password} onChange={handleChange} placeholder="Repeat the new password" autoComplete="new-password" />
 
-        <button className="primary-button" type="submit" disabled={saving}>
-          {saving ? 'Saving...' : 'Save changes'}
+        <button className="primary-button" type="submit">
+          Save changes
         </button>
       </form>
     </div>
