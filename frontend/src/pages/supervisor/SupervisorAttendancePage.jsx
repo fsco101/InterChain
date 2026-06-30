@@ -8,20 +8,31 @@ import { fetchSupervisorAllAttendance, fetchSupervisorStudents, validateStudentA
 import { showError, showSuccess, extractError, confirmAction } from '../../utils/alerts'
 import { SUPERVISOR_LINKS } from '../../utils/links'
 
-const STATUS_COLORS = { pending: '#f59e0b', validated: '#22c55e', rejected: '#ef4444' }
+const STATUS_COLORS = { pending: '#f59e0b', validated: '#22c55e', rejected: '#ef4444', 're-validated': '#f43f5e' }
 
 function AttendanceCard({ record, onValidate, selected, onToggle }) {
   const [acting, setActing] = useState(false)
+  const [editingTime, setEditingTime] = useState(false)
+  const [overrideIn, setOverrideIn] = useState(record.payload.time_in || '')
+  const [overrideOut, setOverrideOut] = useState(record.payload.time_out || '')
 
   const handle = async (validationStatus) => {
-    const label = validationStatus === 'validated' ? 'Validate' : 'Reject'
+    let label = validationStatus === 'validated' ? 'Validate' : 'Reject'
+    if (validationStatus === 're-validated') label = 'Re-validate'
+    
     const ok = await confirmAction({ title: `${label} this attendance?`, confirmButtonText: label })
     if (!ok) return
 
     setActing(true)
     try {
-      await validateStudentAttendance(record.id, { validation_status: validationStatus })
+      const payload = { validation_status: validationStatus }
+      if (editingTime) {
+        payload.override_time_in = overrideIn
+        payload.override_time_out = overrideOut
+      }
+      await validateStudentAttendance(record.id, payload)
       showSuccess(`Attendance ${validationStatus}`)
+      setEditingTime(false)
       onValidate?.()
     } catch (err) {
       showError('Failed', extractError(err))
@@ -61,16 +72,21 @@ function AttendanceCard({ record, onValidate, selected, onToggle }) {
           </div>
         )}
       </div>
-      <Link to={`/profile/${record.user_id}`} style={{ flexShrink: 0, display: 'block', marginTop: 4 }}>
-        <AvatarBadge name={record.user_name || 'Student'} avatarUrl={record.user_avatar_url} size={42} />
-      </Link>
       <div style={{ flex: 1, minWidth: 180 }}>
-        <Link to={`/profile/${record.user_id}`} style={{ textDecoration: 'none' }}>
+        <Link to={`/profile/${record.user_id}`} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+          <AvatarBadge name={record.user_name || 'Student'} avatarUrl={record.user_avatar_url} size={32} />
           <strong>{record.user_name || 'Student'}</strong>
         </Link>
         <p className="muted" style={{ margin: 0, fontSize: '0.82rem' }}>
           {record.payload.attendance_date} · {record.payload.time_in} – {record.payload.time_out} · {record.payload.hours}h
         </p>
+        {editingTime && (
+          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+            <input type="time" value={overrideIn} onChange={e => setOverrideIn(e.target.value)} style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid rgba(148,163,184,0.2)', background: 'var(--input-bg)', color: 'var(--text)' }} />
+            <input type="time" value={overrideOut} onChange={e => setOverrideOut(e.target.value)} style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid rgba(148,163,184,0.2)', background: 'var(--input-bg)', color: 'var(--text)' }} />
+            <button className="secondary-button" style={{ padding: '4px 8px', fontSize: '0.75rem' }} onClick={() => setEditingTime(false)}>Cancel</button>
+          </div>
+        )}
         <p className="muted" style={{ margin: '4px 0 0', fontSize: '0.78rem' }}>
           {record.payload.internship_id && <span style={{ fontFamily: 'monospace', color: '#a78bfa' }}>ID: {record.payload.internship_id}</span>}
           {record.payload.ojt_position && <span> · {record.payload.ojt_position}</span>}
@@ -92,6 +108,15 @@ function AttendanceCard({ record, onValidate, selected, onToggle }) {
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', width: '100%', maxWidth: 140, justifyContent: 'flex-end' }}>
             <button className="primary-button" style={{ fontSize: '0.78rem', padding: '6px 0', flex: 1 }} onClick={() => handle('validated')} disabled={acting}>✓ Validate</button>
             <button className="secondary-button danger-button" style={{ fontSize: '0.78rem', padding: '6px 0', flex: 1 }} onClick={() => handle('rejected')} disabled={acting}>✕ Reject</button>
+            {!editingTime && <button className="secondary-button" style={{ fontSize: '0.75rem', padding: '4px 10px', width: '100%' }} onClick={() => setEditingTime(true)}>Override Time</button>}
+            {editingTime && <button className="primary-button" style={{ fontSize: '0.75rem', padding: '4px 10px', width: '100%' }} onClick={() => handle('validated')} disabled={acting}>Save Time</button>}
+          </div>
+        )}
+        {record.payload.validation_status === 'validated' && (
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', width: '100%', maxWidth: 140, justifyContent: 'flex-end' }}>
+            <button className="secondary-button danger-button" style={{ fontSize: '0.78rem', padding: '6px 0', width: '100%' }} onClick={() => handle('re-validated')} disabled={acting}>Re-validate</button>
+            {!editingTime && <button className="secondary-button" style={{ fontSize: '0.75rem', padding: '4px 10px', width: '100%' }} onClick={() => setEditingTime(true)}>Override Time</button>}
+            {editingTime && <button className="primary-button" style={{ fontSize: '0.75rem', padding: '4px 10px', width: '100%' }} onClick={() => handle('validated')} disabled={acting}>Save Time</button>}
           </div>
         )}
       </div>
@@ -101,7 +126,7 @@ function AttendanceCard({ record, onValidate, selected, onToggle }) {
 
 function SupervisorAttendancePanel() {
   const [records, setRecords] = useState([])
-  const [filter, setFilter] = useSessionStorage('sup-att-filter', 'all') // all | pending | validated | rejected
+  const [filter, setFilter] = useSessionStorage('sup-att-filter', 'all') // all | pending | validated | rejected | re-validated
   const [searchQuery, setSearchQuery] = useSessionStorage('sup-att-search', '')
   const [dateFilter, setDateFilter] = useSessionStorage('sup-att-date', '')
   const [selected, setSelected] = useState(new Set())
@@ -176,7 +201,7 @@ function SupervisorAttendancePanel() {
         <p className="muted">View and validate student attendance records with photo proof.</p>
         
         <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap', alignItems: 'center' }}>
-          {['all', 'pending', 'validated', 'rejected'].map((f) => (
+          {['all', 'pending', 'validated', 'rejected', 're-validated'].map((f) => (
             <button key={f} className={filter === f ? 'primary-button' : 'secondary-button'} style={{ fontSize: '0.8rem', padding: '6px 14px' }} onClick={() => setFilter(f)}>
               {f.charAt(0).toUpperCase() + f.slice(1)}
               {f === 'pending' && pending > 0 && <span style={{ marginLeft: 6, fontWeight: 800 }}>({pending})</span>}

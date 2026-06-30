@@ -181,7 +181,7 @@ async def student_time_out(
 
     if not existing:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No time in record found for today.")
-    if existing["payload"].get("time_out") and existing["payload"].get("validation_status") != "rejected":
+    if existing["payload"].get("time_out") and existing["payload"].get("validation_status") not in ("rejected", "re-validated"):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Already timed out for today.")
 
     time_in = existing["payload"]["time_in"]

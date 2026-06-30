@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { FaGithub, FaLinkedin, FaFacebook, FaInstagram, FaTwitter, FaGlobe } from 'react-icons/fa'
+import { FaGithub, FaLinkedin, FaFacebook, FaInstagram, FaTwitter, FaGlobe, FaEnvelope } from 'react-icons/fa'
 import { useParams, Link } from 'react-router-dom'
 import DashboardShell from '../components/DashboardShell'
 import AvatarBadge from '../components/AvatarBadge'
@@ -81,22 +81,29 @@ export function UserProfileContent({ providedUserId, hideShell = false }) {
       <div className="dashboard-stack">
         {loading ? <p className="muted">Loading profile…</p> : error ? <p className="muted">{error}</p> : (
           <>
-              <div className="dashboard-card" style={{ display: 'flex', gap: 24, alignItems: 'center', flexWrap: 'wrap' }}>
-                <AvatarBadge name={profile.full_name} avatarUrl={profile.avatar_url} size={120} />
-                <div>
-                  <h1 style={{ margin: '0 0 6px', fontSize: '2rem', fontWeight: 800 }}>{profile.full_name}</h1>
-                  <p className="muted" style={{ margin: 0, fontSize: '1rem', display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            <div className="dashboard-card" style={{ display: 'flex', gap: 24, alignItems: 'center', flexWrap: 'wrap' }}>
+              <AvatarBadge name={profile.full_name} avatarUrl={profile.avatar_url} size={120} />
+              <div>
+                <h1 style={{ margin: '0 0 6px', fontSize: '2rem', fontWeight: 800 }}>{profile.full_name}</h1>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
+                  <div className="muted" style={{ margin: 0, fontSize: '1rem', display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
                     <span className="role-chip">{profile.role_id || profile.role}</span>
                     {profile.internship_id && <span>Internship ID: {profile.internship_id}</span>}
                     {profile.institution && <span>{profile.institution}</span>}
                     {profile.company && <span>{profile.company}</span>}
                     {profile.contact_number && <span>{profile.contact_number}</span>}
                     {profile.ojt_position && <span style={{ color: 'var(--accent)', fontWeight: 600 }}>{profile.ojt_position}</span>}
-                  </p>
-                  {profile.social_links && (Object.values(profile.social_links).some(link => link)) && (
-                    <div style={{ marginTop: 16 }}>
-                      <p className="eyebrow" style={{ margin: 0, fontSize: '0.7rem' }}>Social Links</p>
-                      <div style={{ display: 'flex', gap: 14, marginTop: 8, alignItems: 'center' }}>
+                  </div>
+                  {profile.email && (
+                    <div className="muted" style={{ fontSize: '1rem', display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <FaEnvelope /> <span>{profile.email}</span>
+                    </div>
+                  )}
+                </div>
+                {profile.social_links && (Object.values(profile.social_links).some(link => link)) && (
+                  <div style={{ marginTop: 16 }}>
+                    <p className="eyebrow" style={{ margin: 0, fontSize: '0.7rem' }}>Social Links</p>
+                    <div style={{ display: 'flex', gap: 14, marginTop: 8, alignItems: 'center' }}>
                       {profile.social_links.github && (
                         <a href={profile.social_links.github} target="_blank" rel="noreferrer" style={{ fontSize: '1.2rem', color: '#e2e8f0', display: 'flex', alignItems: 'center' }} title="GitHub">
                           <FaGithub />
@@ -129,262 +136,262 @@ export function UserProfileContent({ providedUserId, hideShell = false }) {
                       )}
                     </div>
                   </div>
-                  )}
+                )}
+              </div>
+            </div>
+
+            {profile.role === 'student' && (
+              <div className="grid-two">
+                {/* Attendance Summary */}
+                <div className="dashboard-card">
+                  <p className="eyebrow">Attendance Summary</p>
+                  {profile.attendance_summary ? (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 16, marginTop: 16 }}>
+                      <div>
+                        <p className="muted" style={{ margin: 0, fontSize: '0.8rem' }}>Total Days</p>
+                        <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700 }}>{profile.attendance_summary.total_days}</p>
+                      </div>
+                      <div>
+                        <p className="muted" style={{ margin: 0, fontSize: '0.8rem' }}>Attendance Hours</p>
+                        <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700 }}>{profile.attendance_summary.total_hours}h</p>
+                      </div>
+                      <div>
+                        <p className="muted" style={{ margin: 0, fontSize: '0.8rem' }}>Validated Hours</p>
+                        <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#22c55e' }}>{profile.attendance_summary.validated_hours}h</p>
+                      </div>
+                    </div>
+                  ) : <p className="muted">No attendance data.</p>}
+                </div>
+
+                {/* Ranking Summary */}
+                <div className="dashboard-card">
+                  <p className="eyebrow">Performance</p>
+                  {profile.evaluation_summary ? (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 16, marginTop: 16 }}>
+                      <div>
+                        <p className="muted" style={{ margin: 0, fontSize: '0.8rem' }}>Avg Score</p>
+                        <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#0ea5e9' }}>{profile.evaluation_summary.avg_score}/10</p>
+                      </div>
+                      {profile.evaluation_summary.recent_feedback && (
+                        <div style={{ gridColumn: '1 / -1', marginTop: 8 }}>
+                          <p className="muted" style={{ margin: 0, fontSize: '0.8rem' }}>Recent Feedback</p>
+                          <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '12px 16px', borderRadius: 12, marginTop: 8, border: '1px solid rgba(255,255,255,0.05)' }}>
+                            <p style={{ margin: 0, fontSize: '0.85rem', fontStyle: 'italic', color: 'var(--text)', lineHeight: 1.5 }}>"{profile.evaluation_summary.recent_feedback}"</p>
+                            {profile.evaluation_summary.recent_supervisor && (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10 }}>
+                                <Link to={`/profile/${profile.evaluation_summary.recent_supervisor.id}`} style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
+                                  <AvatarBadge name={profile.evaluation_summary.recent_supervisor.full_name} avatarUrl={profile.evaluation_summary.recent_supervisor.avatar_url} size={20} />
+                                  <span style={{ fontSize: '0.75rem', color: 'var(--muted)', fontWeight: 500 }}>
+                                    {profile.evaluation_summary.recent_supervisor.full_name}
+                                    {profile.evaluation_summary.recent_supervisor.company && ` • ${profile.evaluation_summary.recent_supervisor.company}`}
+                                  </span>
+                                </Link>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : <p className="muted">No evaluations yet.</p>}
+                </div>
+
+                {/* Activity Summary */}
+                <div className="dashboard-card">
+                  <p className="eyebrow">Activity Summary</p>
+                  {profile.activity_summary ? (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 16, marginTop: 16 }}>
+                      <div>
+                        <p className="muted" style={{ margin: 0, fontSize: '0.8rem' }}>Total Days</p>
+                        <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700 }}>{profile.activity_summary.total_days}</p>
+                      </div>
+                      <div>
+                        <p className="muted" style={{ margin: 0, fontSize: '0.8rem' }}>Activity Hours</p>
+                        <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#a78bfa' }}>{profile.activity_summary.total_hours}h</p>
+                      </div>
+                    </div>
+                  ) : <p className="muted">No activity data.</p>}
                 </div>
               </div>
+            )}
 
-              {profile.role === 'student' && (
-                <div className="grid-two">
-                  {/* Attendance Summary */}
-                  <div className="dashboard-card">
-                    <p className="eyebrow">Attendance Summary</p>
-                    {profile.attendance_summary ? (
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 16, marginTop: 16 }}>
-                        <div>
-                          <p className="muted" style={{ margin: 0, fontSize: '0.8rem' }}>Total Days</p>
-                          <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700 }}>{profile.attendance_summary.total_days}</p>
-                        </div>
-                        <div>
-                          <p className="muted" style={{ margin: 0, fontSize: '0.8rem' }}>Attendance Hours</p>
-                          <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700 }}>{profile.attendance_summary.total_hours}h</p>
-                        </div>
-                        <div>
-                          <p className="muted" style={{ margin: 0, fontSize: '0.8rem' }}>Validated Hours</p>
-                          <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#22c55e' }}>{profile.attendance_summary.validated_hours}h</p>
-                        </div>
+            {profile.role === 'student' && profile.supervisors && (
+              <div className="grid-two" style={{ marginBottom: 18 }}>
+                <div className="dashboard-card">
+                  <p className="eyebrow" style={{ marginBottom: 12 }}>Instructor</p>
+                  {profile.supervisors.instructor ? (
+                    <Link to={`/profile/${profile.supervisors.instructor.id}`} style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}>
+                      <AvatarBadge name={profile.supervisors.instructor.full_name} avatarUrl={profile.supervisors.instructor.avatar_url} size={40} />
+                      <div>
+                        <p style={{ margin: 0, fontWeight: 600, color: 'var(--text)' }}>{profile.supervisors.instructor.full_name}</p>
+                        <p className="muted" style={{ margin: 0, fontSize: '0.8rem', fontFamily: 'monospace' }}>{profile.supervisors.instructor.role_id}</p>
                       </div>
-                    ) : <p className="muted">No attendance data.</p>}
-                  </div>
-
-                  {/* Ranking Summary */}
-                  <div className="dashboard-card">
-                    <p className="eyebrow">Performance</p>
-                    {profile.evaluation_summary ? (
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 16, marginTop: 16 }}>
-                        <div>
-                          <p className="muted" style={{ margin: 0, fontSize: '0.8rem' }}>Avg Score</p>
-                          <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#0ea5e9' }}>{profile.evaluation_summary.avg_score}/10</p>
-                        </div>
-                        {profile.evaluation_summary.recent_feedback && (
-                          <div style={{ gridColumn: '1 / -1', marginTop: 8 }}>
-                            <p className="muted" style={{ margin: 0, fontSize: '0.8rem' }}>Recent Feedback</p>
-                            <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '12px 16px', borderRadius: 12, marginTop: 8, border: '1px solid rgba(255,255,255,0.05)' }}>
-                              <p style={{ margin: 0, fontSize: '0.85rem', fontStyle: 'italic', color: 'var(--text)', lineHeight: 1.5 }}>"{profile.evaluation_summary.recent_feedback}"</p>
-                              {profile.evaluation_summary.recent_supervisor && (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10 }}>
-                                  <Link to={`/profile/${profile.evaluation_summary.recent_supervisor.id}`} style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
-                                    <AvatarBadge name={profile.evaluation_summary.recent_supervisor.full_name} avatarUrl={profile.evaluation_summary.recent_supervisor.avatar_url} size={20} />
-                                    <span style={{ fontSize: '0.75rem', color: 'var(--muted)', fontWeight: 500 }}>
-                                      {profile.evaluation_summary.recent_supervisor.full_name} 
-                                      {profile.evaluation_summary.recent_supervisor.company && ` • ${profile.evaluation_summary.recent_supervisor.company}`}
-                                    </span>
-                                  </Link>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ) : <p className="muted">No evaluations yet.</p>}
-                  </div>
-
-                  {/* Activity Summary */}
-                  <div className="dashboard-card">
-                    <p className="eyebrow">Activity Summary</p>
-                    {profile.activity_summary ? (
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 16, marginTop: 16 }}>
-                        <div>
-                          <p className="muted" style={{ margin: 0, fontSize: '0.8rem' }}>Total Days</p>
-                          <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700 }}>{profile.activity_summary.total_days}</p>
-                        </div>
-                        <div>
-                          <p className="muted" style={{ margin: 0, fontSize: '0.8rem' }}>Activity Hours</p>
-                          <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#a78bfa' }}>{profile.activity_summary.total_hours}h</p>
-                        </div>
-                      </div>
-                    ) : <p className="muted">No activity data.</p>}
-                  </div>
+                    </Link>
+                  ) : <p className="muted">No instructor assigned.</p>}
                 </div>
-              )}
 
-              {profile.role === 'student' && profile.supervisors && (
-                <div className="grid-two" style={{ marginBottom: 18 }}>
-                  <div className="dashboard-card">
-                    <p className="eyebrow" style={{ marginBottom: 12 }}>Instructor</p>
-                    {profile.supervisors.instructor ? (
-                      <Link to={`/profile/${profile.supervisors.instructor.id}`} style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}>
-                        <AvatarBadge name={profile.supervisors.instructor.full_name} avatarUrl={profile.supervisors.instructor.avatar_url} size={40} />
+                <div className="dashboard-card">
+                  {profile.supervisors.supervisor && (
+                    <div className="role-link-card">
+                      <p className="eyebrow">Supervisor / Company</p>
+                      <Link to={`/profile/${profile.supervisors.supervisor.id}`} style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 8, textDecoration: 'none' }}>
+                        <AvatarBadge name={profile.supervisors.supervisor.full_name} avatarUrl={profile.supervisors.supervisor.avatar_url} size={38} />
                         <div>
-                          <p style={{ margin: 0, fontWeight: 600, color: 'var(--text)' }}>{profile.supervisors.instructor.full_name}</p>
-                          <p className="muted" style={{ margin: 0, fontSize: '0.8rem', fontFamily: 'monospace' }}>{profile.supervisors.instructor.role_id}</p>
+                          <strong style={{ display: 'block', color: 'var(--text)' }}>{profile.supervisors.supervisor.full_name}</strong>
+                          <span className="muted" style={{ fontSize: '0.8rem' }}>{profile.supervisors.supervisor.company || 'Unknown Company'}</span>
                         </div>
                       </Link>
-                    ) : <p className="muted">No instructor assigned.</p>}
-                  </div>
+                    </div>
+                  )}
+                  {!profile.supervisors.supervisor && <p className="muted">No supervisor assigned.</p>}
+                </div>
+              </div>
+            )}
 
-                  <div className="dashboard-card">
-                    {profile.supervisors.supervisor && (
-                      <div className="role-link-card">
-                        <p className="eyebrow">Supervisor / Company</p>
-                        <Link to={`/profile/${profile.supervisors.supervisor.id}`} style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 8, textDecoration: 'none' }}>
-                          <AvatarBadge name={profile.supervisors.supervisor.full_name} avatarUrl={profile.supervisors.supervisor.avatar_url} size={38} />
-                          <div>
-                            <strong style={{ display: 'block', color: 'var(--text)' }}>{profile.supervisors.supervisor.full_name}</strong>
-                            <span className="muted" style={{ fontSize: '0.8rem' }}>{profile.supervisors.supervisor.company || 'Unknown Company'}</span>
+            {profile.role === 'student' && profile.tasks && profile.tasks.length > 0 && (
+              <div className="dashboard-card">
+                <p className="eyebrow" style={{ marginBottom: 12 }}>Assigned Tasks</p>
+                <div className="users-table">
+                  {profile.tasks.map((t) => (
+                    <StudentTaskItem key={t.id} task={t} isOwner={currentUser?.id === profile.id} onRefresh={loadProfile} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {profile.role === 'instructor' && profile.instructor_summary && (
+              <div className="dashboard-card">
+                <p className="eyebrow">Instructor Overview</p>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 16, marginTop: 16, marginBottom: 16 }}>
+                  <div>
+                    <p className="muted" style={{ margin: 0, fontSize: '0.8rem' }}>Students Handled</p>
+                    <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#38bdf8' }}>{profile.instructor_summary.student_count}</p>
+                  </div>
+                  <div>
+                    <p className="muted" style={{ margin: 0, fontSize: '0.8rem' }}>Supervisors</p>
+                    <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#a78bfa' }}>{profile.instructor_summary.supervisor_count}</p>
+                  </div>
+                </div>
+                {profile.instructor_summary.students && profile.instructor_summary.students.length > 0 && (
+                  <>
+                    <p className="muted" style={{ margin: '16px 0 8px', fontSize: '0.85rem' }}>Students in Roster</p>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                      {profile.instructor_summary.students.map((student) => (
+                        <Link key={student.role_id} to={student.user_id ? `/profile/${student.user_id}` : '#'} title={student.full_name} style={{ display: 'flex', alignItems: 'center', gap: 6, textDecoration: 'none', background: 'rgba(255,255,255,0.05)', padding: '6px 12px', borderRadius: 20 }}>
+                          <AvatarBadge name={student.full_name} avatarUrl={student.avatar_url} size={24} />
+                          <span style={{ fontSize: '0.85rem', color: 'var(--text)' }}>{student.full_name || student.role_id}</span>
+                        </Link>
+                      ))}
+                    </div>
+                  </>
+                )}
+                {profile.instructor_summary.supervisors && profile.instructor_summary.supervisors.length > 0 && (
+                  <>
+                    <p className="muted" style={{ margin: '16px 0 8px', fontSize: '0.85rem' }}>Supervisors in Network</p>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                      {profile.instructor_summary.supervisors.map((sup) => (
+                        <Link key={sup.user_id} to={sup.user_id ? `/profile/${sup.user_id}` : '#'} title={sup.full_name} style={{ display: 'flex', alignItems: 'center', gap: 6, textDecoration: 'none', background: 'rgba(255,255,255,0.05)', padding: '6px 12px', borderRadius: 20 }}>
+                          <AvatarBadge name={sup.full_name} avatarUrl={sup.avatar_url} size={24} />
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <span style={{ fontSize: '0.85rem', color: 'var(--text)' }}>{sup.full_name}</span>
+                            <span className="muted" style={{ fontSize: '0.7rem' }}>{sup.company}</span>
                           </div>
                         </Link>
-                      </div>
-                    )}
-                    {!profile.supervisors.supervisor && <p className="muted">No supervisor assigned.</p>}
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            {profile.role === 'employer' && profile.employer_summary && (
+              <div className="dashboard-card">
+                <p className="eyebrow">Employer Overview</p>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 16, marginTop: 16 }}>
+                  <div>
+                    <p className="muted" style={{ margin: 0, fontSize: '0.8rem' }}>OJT Positions</p>
+                    <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#a78bfa' }}>{profile.employer_summary.position_count}</p>
+                  </div>
+                  <div>
+                    <p className="muted" style={{ margin: 0, fontSize: '0.8rem' }}>Tasks Created</p>
+                    <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700 }}>{profile.employer_summary.task_count}</p>
+                  </div>
+                  <div>
+                    <p className="muted" style={{ margin: 0, fontSize: '0.8rem' }}>Instructors Linked</p>
+                    <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700 }}>{profile.employer_summary.instructor_count}</p>
                   </div>
                 </div>
-              )}
 
-              {profile.role === 'student' && profile.tasks && profile.tasks.length > 0 && (
-                <div className="dashboard-card">
-                  <p className="eyebrow" style={{ marginBottom: 12 }}>Assigned Tasks</p>
-                  <div className="users-table">
-                    {profile.tasks.map((t) => (
-                      <StudentTaskItem key={t.id} task={t} isOwner={currentUser?.id === profile.id} onRefresh={loadProfile} />
-                    ))}
+                {profile.employer_summary.instructors && profile.employer_summary.instructors.length > 0 && (
+                  <>
+                    <p className="muted" style={{ margin: '16px 0 8px', fontSize: '0.85rem' }}>Instructors in Roster</p>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                      {profile.employer_summary.instructors.map((ins) => (
+                        <Link key={ins.role_id} to={ins.user_id ? `/profile/${ins.user_id}` : '#'} title={ins.full_name} style={{ display: 'flex', alignItems: 'center', gap: 6, textDecoration: 'none', background: 'rgba(255,255,255,0.05)', padding: '6px 12px', borderRadius: 20 }}>
+                          <AvatarBadge name={ins.full_name} avatarUrl={ins.avatar_url} size={24} />
+                          <span style={{ fontSize: '0.85rem', color: 'var(--text)' }}>{ins.full_name || ins.role_id}</span>
+                        </Link>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+            {profile.role === 'supervisor' && profile.supervisor_summary && (
+              <div className="dashboard-card">
+                <p className="eyebrow">Supervisor Overview</p>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 16, marginTop: 16 }}>
+                  <div>
+                    <p className="muted" style={{ margin: 0, fontSize: '0.8rem' }}>OJT Students</p>
+                    <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#38bdf8' }}>{profile.supervisor_summary.student_count}</p>
+                  </div>
+                  <div>
+                    <p className="muted" style={{ margin: 0, fontSize: '0.8rem' }}>OJT Positions</p>
+                    <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#a78bfa' }}>{profile.supervisor_summary.position_count}</p>
+                  </div>
+                  <div>
+                    <p className="muted" style={{ margin: 0, fontSize: '0.8rem' }}>Tasks Assigned</p>
+                    <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700 }}>{profile.supervisor_summary.task_count}</p>
+                  </div>
+                  <div>
+                    <p className="muted" style={{ margin: 0, fontSize: '0.8rem' }}>Instructors Handled</p>
+                    <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700 }}>{profile.supervisor_summary.instructor_count}</p>
                   </div>
                 </div>
-              )}
 
-              {profile.role === 'instructor' && profile.instructor_summary && (
-                <div className="dashboard-card">
-                  <p className="eyebrow">Instructor Overview</p>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 16, marginTop: 16, marginBottom: 16 }}>
-                    <div>
-                      <p className="muted" style={{ margin: 0, fontSize: '0.8rem' }}>Students Handled</p>
-                      <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#38bdf8' }}>{profile.instructor_summary.student_count}</p>
-                    </div>
-                    <div>
-                      <p className="muted" style={{ margin: 0, fontSize: '0.8rem' }}>Supervisors</p>
-                      <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#a78bfa' }}>{profile.instructor_summary.supervisor_count}</p>
-                    </div>
-                  </div>
-                  {profile.instructor_summary.students && profile.instructor_summary.students.length > 0 && (
-                    <>
-                      <p className="muted" style={{ margin: '16px 0 8px', fontSize: '0.85rem' }}>Students in Roster</p>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                        {profile.instructor_summary.students.map((student) => (
-                          <Link key={student.role_id} to={student.user_id ? `/profile/${student.user_id}` : '#'} title={student.full_name} style={{ display: 'flex', alignItems: 'center', gap: 6, textDecoration: 'none', background: 'rgba(255,255,255,0.05)', padding: '6px 12px', borderRadius: 20 }}>
-                            <AvatarBadge name={student.full_name} avatarUrl={student.avatar_url} size={24} />
+                {profile.supervisor_summary.students && profile.supervisor_summary.students.length > 0 && (
+                  <>
+                    <p className="muted" style={{ margin: '16px 0 8px', fontSize: '0.85rem' }}>Students under supervision</p>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                      {profile.supervisor_summary.students.map((student) => (
+                        <Link key={student.user_id} to={student.user_id ? `/profile/${student.user_id}` : '#'} title={student.full_name} style={{ display: 'flex', alignItems: 'center', gap: 6, textDecoration: 'none', background: 'rgba(255,255,255,0.05)', padding: '6px 12px', borderRadius: 20 }}>
+                          <AvatarBadge name={student.full_name} avatarUrl={student.avatar_url} size={24} />
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
                             <span style={{ fontSize: '0.85rem', color: 'var(--text)' }}>{student.full_name || student.role_id}</span>
-                          </Link>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                  {profile.instructor_summary.supervisors && profile.instructor_summary.supervisors.length > 0 && (
-                    <>
-                      <p className="muted" style={{ margin: '16px 0 8px', fontSize: '0.85rem' }}>Supervisors in Network</p>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                        {profile.instructor_summary.supervisors.map((sup) => (
-                          <Link key={sup.user_id} to={sup.user_id ? `/profile/${sup.user_id}` : '#'} title={sup.full_name} style={{ display: 'flex', alignItems: 'center', gap: 6, textDecoration: 'none', background: 'rgba(255,255,255,0.05)', padding: '6px 12px', borderRadius: 20 }}>
-                            <AvatarBadge name={sup.full_name} avatarUrl={sup.avatar_url} size={24} />
-                            <div style={{ display: 'flex', flexDirection: 'column' }}>
-                              <span style={{ fontSize: '0.85rem', color: 'var(--text)' }}>{sup.full_name}</span>
-                              <span className="muted" style={{ fontSize: '0.7rem' }}>{sup.company}</span>
-                            </div>
-                          </Link>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </div>
-              )}
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  </>
+                )}
 
-              {profile.role === 'employer' && profile.employer_summary && (
-                <div className="dashboard-card">
-                  <p className="eyebrow">Employer Overview</p>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 16, marginTop: 16 }}>
-                    <div>
-                      <p className="muted" style={{ margin: 0, fontSize: '0.8rem' }}>OJT Positions</p>
-                      <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#a78bfa' }}>{profile.employer_summary.position_count}</p>
+                {profile.supervisor_summary.instructors && profile.supervisor_summary.instructors.length > 0 && (
+                  <>
+                    <p className="muted" style={{ margin: '16px 0 8px', fontSize: '0.85rem' }}>Instructors</p>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                      {profile.supervisor_summary.instructors.map((ins) => (
+                        <Link key={ins.user_id || ins.role_id} to={ins.user_id ? `/profile/${ins.user_id}` : '#'} title={ins.full_name} style={{ display: 'flex', alignItems: 'center', gap: 6, textDecoration: 'none', background: 'rgba(255,255,255,0.05)', padding: '6px 12px', borderRadius: 20 }}>
+                          <AvatarBadge name={ins.full_name} avatarUrl={ins.avatar_url} size={24} />
+                          <span style={{ fontSize: '0.85rem', color: 'var(--text)' }}>{ins.full_name || ins.role_id}</span>
+                        </Link>
+                      ))}
                     </div>
-                    <div>
-                      <p className="muted" style={{ margin: 0, fontSize: '0.8rem' }}>Tasks Created</p>
-                      <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700 }}>{profile.employer_summary.task_count}</p>
-                    </div>
-                    <div>
-                      <p className="muted" style={{ margin: 0, fontSize: '0.8rem' }}>Instructors Linked</p>
-                      <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700 }}>{profile.employer_summary.instructor_count}</p>
-                    </div>
-                  </div>
-
-                  {profile.employer_summary.instructors && profile.employer_summary.instructors.length > 0 && (
-                    <>
-                      <p className="muted" style={{ margin: '16px 0 8px', fontSize: '0.85rem' }}>Instructors in Roster</p>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                        {profile.employer_summary.instructors.map((ins) => (
-                          <Link key={ins.role_id} to={ins.user_id ? `/profile/${ins.user_id}` : '#'} title={ins.full_name} style={{ display: 'flex', alignItems: 'center', gap: 6, textDecoration: 'none', background: 'rgba(255,255,255,0.05)', padding: '6px 12px', borderRadius: 20 }}>
-                            <AvatarBadge name={ins.full_name} avatarUrl={ins.avatar_url} size={24} />
-                            <span style={{ fontSize: '0.85rem', color: 'var(--text)' }}>{ins.full_name || ins.role_id}</span>
-                          </Link>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </div>
-              )}
-              {profile.role === 'supervisor' && profile.supervisor_summary && (
-                <div className="dashboard-card">
-                  <p className="eyebrow">Supervisor Overview</p>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 16, marginTop: 16 }}>
-                    <div>
-                      <p className="muted" style={{ margin: 0, fontSize: '0.8rem' }}>OJT Students</p>
-                      <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#38bdf8' }}>{profile.supervisor_summary.student_count}</p>
-                    </div>
-                    <div>
-                      <p className="muted" style={{ margin: 0, fontSize: '0.8rem' }}>OJT Positions</p>
-                      <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#a78bfa' }}>{profile.supervisor_summary.position_count}</p>
-                    </div>
-                    <div>
-                      <p className="muted" style={{ margin: 0, fontSize: '0.8rem' }}>Tasks Assigned</p>
-                      <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700 }}>{profile.supervisor_summary.task_count}</p>
-                    </div>
-                    <div>
-                      <p className="muted" style={{ margin: 0, fontSize: '0.8rem' }}>Instructors Handled</p>
-                      <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700 }}>{profile.supervisor_summary.instructor_count}</p>
-                    </div>
-                  </div>
-                  
-                  {profile.supervisor_summary.students && profile.supervisor_summary.students.length > 0 && (
-                    <>
-                      <p className="muted" style={{ margin: '16px 0 8px', fontSize: '0.85rem' }}>Students under supervision</p>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                        {profile.supervisor_summary.students.map((student) => (
-                          <Link key={student.user_id} to={student.user_id ? `/profile/${student.user_id}` : '#'} title={student.full_name} style={{ display: 'flex', alignItems: 'center', gap: 6, textDecoration: 'none', background: 'rgba(255,255,255,0.05)', padding: '6px 12px', borderRadius: 20 }}>
-                            <AvatarBadge name={student.full_name} avatarUrl={student.avatar_url} size={24} />
-                            <div style={{ display: 'flex', flexDirection: 'column' }}>
-                              <span style={{ fontSize: '0.85rem', color: 'var(--text)' }}>{student.full_name || student.role_id}</span>
-                            </div>
-                          </Link>
-                        ))}
-                      </div>
-                    </>
-                  )}
-
-                  {profile.supervisor_summary.instructors && profile.supervisor_summary.instructors.length > 0 && (
-                    <>
-                      <p className="muted" style={{ margin: '16px 0 8px', fontSize: '0.85rem' }}>Instructors</p>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                        {profile.supervisor_summary.instructors.map((ins) => (
-                          <Link key={ins.user_id || ins.role_id} to={ins.user_id ? `/profile/${ins.user_id}` : '#'} title={ins.full_name} style={{ display: 'flex', alignItems: 'center', gap: 6, textDecoration: 'none', background: 'rgba(255,255,255,0.05)', padding: '6px 12px', borderRadius: 20 }}>
-                            <AvatarBadge name={ins.full_name} avatarUrl={ins.avatar_url} size={24} />
-                            <span style={{ fontSize: '0.85rem', color: 'var(--text)' }}>{ins.full_name || ins.role_id}</span>
-                          </Link>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </div>
-              )}
-            </>
-          )}
-        </div>
+                  </>
+                )}
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </>
   )
 

@@ -42,13 +42,17 @@ class TaskStatusBody(BaseModel):
 
 
 class AttendanceValidateBody(BaseModel):
-    validation_status: str  # validated | rejected
+    validation_status: str  # validated | rejected | re-validated
     notes: str | None = None
+    override_time_in: str | None = None
+    override_time_out: str | None = None
 
 class AttendanceBulkValidateBody(BaseModel):
     ids: list[str]
-    validation_status: str  # validated | rejected
+    validation_status: str  # validated | rejected | re-validated
     notes: str | None = None
+    override_time_in: str | None = None
+    override_time_out: str | None = None
 
 
 class CertificateCreate(BaseModel):
@@ -421,11 +425,12 @@ async def get_all_student_attendance(current_user: dict = Depends(require_roles(
     async for doc in cursor:
         record = serialize_record(doc)
         # Enrich with student's current details
-        user_doc = await db.users.find_one({"_id": doc["user_id"]})
+        user_doc = await db.users.find_one({"_id": _oid(doc["user_id"])})
         if user_doc:
             record["payload"]["ojt_position"] = user_doc.get("ojt_position")
             record["payload"]["internship_id"] = user_doc.get("internship_id")
             record["payload"]["institution"] = user_doc.get("institution")
+            record["user_avatar_url"] = user_doc.get("avatar_url")
         records.append(record)
     return {"attendance": records}
 
@@ -438,15 +443,31 @@ async def validate_student_attendance(record_id: str, body: AttendanceValidateBo
     if not oid:
         raise HTTPException(status_code=400, detail="Invalid record ID")
 
+    update_data = {
+        "payload.validation_status": body.validation_status,
+        "payload.validated_by": current_user["id"],
+        "payload.validated_by_name": current_user["full_name"],
+        "payload.validation_notes": body.notes,
+        "payload.validated_at": get_pht_now().isoformat(),
+    }
+    
+    if body.override_time_in:
+        update_data["payload.time_in"] = body.override_time_in
+    if body.override_time_out:
+        update_data["payload.time_out"] = body.override_time_out
+        
+    if body.override_time_in and body.override_time_out:
+        try:
+            h_in, m_in = map(int, body.override_time_in.split(':'))
+            h_out, m_out = map(int, body.override_time_out.split(':'))
+            hours = max(0.0, (h_out + m_out / 60) - (h_in + m_in / 60))
+            update_data["payload.hours"] = round(hours, 2)
+        except Exception:
+            pass
+
     result = await db.student_attendance.update_one(
         {"_id": oid},
-        {"$set": {
-            "payload.validation_status": body.validation_status,
-            "payload.validated_by": current_user["id"],
-            "payload.validated_by_name": current_user["full_name"],
-            "payload.validation_notes": body.notes,
-            "payload.validated_at": get_pht_now().isoformat(),
-        }},
+        {"$set": update_data},
     )
     if result.modified_count == 0:
         raise HTTPException(status_code=404, detail="Attendance record not found")
@@ -472,15 +493,31 @@ async def bulk_validate_student_attendance(body: AttendanceBulkValidateBody, cur
     if not oids:
         raise HTTPException(status_code=400, detail="No valid record IDs provided")
 
+    update_data = {
+        "payload.validation_status": body.validation_status,
+        "payload.validated_by": current_user["id"],
+        "payload.validated_by_name": current_user["full_name"],
+        "payload.validation_notes": body.notes,
+        "payload.validated_at": get_pht_now().isoformat(),
+    }
+    
+    if body.override_time_in:
+        update_data["payload.time_in"] = body.override_time_in
+    if body.override_time_out:
+        update_data["payload.time_out"] = body.override_time_out
+        
+    if body.override_time_in and body.override_time_out:
+        try:
+            h_in, m_in = map(int, body.override_time_in.split(':'))
+            h_out, m_out = map(int, body.override_time_out.split(':'))
+            hours = max(0.0, (h_out + m_out / 60) - (h_in + m_in / 60))
+            update_data["payload.hours"] = round(hours, 2)
+        except Exception:
+            pass
+
     result = await db.student_attendance.update_many(
         {"_id": {"$in": oids}},
-        {"$set": {
-            "payload.validation_status": body.validation_status,
-            "payload.validated_by": current_user["id"],
-            "payload.validated_by_name": current_user["full_name"],
-            "payload.validation_notes": body.notes,
-            "payload.validated_at": get_pht_now().isoformat(),
-        }}
+        {"$set": update_data}
     )
     
     # Notify students

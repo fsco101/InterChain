@@ -134,6 +134,7 @@ export function UserSearchField({ label, role, callerRole, name, onChange, place
                   <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--muted)' }}>
                     {u.role_id} {u.institution ? `· ${u.institution}` : ''}
                     {u.internship_id ? ` · ${u.internship_id}` : ''}
+                    {u.email ? ` · ${u.email}` : ''}
                     {u.ojt_position ? ` · ${u.ojt_position}` : ''}
                   </p>
                 </div>
@@ -259,6 +260,7 @@ export function InternshipSearchField({ name, callerRole, resetKey }) {
                     {' · '}
                     <span style={{ fontFamily: 'monospace', color: '#a78bfa' }}>{u.internship_id}</span>
                     {u.institution ? ` · ${u.institution}` : ''}
+                    {u.email ? ` · ${u.email}` : ''}
                   </p>
                 </div>
               </div>

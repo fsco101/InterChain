@@ -69,7 +69,7 @@ function AttendanceForm({ records, onSuccess }) {
     }
   }
 
-  if (todayRecord && todayRecord.payload.time_out && todayRecord.payload.validation_status !== 'rejected') {
+  if (todayRecord && todayRecord.payload.time_out && !['rejected', 're-validated'].includes(todayRecord.payload.validation_status)) {
     return (
       <div className="dashboard-card form-card" style={{ textAlign: 'center', padding: '32px 16px' }}>
         <h3 style={{ color: '#22c55e', margin: '0 0 8px' }}>Attendance Completed</h3>
@@ -78,7 +78,7 @@ function AttendanceForm({ records, onSuccess }) {
     )
   }
 
-  const isTimedIn = todayRecord && (!todayRecord.payload.time_out || todayRecord.payload.validation_status === 'rejected')
+  const isTimedIn = todayRecord && (!todayRecord.payload.time_out || ['rejected', 're-validated'].includes(todayRecord.payload.validation_status))
 
   return (
     <form className="dashboard-card form-card" onSubmit={isTimedIn ? handleTimeOut : handleTimeIn}>
@@ -86,10 +86,10 @@ function AttendanceForm({ records, onSuccess }) {
       <p className="muted" style={{ marginBottom: 12, fontSize: '0.85rem' }}>Upload a photo as proof of your current location/activity.</p>
 
       {isTimedIn && (
-        <div style={{ background: todayRecord.payload.validation_status === 'rejected' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(56, 189, 248, 0.1)', padding: '12px', borderRadius: '8px', marginBottom: '16px' }}>
-          {todayRecord.payload.validation_status === 'rejected' ? (
+        <div style={{ background: ['rejected', 're-validated'].includes(todayRecord.payload.validation_status) ? 'rgba(239, 68, 68, 0.1)' : 'rgba(56, 189, 248, 0.1)', padding: '12px', borderRadius: '8px', marginBottom: '16px' }}>
+          {['rejected', 're-validated'].includes(todayRecord.payload.validation_status) ? (
             <p style={{ margin: 0, fontSize: '0.85rem', color: '#ef4444' }}>
-              <strong>Attendance Rejected:</strong> Please upload a new time out photo. (Timed in at {todayRecord.payload.time_in})
+              <strong>Attendance {todayRecord.payload.validation_status === 'rejected' ? 'Rejected' : 'Re-validated'}:</strong> Please upload a new time out photo. (Timed in at {todayRecord.payload.time_in})
             </p>
           ) : (
             <p style={{ margin: 0, fontSize: '0.85rem', color: '#38bdf8' }}>
@@ -129,7 +129,7 @@ function AttendanceForm({ records, onSuccess }) {
   )
 }
 
-const STATUS_COLORS = { pending: '#f59e0b', validated: '#22c55e', rejected: '#ef4444' }
+const STATUS_COLORS = { pending: '#f59e0b', validated: '#22c55e', rejected: '#ef4444', 're-validated': '#f43f5e' }
 
 function AttendanceList({ records }) {
   return (
