@@ -350,7 +350,10 @@ function HistoryTab() {
           <div className="users-table">{filteredApprovals.map((r) => (
             <div key={r.id} className="users-row">
               <div><strong>{r.payload.student_id}</strong><p className="muted" style={{ margin:0, fontSize:'0.8rem' }}>{r.payload.approved ? '✓ Approved' : '✕ Not approved'} · {r.payload.approval_date}</p></div>
-              {r.blockchain?.tx_hash && <a href={r.blockchain.explorer_url} target="_blank" rel="noreferrer" style={{ fontSize:'0.72rem', fontFamily:'monospace', color:'var(--accent)' }}>{r.blockchain.tx_hash.slice(0,18)}…</a>}
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                {r.blockchain?.tx_hash && <a href={r.blockchain.explorer_url} target="_blank" rel="noreferrer" title="Amoy Polygon" style={{ fontSize:'0.72rem', fontFamily:'monospace', color:'var(--accent)' }}>Tx: {r.blockchain.tx_hash.slice(0,12)}…</a>}
+                {r.blockchain?.ipfs?.gateway_url && <a href={r.blockchain.ipfs.gateway_url} target="_blank" rel="noreferrer" title="IPFS Pinata" style={{ fontSize:'0.72rem', fontFamily:'monospace', color:'#0ea5e9' }}>IPFS</a>}
+              </div>
             </div>
           ))}</div>
         )}
@@ -363,7 +366,10 @@ function HistoryTab() {
               <div><strong>{c.payload.recipient_name}</strong><p className="muted" style={{ margin:0, fontSize:'0.8rem' }}>{c.payload.internship_title} · {c.payload.company_name}</p></div>
               <span className="role-chip">{c.payload.recipient_role_id}</span>
               <span className="muted" style={{ fontSize:'0.75rem' }}>{new Date(c.created_at).toLocaleDateString('en-PH', { timeZone: 'Asia/Manila' })}</span>
-              {c.blockchain?.tx_hash && <a href={c.blockchain.explorer_url} target="_blank" rel="noreferrer" style={{ fontSize:'0.72rem', fontFamily:'monospace', color:'var(--accent)', maxWidth:140, overflow:'hidden', textOverflow:'ellipsis' }}>{c.blockchain.tx_hash.slice(0,18)}…</a>}
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                {c.blockchain?.tx_hash && <a href={c.blockchain.explorer_url} target="_blank" rel="noreferrer" title="Amoy Polygon" style={{ fontSize:'0.72rem', fontFamily:'monospace', color:'var(--accent)', maxWidth:140, overflow:'hidden', textOverflow:'ellipsis' }}>Tx: {c.blockchain.tx_hash.slice(0,12)}…</a>}
+                {c.blockchain?.ipfs?.gateway_url && <a href={c.blockchain.ipfs.gateway_url} target="_blank" rel="noreferrer" title="IPFS Pinata" style={{ fontSize:'0.72rem', fontFamily:'monospace', color:'#0ea5e9' }}>IPFS</a>}
+              </div>
             </div>
           ))}</div>
         )}

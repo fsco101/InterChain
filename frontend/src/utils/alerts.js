@@ -95,6 +95,61 @@ export async function confirmAction({ title, text, confirmButtonText = 'Confirm'
   return result.isConfirmed
 }
 
+export async function confirmDeleteAction({ title = 'Confirm Deletion', text = 'This cannot be undone.' }) {
+  const step1 = await Swal.fire({
+    title,
+    text: `${text} Please type "Confirm" to proceed.`,
+    input: 'text',
+    inputPlaceholder: 'Confirm',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Proceed',
+    cancelButtonText: 'Cancel',
+    confirmButtonColor: 'var(--danger)',
+    cancelButtonColor: 'var(--muted)',
+    background: 'var(--panel)',
+    color: 'var(--text)',
+    preConfirm: (inputValue) => {
+      if (inputValue !== 'Confirm') {
+        Swal.showValidationMessage('You must type "Confirm" exactly (case-sensitive).');
+        return false;
+      }
+      return true;
+    }
+  });
+
+  if (!step1.isConfirmed) {
+    return false;
+  }
+
+  let timerInterval;
+  const step2 = await Swal.fire({
+    title: 'Deletion Scheduled',
+    html: `Deleting automatically in <b>10</b> seconds...`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Delete Now',
+    cancelButtonText: 'Cancel',
+    confirmButtonColor: 'var(--danger)',
+    cancelButtonColor: 'var(--muted)',
+    background: 'var(--panel)',
+    color: 'var(--text)',
+    timer: 10000,
+    timerProgressBar: true,
+    didOpen: () => {
+      const b = Swal.getHtmlContainer().querySelector('b');
+      timerInterval = setInterval(() => {
+        if (b) b.textContent = Math.ceil(Swal.getTimerLeft() / 1000);
+      }, 100);
+    },
+    willClose: () => {
+      clearInterval(timerInterval);
+    }
+  });
+  
+  return step2.isConfirmed || step2.dismiss === Swal.DismissReason.timer;
+}
+
 export function showLoading(title = 'Processing...') {
   Swal.fire({
     title,

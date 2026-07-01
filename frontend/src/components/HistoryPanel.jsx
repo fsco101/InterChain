@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { confirmAction, showError, showSuccess, extractError } from '../utils/alerts'
+import { confirmAction, confirmDeleteAction, showError, showSuccess, extractError } from '../utils/alerts'
 
 function fmt(val) {
   if (!val) return '—'
@@ -57,7 +57,7 @@ export default function HistoryPanel({ title, records, onDelete, onBulkDelete, l
   const toggleAll = () => setSelected(allSelected ? new Set() : new Set(filtered.map((r) => r.id)))
 
   const handleDelete = async (id) => {
-    const ok = await confirmAction({ title: 'Delete record?', text: 'This cannot be undone.' })
+    const ok = await confirmDeleteAction({ title: 'Delete record?', text: 'This cannot be undone.' })
     if (!ok) return
     try {
       await onDelete(id)
@@ -69,7 +69,7 @@ export default function HistoryPanel({ title, records, onDelete, onBulkDelete, l
   const handleBulkDelete = async () => {
     const ids = [...selected]
     if (!ids.length) return
-    const ok = await confirmAction({ title: `Delete ${ids.length} record(s)?`, text: 'This cannot be undone.' })
+    const ok = await confirmDeleteAction({ title: `Delete ${ids.length} record(s)?`, text: 'This cannot be undone.' })
     if (!ok) return
     try {
       await onBulkDelete(ids)
@@ -142,6 +142,20 @@ export default function HistoryPanel({ title, records, onDelete, onBulkDelete, l
                           title={r.blockchain.tx_hash}
                         >
                           Tx Link
+                        </a>
+                      </>
+                    )}
+                    {r.blockchain?.ipfs?.gateway_url && (
+                      <>
+                        {' · '}
+                        <a
+                          href={r.blockchain.ipfs.gateway_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{ color: '#0ea5e9', textDecoration: 'underline', fontFamily: 'monospace', fontSize: '0.8rem' }}
+                          title={r.blockchain.ipfs.cid}
+                        >
+                          IPFS Link
                         </a>
                       </>
                     )}
