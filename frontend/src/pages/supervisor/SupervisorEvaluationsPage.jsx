@@ -1,6 +1,8 @@
+import { Link } from 'react-router-dom'
 import { useEffect, useRef, useState } from 'react'
 import ProtectedRoute from '../../components/ProtectedRoute'
 import DashboardShell from '../../components/DashboardShell'
+import AvatarBadge from '../../components/AvatarBadge'
 import { createSupervisorEvaluation, fetchSupervisorEvaluations } from '../../api/records'
 import { confirmAction, showError, showSuccess, extractError } from '../../utils/alerts'
 import { UserSearchField, InternshipSearchField } from '../../components/SearchFields'
@@ -17,21 +19,38 @@ function RecordList({ title, records }) {
         {records.length === 0
           ? <p className="muted">No evaluations yet.</p>
           : displayed.map((r) => (
-            <div key={r.id} className="mini-card" style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '12px 14px', borderLeft: '3px solid #38bdf8' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div>
-                  <strong style={{ fontSize: '0.95rem', color: 'var(--text)', display: 'block' }}>{r.user_name || r.payload.student_id}</strong>
-                  <div style={{ display: 'flex', gap: 8, marginTop: 4, alignItems: 'center' }}>
-                    <span style={{ fontSize: '0.75rem', background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: 4, color: 'var(--muted)' }}>Student ID: {r.payload.student_id}</span>
-                    <span style={{ fontSize: '0.75rem', background: 'rgba(167,139,250,0.15)', padding: '2px 6px', borderRadius: 4, color: '#c4b5fd' }}>Intern ID: {r.payload.internship_id || 'N/A'}</span>
+            <div key={r.id} className="mini-card" style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '16px', borderLeft: '4px solid #38bdf8', alignItems: 'stretch' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+                
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <Link to={`/profile/${r.payload.student_id}`} style={{ textDecoration: 'none' }}>
+                    <AvatarBadge name={r.student_name || 'Student'} avatarUrl={r.student_avatar_url} size={42} />
+                  </Link>
+                  <div style={{ textAlign: 'left' }}>
+                    <Link to={`/profile/${r.payload.student_id}`} style={{ textDecoration: 'none' }}>
+                      <strong style={{ fontSize: '0.95rem', color: 'var(--text)', display: 'block', transition: 'color 0.2s ease' }}>
+                        {r.student_name || 'Unknown Student'}
+                      </strong>
+                    </Link>
+                    {r.student_email && (
+                      <span style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginTop: 2 }}>
+                        {r.student_email}
+                      </span>
+                    )}
+                    <div style={{ display: 'flex', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '0.7rem', background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: 4, color: 'var(--muted)' }}>Student ID: {r.payload.student_id}</span>
+                      <span style={{ fontSize: '0.7rem', background: 'rgba(167,139,250,0.15)', padding: '2px 6px', borderRadius: 4, color: '#c4b5fd' }}>Intern ID: {r.payload.internship_id || 'N/A'}</span>
+                    </div>
                   </div>
                 </div>
-                <div style={{ background: 'rgba(56,189,248,0.15)', padding: '4px 10px', borderRadius: 8, border: '1px solid rgba(56,189,248,0.3)', textAlign: 'center' }}>
-                  <span style={{ display: 'block', fontSize: '0.65rem', textTransform: 'uppercase', color: '#7dd3fc', letterSpacing: 0.5 }}>Score</span>
-                  <strong style={{ fontSize: '1.1rem', color: '#38bdf8' }}>{r.payload.score}<span style={{ fontSize: '0.8rem', color: 'var(--muted)', fontWeight: 'normal' }}>/10</span></strong>
+
+                <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', background: 'rgba(56,189,248,0.15)', padding: '8px 14px', borderRadius: 12, border: '1px solid rgba(56,189,248,0.3)', minWidth: 64, alignSelf: 'stretch' }}>
+                  <span style={{ display: 'block', fontSize: '0.65rem', textTransform: 'uppercase', color: '#7dd3fc', letterSpacing: 0.5, marginBottom: 2 }}>Score</span>
+                  <strong style={{ fontSize: '1.2rem', color: '#38bdf8', lineHeight: 1 }}>{r.payload.score}<span style={{ fontSize: '0.85rem', color: 'var(--muted)', fontWeight: 'normal' }}>/10</span></strong>
                 </div>
+
               </div>
-              <p className="muted" style={{ margin: '4px 0 0', fontSize: '0.85rem', lineHeight: 1.5, fontStyle: 'italic', background: 'rgba(0,0,0,0.2)', padding: '8px 10px', borderRadius: 6 }}>
+              <p className="muted" style={{ margin: '2px 0 0', fontSize: '0.9rem', lineHeight: 1.5, fontStyle: 'italic', background: 'rgba(0,0,0,0.2)', padding: '12px 14px', borderRadius: 8, textAlign: 'left' }}>
                 "{r.payload.feedback}"
               </p>
             </div>
@@ -98,7 +117,7 @@ function SupervisorEvaluationsPanel() {
         <p className="muted">Evaluate student performance with a score (1–10) and feedback.</p>
       </div>
 
-      <div className="grid-two">
+      <div className="grid-two" style={{ alignItems: 'flex-start' }}>
         <form className="dashboard-card form-card" style={{ zIndex: 10 }} onSubmit={handleSubmit} ref={formRef}>
           <h3>New Evaluation</h3>
           <UserSearchField

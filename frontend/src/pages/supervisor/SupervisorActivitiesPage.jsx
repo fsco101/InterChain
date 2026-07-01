@@ -31,7 +31,7 @@ function ActivityCard({ record, onValidate, selectable, selected, onToggle }) {
   }
 
   return (
-    <div className="users-row" style={{ alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
+    <div className="users-row" style={{ display: 'flex', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
       {selectable && (
         <input 
           type="checkbox" 

@@ -99,11 +99,37 @@ function InstructorSchedulePanel() {
               const studentDoc = students.find(s => s.user_id === r.user_id)
               return (
                 <div key={r.id} className="users-row" style={{ alignItems: 'flex-start' }}>
-                  {r.payload.photo_url && (
-                    <img src={r.payload.photo_url} alt="Proof" style={{ width: 48, height: 48, borderRadius: 8, objectFit: 'cover' }} />
-                  )}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <strong>{r.user_name || 'Student'}</strong>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    {r.payload.photo_url && (
+                      <div style={{ position: 'relative' }}>
+                        <a href={r.payload.photo_url} target="_blank" rel="noreferrer">
+                          <img
+                            src={r.payload.photo_url}
+                            alt="Time In Proof"
+                            style={{ width: 64, height: 64, borderRadius: 10, objectFit: 'cover', border: '2px solid rgba(148,163,184,0.2)', cursor: 'pointer' }}
+                          />
+                        </a>
+                        <div style={{ position: 'absolute', bottom: -6, left: '50%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: '0.6rem', padding: '2px 4px', borderRadius: 4 }}>In</div>
+                      </div>
+                    )}
+                    {r.payload.photo_out_url && (
+                      <div style={{ position: 'relative' }}>
+                        <a href={r.payload.photo_out_url} target="_blank" rel="noreferrer">
+                          <img
+                            src={r.payload.photo_out_url}
+                            alt="Time Out Proof"
+                            style={{ width: 64, height: 64, borderRadius: 10, objectFit: 'cover', border: '2px solid rgba(148,163,184,0.2)', cursor: 'pointer' }}
+                          />
+                        </a>
+                        <div style={{ position: 'absolute', bottom: -6, left: '50%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: '0.6rem', padding: '2px 4px', borderRadius: 4 }}>Out</div>
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0, paddingLeft: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                      <AvatarBadge name={r.user_name || 'Student'} avatarUrl={r.user_avatar_url} size={28} />
+                      <strong style={{ fontSize: '0.95rem' }}>{r.user_name || 'Student'}</strong>
+                    </div>
                     <p className="muted" style={{ margin: 0, fontSize: '0.82rem' }}>{r.payload.attendance_date} · {r.payload.time_in}–{r.payload.time_out} · {r.payload.hours}h</p>
                   </div>
                   {studentDoc && studentDoc.supervisor_name && (

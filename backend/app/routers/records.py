@@ -414,13 +414,37 @@ async def submit_supervisor_evaluation(payload: EmployerEvaluationCreate, curren
 
 @router.get("/supervisor/evaluations")
 async def get_supervisor_evaluations(current_user: dict = Depends(require_roles("supervisor"))):
-    evaluations = await list_records("employer_evaluations", current_user["id"])
+    evaluations = await list_all_records("employer_evaluations", current_user["id"])
+    db = get_database()
+    for ev in evaluations:
+        student_id = ev.get("payload", {}).get("student_id")
+        if student_id:
+            try:
+                student = await db.users.find_one({"role_id": student_id})
+                if student:
+                    ev["student_name"] = student.get("full_name")
+                    ev["student_email"] = student.get("email")
+                    ev["student_avatar_url"] = student.get("avatar_url")
+            except Exception:
+                pass
     return {"evaluations": evaluations}
 
 
 @router.get("/supervisor/evaluations/history")
 async def get_supervisor_evaluations_history(current_user: dict = Depends(require_roles("supervisor"))):
     evaluations = await list_all_records("employer_evaluations", current_user["id"])
+    db = get_database()
+    for ev in evaluations:
+        student_id = ev.get("payload", {}).get("student_id")
+        if student_id:
+            try:
+                student = await db.users.find_one({"role_id": student_id})
+                if student:
+                    ev["student_name"] = student.get("full_name")
+                    ev["student_email"] = student.get("email")
+                    ev["student_avatar_url"] = student.get("avatar_url")
+            except Exception:
+                pass
     return {"evaluations": evaluations}
 
 
