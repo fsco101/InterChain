@@ -92,7 +92,7 @@ function GlobalRankingsPanel() {
         <p className="eyebrow">System-Wide</p>
         <h2>Global Rankings</h2>
         <p className="muted">See how students rank across all companies, institutions, and positions based on supervisor evaluations.</p>
-        
+
         <div style={{ display: 'flex', gap: 16, marginTop: 16, flexWrap: 'wrap', alignItems: 'flex-end' }}>
           <label style={{ display: 'flex', flexDirection: 'column', fontSize: '0.8rem', color: 'var(--muted)' }}>
             Start Date
@@ -102,7 +102,7 @@ function GlobalRankingsPanel() {
             End Date
             <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-soft)', color: 'var(--text)' }} />
           </label>
-          
+
           <label style={{ display: 'flex', flexDirection: 'column', fontSize: '0.8rem', color: 'var(--muted)' }}>
             Institution
             <select value={institutionFilter} onChange={e => setInstitutionFilter(e.target.value)} style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-soft)', color: 'var(--text)' }}>
@@ -136,7 +136,7 @@ function GlobalRankingsPanel() {
 
 export default function RankingsPage() {
   const { user } = useAuth()
-  
+
   let links = []
   if (user?.role === 'student') links = STUDENT_LINKS
   else if (user?.role === 'instructor') links = INSTRUCTOR_LINKS
