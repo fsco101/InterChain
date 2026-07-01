@@ -521,6 +521,7 @@ async def get_global_rankings(
         if sid not in student_scores:
             student_scores[sid] = {
                 "scores": [],
+                "recent_score": ev["payload"]["score"],
                 "student_id": sid,
                 "recent_feedback": ev["payload"].get("feedback"),
                 "recent_supervisor_id": ev.get("user_id")
@@ -578,10 +579,9 @@ async def get_global_rankings(
         else:
             data["recent_supervisor"] = None
 
-        data["avg_score"] = round(sum(data["scores"]) / len(data["scores"]), 2)
         data["eval_count"] = len(data["scores"])
 
-    ranked = sorted(student_scores.values(), key=lambda x: x["avg_score"], reverse=True)
+    ranked = sorted(student_scores.values(), key=lambda x: x["recent_score"], reverse=True)
     overall = [{"rank": i + 1, **{k: v for k, v in r.items() if k != "scores"}} for i, r in enumerate(ranked)]
 
     return {"overall": overall}

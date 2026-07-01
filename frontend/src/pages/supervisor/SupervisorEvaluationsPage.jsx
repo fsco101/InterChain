@@ -23,15 +23,11 @@ function RecordList({ title, records }) {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
                 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <Link to={`/profile/${r.payload.student_id}`} style={{ textDecoration: 'none' }}>
-                    <AvatarBadge name={r.student_name || 'Student'} avatarUrl={r.student_avatar_url} size={42} />
-                  </Link>
+                  <AvatarBadge name={r.student_name || 'Student'} avatarUrl={r.student_avatar_url} size={42} />
                   <div style={{ textAlign: 'left' }}>
-                    <Link to={`/profile/${r.payload.student_id}`} style={{ textDecoration: 'none' }}>
-                      <strong style={{ fontSize: '0.95rem', color: 'var(--text)', display: 'block', transition: 'color 0.2s ease' }}>
-                        {r.student_name || 'Unknown Student'}
-                      </strong>
-                    </Link>
+                    <strong style={{ fontSize: '0.95rem', color: 'var(--text)', display: 'block' }}>
+                      {r.student_name || 'Unknown Student'}
+                    </strong>
                     {r.student_email && (
                       <span style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginTop: 2 }}>
                         {r.student_email}

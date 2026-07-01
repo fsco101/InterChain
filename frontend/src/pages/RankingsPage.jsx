@@ -41,7 +41,7 @@ function RankTable({ title, rows }) {
             <span>{r.ojt_position || '—'}</span>
             <span>{r.company || '—'}</span>
             <span>{r.institution || '—'}</span>
-            <span style={{ fontWeight: 700, color: '#22c55e' }}>{r.avg_score}/10</span>
+            <span style={{ fontWeight: 700, color: '#22c55e' }}>{r.recent_score}/10</span>
             <span style={{ fontSize: '0.75rem', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'center' }} title={r.recent_feedback}>
               <span className="muted" style={{ fontStyle: 'italic', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {r.recent_feedback ? `"${r.recent_feedback}"` : '—'}

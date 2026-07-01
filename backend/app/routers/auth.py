@@ -247,9 +247,8 @@ async def get_user_profile(
             cursor = db.employer_evaluations.find({"payload.student_id": role_id}).sort("created_at", -1)
             evals = [ev async for ev in cursor]
             if evals:
-                scores = [ev["payload"]["score"] for ev in evals]
-                avg = round(sum(scores) / len(scores), 2)
                 recent_ev = evals[0]
+                recent_score = recent_ev["payload"]["score"]
                 recent_feedback = recent_ev["payload"].get("feedback")
                 recent_supervisor = None
                 
@@ -270,8 +269,8 @@ async def get_user_profile(
                         }
 
                 profile["evaluation_summary"] = {
-                    "avg_score": avg,
-                    "eval_count": len(scores),
+                    "recent_score": recent_score,
+                    "eval_count": len(evals),
                     "recent_feedback": recent_feedback,
                     "recent_supervisor": recent_supervisor
                 }

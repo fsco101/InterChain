@@ -63,7 +63,7 @@ def serialize_user(document: dict) -> dict:
 def _object_id(user_id: str) -> ObjectId | None:
     try:
         return ObjectId(user_id)
-    except (TypeError, ValueError):
+    except Exception:
         return None
 
 

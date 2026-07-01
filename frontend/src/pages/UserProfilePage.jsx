@@ -53,7 +53,6 @@ function StudentTaskItem({ task, isOwner, onRefresh }) {
   )
 }
 
-
 export function UserProfileContent({ providedUserId, hideShell = false }) {
   const { userId: paramId } = useParams()
   const userId = providedUserId || paramId
@@ -167,10 +166,10 @@ export function UserProfileContent({ providedUserId, hideShell = false }) {
                 <div className="dashboard-card">
                   <p className="eyebrow">Performance</p>
                   {profile.evaluation_summary ? (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 16, marginTop: 16 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                       <div>
-                        <p className="muted" style={{ margin: 0, fontSize: '0.8rem' }}>Avg Score</p>
-                        <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#0ea5e9' }}>{profile.evaluation_summary.avg_score}/10</p>
+                        <p className="muted" style={{ margin: 0, fontSize: '0.8rem' }}>Recent Score</p>
+                        <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#0ea5e9' }}>{profile.evaluation_summary.recent_score}/10</p>
                       </div>
                       {profile.evaluation_summary.recent_feedback && (
                         <div style={{ gridColumn: '1 / -1', marginTop: 8 }}>
